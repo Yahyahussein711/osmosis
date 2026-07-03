@@ -1,0 +1,2461 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Osmosis" />
+    <meta name="theme-color" content="#FAF8F0" id="themeColorMeta" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="logo.svg" />
+    <link rel="apple-touch-icon" href="logo.svg" />
+    <title>Osmosis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="reset.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <style id="synthesisRitualStyles">
+      .brand-logo-svg {
+        /* Static logo - no animation */
+      }
+      .reflection-carousel-wrapper {
+        margin: 24px 0;
+        background: var(--glass-solid);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      .carousel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        border-bottom: 1px solid var(--glass-border);
+        background: rgba(0, 0, 0, 0.02);
+      }
+      [data-theme="dark"] .carousel-header {
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .carousel-viewport {
+        overflow: hidden;
+        width: 100%;
+        position: relative;
+        touch-action: pan-y;
+      }
+      .carousel-track {
+        display: flex;
+        width: 100%;
+        transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .carousel-card {
+        flex: 0 0 100%;
+        min-width: 100%;
+        padding: 24px 16px;
+        opacity: 0.4;
+        transform: scale(0.95);
+        transition:
+          opacity 0.4s ease,
+          transform 0.4s ease;
+        pointer-events: none;
+      }
+      .carousel-card.active {
+        opacity: 1;
+        transform: scale(1);
+        pointer-events: auto;
+      }
+      .carousel-card h4 {
+        color: var(--accent);
+        margin-bottom: 8px;
+        font-size: 1.1rem;
+      }
+      .carousel-card p {
+        color: var(--subtitle-color);
+        font-size: 0.95rem;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+      .drawer-tabs {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        padding: 16px 20px;
+        border-top: none;
+        background: var(--glass-bg);
+        margin-top: 8px;
+        box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.05);
+      }
+      [data-theme="dark"] .drawer-tabs,
+      [data-theme="midnight"] .drawer-tabs {
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .drawer-tab {
+        flex: 1;
+        padding: 8px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--subtitle-color);
+        background: transparent;
+        border: 1px solid var(--glass-border);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .drawer-tab.active {
+        color: var(--cream);
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+    </style>
+    <script>
+      // Apply the Editorial ("The Quarterly") skin before first paint to avoid a flash.
+      try {
+        if (localStorage.getItem("osmosis_skin") === "editorial") {
+          document.documentElement.setAttribute("data-skin", "editorial");
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div class="bg-blobs" style="display: none">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+
+    <div id="splashScreen">
+      <div class="splash-logo-container">
+        <h1 class="splash-title">Osmosis</h1>
+      </div>
+    </div>
+
+    <header class="top-app-bar">
+      <div class="logo-container" id="logoHomeBtn">
+        <h1 class="logo-title">Osmosis</h1>
+      </div>
+      <div class="header-actions">
+        <div class="search-container">
+          <input
+            type="text"
+            id="globalSearch"
+            class="search-input"
+            placeholder="Search knowledge..."
+          />
+          <div id="searchResults" class="search-results glass-panel"></div>
+        </div>
+        <div style="position: relative; display: flex; align-items: center">
+          <button
+            class="icon-btn-small"
+            id="themeToggleBtn"
+            aria-label="Toggle Theme"
+            title="Tap to toggle, hold for options"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <div
+            id="themeOptionsMenu"
+            class="glass-panel"
+            style="
+              display: none;
+              position: absolute;
+              top: 100%;
+              right: 0;
+              margin-top: 8px;
+              flex-direction: column;
+              gap: 4px;
+              padding: 8px;
+              min-width: 170px;
+              z-index: 1000;
+            "
+          >
+            <div
+              style="
+                font-size: 0.7rem;
+                font-weight: bold;
+                color: var(--subtitle-color);
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                padding: 4px 8px;
+                margin-bottom: 4px;
+              "
+            >
+              Select Dark Mode
+            </div>
+            <button
+              class="text-btn"
+              id="btnStandardDark"
+              style="
+                text-align: left;
+                width: 100%;
+                padding: 10px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: background 0.2s;
+              "
+            >
+              Standard
+            </button>
+            <button
+              class="text-btn"
+              id="btnOledMidnight"
+              style="
+                text-align: left;
+                width: 100%;
+                padding: 10px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: background 0.2s;
+              "
+            >
+              OLED Midnight
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="article-progress-container" id="globalProgressBarContainer">
+        <div id="articleProgressBar"></div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div id="exploreView" class="view active">
+        <div class="ed-masthead" aria-hidden="true">
+          <div class="ed-mh-meta">
+            <span>Est · MMXVI</span>
+            <span>Vol · IV</span>
+            <span>No. 14</span>
+          </div>
+          <div class="ed-mh-title">The Quarterly</div>
+          <div class="ed-mh-tag">A Field Guide to the Examined Life</div>
+        </div>
+        <h2 style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+          <span style="display: flex; align-items: center; gap: 10px">
+            <svg
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--accent)"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polygon
+                points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
+              >
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  from="0 12 12"
+                  to="360 12 12"
+                  dur="12s"
+                  repeatCount="indefinite"
+                />
+              </polygon>
+            </svg>
+            The Library
+          </span>
+          <span
+            id="libraryStoryCount"
+            style="font-size: 0.85rem; font-weight: 600; color: var(--subtitle-color); white-space: nowrap;"
+          ></span>
+        </h2>
+        <div
+          id="exploreStreakRow"
+          class="streak-row"
+          style="margin-bottom: 20px"
+        ></div>
+        <div style="display: flex; align-items: center; margin-bottom: 16px">
+          <button
+            id="continueReadingBtn"
+            class="primary btn-sm"
+            title="Continue where you left off"
+            style="
+              display: none;
+              align-items: center;
+              justify-content: center;
+              padding: 8px;
+              border-radius: 50%;
+            "
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
+              ></path>
+            </svg>
+          </button>
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              margin-left: auto;
+              flex-wrap: wrap;
+              justify-content: flex-end;
+            "
+          >
+            <select
+              id="exploreFilterSelect"
+              style="
+                background: var(--glass-solid);
+                border: 1px solid var(--glass-border);
+                border-radius: 20px;
+                padding: 6px 32px 6px 14px;
+                color: var(--subtitle-color);
+                font-family: &quot;Outfit&quot;, sans-serif;
+                font-size: 0.85rem;
+                outline: none;
+                cursor: pointer;
+                -webkit-appearance: none;
+                appearance: none;
+                background-image: url(&quot;data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238a9a9d%22 stroke-width=%222.5%22><polyline points=%226 9 12 15 18 9%22/></svg>&quot;);
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+              "
+            >
+              <option value="all">All Stories</option>
+              <option value="unread">Unread Only</option>
+              <option value="read">Read Only</option>
+              <option value="favorite">Favorited Only</option>
+              <option value="not-favorite">Not Favorited</option>
+            </select>
+            <select
+              id="exploreSortSelect"
+              style="
+                background: var(--glass-solid);
+                border: 1px solid var(--glass-border);
+                border-radius: 20px;
+                padding: 6px 32px 6px 14px;
+                color: var(--subtitle-color);
+                font-family: &quot;Outfit&quot;, sans-serif;
+                font-size: 0.85rem;
+                outline: none;
+                cursor: pointer;
+                -webkit-appearance: none;
+                appearance: none;
+                background-image: url(&quot;data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%238a9a9d%22 stroke-width=%222.5%22><polyline points=%226 9 12 15 18 9%22/></svg>&quot;);
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+              "
+            >
+              <option value="newest">Recently Added</option>
+              <option value="oldest">Older First</option>
+              <option value="shortest">Shortest Read</option>
+              <option value="longest">Longest Read</option>
+            </select>
+          </div>
+        </div>
+        <div class="ed-issue-eyebrow" aria-hidden="true">In This Issue</div>
+        <div id="articlesGrid" class="categories-grid"></div>
+      </div>
+
+      <div id="articleView" class="view">
+        <div class="ed-runhead" aria-hidden="true">
+          <span class="ed-runhead-pub">The Quarterly</span>
+          <span class="ed-runhead-folio">No. 14</span>
+        </div>
+        <div class="article-top-bar">
+          <button class="back" id="backToPrevious">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back
+          </button>
+          <div style="display: flex; align-items: center; gap: 12px">
+            <span class="read-time" id="readTimeLabel">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              — min
+            </span>
+            <button class="text-btn listen-btn" id="listenBtn">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              </svg>
+              Listen
+            </button>
+            <button
+              class="text-btn icon-text-btn"
+              id="startDeepWorkBtn"
+              style="color: var(--subtitle-color)"
+              title="Start 25m Deep Work"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              Focus
+            </button>
+            <button class="text-btn accent-btn icon-text-btn" id="topNotesBtn">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M12 20h9"></path>
+                <path
+                  d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+                ></path>
+              </svg>
+              Notes
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="deepWorkHeader"
+          style="
+            width: 100%;
+            justify-content: flex-end;
+            align-items: center;
+          "
+        >
+          <div
+            style="
+              display: none;
+              font-weight: bold;
+              color: var(--accent);
+              font-size: 0.85rem;
+              text-transform: uppercase;
+              letter-spacing: 1px;
+            "
+          >
+            Deep Work Session
+          </div>
+          <div
+            id="deepWorkTimerDisplay"
+            style="
+              display: none;
+              font-family: monospace;
+              font-size: 1.2rem;
+              font-weight: bold;
+              color: var(--dark-text);
+            "
+          >
+            25:00
+          </div>
+          <button
+            id="exitDeepWorkBtn"
+            class="text-btn"
+            style="color: var(--subtitle-color)"
+          >
+            End
+          </button>
+        </div>
+
+        <div class="article-header">
+          <div class="article-meta">
+            <button
+              class="text-btn icon-text-btn"
+              id="scrollToBottomBtn"
+              style="color: var(--subtitle-color); margin-left: auto"
+              title="Scroll to Bottom"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <polyline points="19 12 12 19 5 12"></polyline>
+              </svg>
+              Scroll Down
+            </button>
+          </div>
+          <img
+            id="articleFrontispiece"
+            class="story-cover"
+            alt=""
+            style="display: none; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; object-position: center; border-radius: 12px; margin-bottom: 16px;"
+          />
+          <h2 class="article-title" id="articleTitle">Story Title</h2>
+          <p
+            id="articleAuthor"
+            style="display: none; font-style: italic; color: var(--subtitle-color); font-size: 0.95rem; margin: 6px 0 0;"
+          ></p>
+          <div
+            id="articleGenres"
+            style="display: none; flex-wrap: wrap; gap: 8px; margin-top: 10px;"
+          ></div>
+          <button
+            id="storyBookmarkLink"
+            title="Jump to your bookmark"
+            style="display: none; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; color: var(--accent); font-size: 0.85rem; font-weight: 600; padding: 4px 0; font-family: 'Outfit', sans-serif;"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            Jump to your bookmark
+          </button>
+        </div>
+
+        <div class="article-view-wrapper">
+          <div class="article-main-col">
+            <div id="articleContent" class="article-content"></div>
+
+            <div class="article-completion-section">
+              <h3>Reading Completed</h3>
+              <p>
+                Mark this article as read to track your progress and add it to
+                your timeline.
+              </p>
+              <div
+                style="
+                  display: flex;
+                  gap: 12px;
+                  justify-content: center;
+                  margin-top: 8px;
+                "
+              >
+                <button id="markReadBtn" class="primary">Mark as Read</button>
+                <button id="reflectFinishedBtn" class="secondary">
+                  Reflect
+                </button>
+              </div>
+              <button
+                class="text-btn icon-text-btn"
+                id="scrollToTopBtn"
+                style="color: var(--subtitle-color); margin-top: 24px"
+                title="Scroll to Top"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="12" y1="19" x2="12" y2="5"></line>
+                  <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
+                Scroll Up
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DASHBOARD VIEW -->
+      <div id="dashboardView" class="view">
+        <div class="view-header">
+          <div>
+            <h2 style="display: flex; align-items: center; gap: 10px">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              Dashboard
+            </h2>
+            <p class="subtitle">Your learning journey at a glance</p>
+          </div>
+        </div>
+
+        <!-- COLLAPSIBLE CARDS SECTION -->
+        <div id="dashboardCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 32px;">
+          <!-- Cards: Stats, Heatmap, Streak, Domains, Activity, Achievements -->
+        </div>
+
+        <!-- EXPANDED DETAIL VIEW -->
+        <div id="dashboardDetailView" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--glass-solid); border: none; border-radius: 0; padding: 24px; z-index: 1000; overflow-y: scroll; overflow-x: hidden; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+          <button onclick="closeDashboardDetail()" style="position: sticky; top: 0; background: none; border: none; font-size: 2rem; cursor: pointer; color: var(--subtitle-color); margin-bottom: 20px; padding: 8px; margin-left: -8px;">←</button>
+
+          <!-- Stats Detail -->
+          <div id="statsDetail" style="display: none; clear: both;">
+            <h2 style="margin-bottom: 24px;">Overview Stats</h2>
+
+            <!-- Main Stats -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 28px;">
+              <div style="padding: 16px; background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: 12px; text-align: center;">
+                <div style="font-size: 2rem; font-weight: bold; color: #d4735c;" id="dashArticlesCount">0</div>
+                <div style="font-size: 0.75rem; color: var(--subtitle-color); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; font-weight: 600;">Stories</div>
+              </div>
+              <div style="padding: 16px; background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: 12px; text-align: center;">
+                <div style="font-size: 2rem; font-weight: bold; color: #6b8e6f;" id="dashHighlightsCount">0</div>
+                <div style="font-size: 0.75rem; color: var(--subtitle-color); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; font-weight: 600;">Highlights</div>
+              </div>
+              <div style="padding: 16px; background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: 12px; text-align: center;">
+                <div style="font-size: 2rem; font-weight: bold; color: #9b59b6;" id="dashReflectionsCount">0</div>
+                <div style="font-size: 0.75rem; color: var(--subtitle-color); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; font-weight: 600;">Reflections</div>
+              </div>
+            </div>
+
+            <!-- Breakdown Section -->
+            <h3 style="margin-bottom: 16px; font-size: 1rem; font-weight: 600;">Content Breakdown</h3>
+            <div id="statsBreakdown" style="display: grid; gap: 12px; margin-bottom: 28px;"></div>
+
+            <!-- Total Stats -->
+            <h3 style="margin-bottom: 16px; font-size: 1rem; font-weight: 600;">Total Knowledge</h3>
+            <div id="totalStats" style="display: grid; gap: 12px;"></div>
+          </div>
+
+          <!-- Heatmap Detail (legacy, no longer used) -->
+          <div id="heatmapDetail" style="display: none; clear: both;">
+            <h2 style="margin-bottom: 24px;">Engagement Calendar</h2>
+            <div id="habitHeatmapLegacy" class="heatmap-grid"></div>
+            <div class="heatmap-legend" style="margin-top: 12px; margin-bottom: 28px;">
+              <span>28 Days Ago</span>
+              <span>Today</span>
+            </div>
+
+            <h3 style="margin-bottom: 12px; font-size: 1rem; font-weight: 600;">Activity Insights</h3>
+            <div id="heatmapStats" style="display: grid; gap: 12px;"></div>
+          </div>
+
+          <!-- Reflection Detail -->
+          <div id="reflectionDetail" style="display: none; clear: both;">
+            <div id="reflectionTrackerContainer"></div>
+          </div>
+
+          <!-- Serendipity Detail -->
+          <div id="serendipityDetail" style="display: none; clear: both;">
+            <h2 style="margin-bottom: 24px;">The Serendipity Engine</h2>
+            <div class="glass-panel card-padded" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2" style="margin-bottom: 12px;">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              <h4 style="margin-bottom: 8px">Venture into the Unknown</h4>
+              <p style="font-size: 0.9rem; color: var(--subtitle-color); margin-bottom: 16px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                Discover a random, unexplored concept from your library or revisit a forgotten highlight or reflection.
+              </p>
+              <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <button class="primary btn-sm" id="serendipityBtn">Random Story</button>
+                <button class="secondary btn-sm" id="serendipityNoteBtn">Random Note</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="timelineView" class="view">
+        <div class="view-header">
+          <div>
+            <h2 style="display: flex; align-items: center; gap: 10px">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--accent)"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14">
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from="0 12 12"
+                    to="360 12 12"
+                    dur="8s"
+                    repeatCount="indefinite"
+                  />
+                </polyline>
+              </svg>
+              Intellectual Timeline
+            </h2>
+            <p class="subtitle">
+              Review your history of notes, synthesis, and milestones.
+            </p>
+          </div>
+        </div>
+        <div class="dash-column">
+          <div
+            class="timeline-header-row"
+            style="justify-content: space-between; align-items: center"
+          >
+            <button
+              id="toggleAllTimelineBtn"
+              class="text-btn sage-btn icon-text-btn"
+              style="font-size: 0.8rem; font-weight: 600"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+              Expand All
+            </button>
+            <div class="zoom-controls">
+              <button class="zoom-btn active" data-zoom="daily">Daily</button>
+              <button class="zoom-btn" data-zoom="weekly">Weekly</button>
+            </div>
+          </div>
+          <div style="margin-bottom: 12px; position: relative">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--subtitle-color)"
+              stroke-width="2"
+              style="
+                position: absolute;
+                left: 14px;
+                top: 50%;
+                transform: translateY(-50%);
+              "
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              id="timelineSearch"
+              placeholder="Search your thoughts, highlights, and history..."
+              style="
+                width: 100%;
+                padding: 10px 14px 10px 38px;
+                border-radius: 12px;
+                border: 1px solid var(--glass-border);
+                background: var(--glass-solid);
+                color: var(--dark-text);
+                font-family: &quot;Outfit&quot;, sans-serif;
+                font-size: 0.9rem;
+                outline: none;
+                transition:
+                  border-color 0.2s,
+                  box-shadow 0.2s;
+              "
+            />
+          </div>
+          <div class="timeline-filters" id="timelineFilters">
+            <button class="timeline-filter-btn active" data-filter="All">
+              All
+            </button>
+            <button class="timeline-filter-btn" data-filter="Favorite">
+              Favorites
+            </button>
+            <button class="timeline-filter-btn" data-filter="Note">
+              Notes
+            </button>
+            <button class="timeline-filter-btn" data-filter="Highlight">
+              Highlights
+            </button>
+            <button class="timeline-filter-btn" data-filter="Bookmark">
+              Bookmarks
+            </button>
+            <button class="timeline-filter-btn" data-filter="Reflection">
+              Reflections
+            </button>
+            <button class="timeline-filter-btn" data-filter="Read">
+              Read Stories
+            </button>
+          </div>
+          <div id="journeyTimeline" class="timeline-container"></div>
+        </div>
+      </div>
+
+      <div id="generatorView" class="view">
+        <div class="view-header">
+          <div>
+            <h2 style="display: flex; align-items: center; gap: 10px">
+              <svg
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--accent)"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 20h9"></path>
+                <path
+                  d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+                ></path>
+              </svg>
+              Content Studio
+            </h2>
+            <p class="subtitle">
+              Instantly create your own concepts and articles to study.
+            </p>
+          </div>
+        </div>
+
+        <div class="gen-mode-row">
+          <button class="gen-mode-btn active" id="btnGenNew">
+            Create Story
+          </button>
+          <button class="gen-mode-btn" id="btnGenManage">Manage Stories</button>
+        </div>
+
+        <div id="genCreateFlow" style="margin-bottom: 24px;">
+          <!-- Step 1: Title -->
+          <div style="margin-bottom: 32px;">
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Title</h3>
+                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">Main topic or concept</p>
+              </div>
+            </div>
+            <input
+              type="text"
+              id="genTitle"
+              placeholder="e.g. The Dichotomy of Control"
+              style="
+                width: 100%;
+                padding: 12px 16px;
+                border-radius: 12px;
+                border: 1px solid var(--glass-border);
+                background: var(--glass-solid);
+                color: var(--dark-text);
+                font-family: &quot;Outfit&quot;, sans-serif;
+                font-size: 0.95rem;
+                outline: none;
+                transition: all 0.2s;
+                box-sizing: border-box;
+              "
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--glass-border)'"
+            />
+          </div>
+
+          <!-- Step 3: Description -->
+          <div style="margin-bottom: 32px;">
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Summary</h3>
+                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">Hook or brief explanation</p>
+              </div>
+            </div>
+            <input
+              type="text"
+              id="genHook"
+              placeholder="e.g. A practical guide to focusing on what matters"
+              style="
+                width: 100%;
+                padding: 12px 16px;
+                border-radius: 12px;
+                border: 1px solid var(--glass-border);
+                background: var(--glass-solid);
+                color: var(--dark-text);
+                font-family: &quot;Outfit&quot;, sans-serif;
+                font-size: 0.95rem;
+                outline: none;
+                transition: all 0.2s;
+                box-sizing: border-box;
+              "
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--glass-border)'"
+            />
+          </div>
+
+          <!-- Author -->
+          <div style="margin-bottom: 32px;">
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Author</h3>
+                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">Who wrote this story</p>
+              </div>
+            </div>
+            <input
+              type="text"
+              id="genAuthor"
+              placeholder="e.g. Marcus Aurelius"
+              style="
+                width: 100%;
+                padding: 12px 16px;
+                border-radius: 12px;
+                border: 1px solid var(--glass-border);
+                background: var(--glass-solid);
+                color: var(--dark-text);
+                font-family: &quot;Outfit&quot;, sans-serif;
+                font-size: 0.95rem;
+                outline: none;
+                transition: all 0.2s;
+                box-sizing: border-box;
+              "
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--glass-border)'"
+            />
+          </div>
+
+          <!-- Genres -->
+          <div style="margin-bottom: 32px;">
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Genres</h3>
+                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">One or more, separated by commas</p>
+              </div>
+            </div>
+            <input
+              type="text"
+              id="genGenres"
+              placeholder="e.g. Philosophy, Essay, Stoicism"
+              style="
+                width: 100%;
+                padding: 12px 16px;
+                border-radius: 12px;
+                border: 1px solid var(--glass-border);
+                background: var(--glass-solid);
+                color: var(--dark-text);
+                font-family: &quot;Outfit&quot;, sans-serif;
+                font-size: 0.95rem;
+                outline: none;
+                transition: all 0.2s;
+                box-sizing: border-box;
+              "
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--glass-border)'"
+            />
+          </div>
+
+          <!-- Frontispiece Image -->
+          <div style="margin-bottom: 32px;">
+            <div style="margin-bottom: 8px;">
+              <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Frontispiece Image</h3>
+              <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">An optional cover image from your device</p>
+            </div>
+            <input
+              type="file"
+              id="genImage"
+              accept="image/*"
+              style="
+                width: 100%;
+                padding: 12px 16px;
+                border-radius: 12px;
+                border: 1px solid var(--glass-border);
+                background: var(--glass-solid);
+                color: var(--dark-text);
+                font-family: &quot;Outfit&quot;, sans-serif;
+                font-size: 0.9rem;
+                outline: none;
+                box-sizing: border-box;
+                cursor: pointer;
+              "
+            />
+            <div
+              id="genImagePreview"
+              style="margin-top: 12px; display: none; align-items: center; gap: 12px;"
+            >
+              <img
+                id="genImagePreviewImg"
+                alt="Cover preview"
+                style="max-width: 120px; max-height: 120px; border-radius: 12px; border: 1px solid var(--glass-border); object-fit: cover;"
+              />
+              <button
+                type="button"
+                onclick="clearGenImage()"
+                style="background: var(--glass-solid); border: 1px solid var(--glass-border); padding: 6px 12px; cursor: pointer; color: var(--subtitle-color); font-size: 0.8rem; border-radius: 6px;"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 4: Content -->
+          <div style="margin-bottom: 28px;">
+            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Content</h3>
+                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">Full story text (Markdown supported)</p>
+              </div>
+            </div>
+            <textarea
+              id="genContent"
+              placeholder="Paste your story content here..."
+              style="
+                width: 100%;
+                padding: 16px;
+                border-radius: 12px;
+                border: 1px solid var(--glass-border);
+                background: var(--glass-solid);
+                color: var(--dark-text);
+                font-family: &quot;Lora&quot;, serif;
+                font-size: 0.95rem;
+                outline: none;
+                transition: all 0.2s;
+                min-height: 300px;
+                resize: vertical;
+                box-sizing: border-box;
+              "
+              onfocus="this.style.borderColor='var(--accent)'"
+              onblur="this.style.borderColor='var(--glass-border)'"
+            ></textarea>
+            <div
+              id="genContentCount"
+              style="margin-top: 6px; font-size: 0.75rem; color: var(--subtitle-color); text-align: right;"
+            >
+              0 words · ~1 min read
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 12px;">
+            <button
+              id="genSubmitBtn"
+              class="primary"
+              style="flex: 1; padding: 14px; font-size: 1rem; font-weight: 600;"
+            >
+              Save Story
+            </button>
+            <button
+              id="genEditNextBtn"
+              class="secondary"
+              style="
+                display: none;
+                flex: 1;
+                padding: 14px;
+                font-size: 1rem;
+              "
+            >
+              Edit Next
+            </button>
+            <button
+              id="genCancelEditBtn"
+              class="secondary"
+              style="
+                display: none;
+                flex: 1;
+                padding: 14px;
+                font-size: 1rem;
+              "
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <div id="genManageFlow" style="display: none; margin-bottom: 24px">
+          <div
+            id="genManageList"
+            style="display: flex; flex-direction: column; gap: 12px"
+          ></div>
+        </div>
+      </div>
+
+      <div id="profileView" class="view">
+        <h2
+          class="profile-page-title"
+          style="display: flex; align-items: center; gap: 10px"
+        >
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--accent)"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+            >
+              <animateTransform
+                attributeName="transform"
+                type="rotate"
+                from="0 12 12"
+                to="360 12 12"
+                dur="15s"
+                repeatCount="indefinite"
+              />
+            </path>
+          </svg>
+          Settings
+        </h2>
+
+        <div class="dash-column">
+          <h3>App Settings</h3>
+          <div class="settings-masonry">
+            <div class="settings-group">
+              <div class="settings-group-label">Appearance</div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Highlight Color</div>
+                  <div class="setting-desc">
+                    Marker color for selected text and saved notes
+                  </div>
+                </div>
+                <div
+                  class="swatches-row"
+                  style="
+                    margin-left: 16px;
+                    flex-wrap: wrap;
+                    justify-content: flex-end;
+                    max-width: 50%;
+                  "
+                >
+                  <button class="hl-swatch hl-yellow" data-hl="yellow"></button>
+                  <button class="hl-swatch hl-green" data-hl="green"></button>
+                  <button class="hl-swatch hl-blue" data-hl="blue"></button>
+                  <button class="hl-swatch hl-pink" data-hl="pink"></button>
+                  <button class="hl-swatch hl-orange" data-hl="orange"></button>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Dark Mode</div>
+                  <div class="setting-desc" id="darkModeDesc">
+                    Switch between light and dark
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="darkModeToggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">OLED Midnight Mode</div>
+                  <div class="setting-desc" id="midnightModeDesc">
+                    Pure black background to save battery
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="midnightModeToggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Auto Dark Mode</div>
+                  <div class="setting-desc">
+                    Switches dark automatically from 9 PM to 7 AM
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="autoDarkToggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Compact Mode</div>
+                  <div class="setting-desc">
+                    Tighter spacing, more content on screen
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="compactToggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Editorial Theme</div>
+                  <div class="setting-desc">
+                    “The Quarterly” — a print-magazine look for the Explore &
+                    reading views
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="editorialToggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-group-label">Reading</div>
+              <div class="reading-preview-box">
+                <h3
+                  style="
+                    font-size: 0.9rem;
+                    margin-bottom: 8px;
+                    color: var(--subtitle-color);
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                  "
+                >
+                  Live Preview
+                </h3>
+                <p class="preview-text">
+                  This is a live preview of your reading environment. As you
+                  adjust the typography sliders and select different fonts
+                  below, this text will instantly update to reflect your
+                  preferences.
+                </p>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Daily Reading Reminder</div>
+                  <div class="setting-desc">
+                    Get notified to explore your Knowledge Web
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px">
+                  <input
+                    type="time"
+                    id="reminderTimeInput"
+                    style="
+                      padding: 6px 12px;
+                      border-radius: 8px;
+                      border: 1px solid var(--glass-border);
+                      background: var(--glass-solid);
+                      color: var(--dark-text);
+                      outline: none;
+                      font-family: &quot;Outfit&quot;;
+                    "
+                  />
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="reminderToggle" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <button
+                    id="testReminderBtn"
+                    class="icon-btn-small"
+                    style="
+                      background: var(--glass-solid);
+                      border: 1px solid var(--glass-border);
+                      padding: 6px 8px;
+                      border-radius: 8px;
+                    "
+                    title="Test Notification"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="var(--accent)"
+                      stroke-width="2.5"
+                    >
+                      <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div
+                class="setting-row"
+                style="
+                  flex-direction: column;
+                  align-items: flex-start;
+                  gap: 14px;
+                "
+              >
+                <div class="setting-info" style="width: 100%">
+                  <div class="setting-name">Font Size</div>
+                  <div class="setting-desc">Adjust story reading size</div>
+                </div>
+                <div class="custom-slider-container" style="width: 100%">
+                  <span class="slider-label-sm">A</span>
+                  <input
+                    type="range"
+                    id="fontSizeSlider"
+                    class="custom-slider"
+                    min="0.9"
+                    max="1.5"
+                    step="0.1"
+                    value="1.1"
+                  />
+                  <span class="slider-label-lg">A</span>
+                </div>
+              </div>
+              <div
+                class="setting-row"
+                style="
+                  flex-direction: column;
+                  align-items: flex-start;
+                  gap: 14px;
+                "
+              >
+                <div class="setting-info" style="width: 100%">
+                  <div class="setting-name">Line Spacing</div>
+                  <div class="setting-desc">Adjust space between lines</div>
+                </div>
+                <div class="custom-slider-container" style="width: 100%">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="18" x2="20" y2="18"></line>
+                  </svg>
+                  <input
+                    type="range"
+                    id="lineHeightSlider"
+                    class="custom-slider"
+                    min="1.4"
+                    max="2.2"
+                    step="0.1"
+                    value="1.7"
+                  />
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    style="opacity: 0.4"
+                  >
+                    <line x1="4" y1="4" x2="20" y2="4"></line>
+                    <line x1="4" y1="12" x2="20" y2="12"></line>
+                    <line x1="4" y1="20" x2="20" y2="20"></line>
+                  </svg>
+                </div>
+              </div>
+              <div
+                class="setting-row"
+                style="
+                  flex-direction: column;
+                  align-items: flex-start;
+                  gap: 14px;
+                "
+              >
+                <div class="setting-info" style="width: 100%">
+                  <div class="setting-name">Letter Spacing</div>
+                  <div class="setting-desc">
+                    Adjust the tracking between characters
+                  </div>
+                </div>
+                <div class="custom-slider-container" style="width: 100%">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    style="margin-right: 10px"
+                  >
+                    <path
+                      d="M4 12h8m-8 0l4-4m-4 4l4 4m12-4h-8m8 0l-4-4m4 4l-4 4"
+                    ></path>
+                  </svg>
+                  <input
+                    type="range"
+                    id="letterSpacingSlider"
+                    class="custom-slider"
+                    min="-1"
+                    max="3"
+                    step="0.1"
+                    value="0"
+                  />
+                </div>
+              </div>
+              <div
+                class="setting-row"
+                style="
+                  flex-direction: column;
+                  align-items: flex-start;
+                  gap: 14px;
+                "
+              >
+                <div class="setting-info" style="width: 100%">
+                  <div class="setting-name">Content Width</div>
+                  <div class="setting-desc">
+                    Adjust max reading width on larger screens
+                  </div>
+                </div>
+                <div class="custom-slider-container" style="width: 100%">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    style="margin-right: 10px"
+                  >
+                    <rect
+                      x="3"
+                      y="3"
+                      width="18"
+                      height="18"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <line x1="8" y1="3" x2="8" y2="21"></line>
+                    <line x1="16" y1="3" x2="16" y2="21"></line>
+                  </svg>
+                  <input
+                    type="range"
+                    id="maxWidthSlider"
+                    class="custom-slider"
+                    min="500"
+                    max="1200"
+                    step="50"
+                    value="800"
+                  />
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Font Family</div>
+                  <div class="setting-desc">
+                    Create new categories and articles
+                  </div>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 8px;
+                    margin-left: 16px;
+                    flex-wrap: wrap;
+                    justify-content: flex-end;
+                    max-width: 60%;
+                  "
+                >
+                  <button
+                    class="font-btn active"
+                    data-font="'Lora', serif"
+                    style="
+                      font-family: &quot;Lora&quot;, serif;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Serif
+                  </button>
+                  <button
+                    class="font-btn"
+                    data-font="'Outfit', sans-serif"
+                    style="
+                      font-family: &quot;Outfit&quot;, sans-serif;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Sans
+                  </button>
+                  <button
+                    class="font-btn"
+                    data-font="Georgia, serif"
+                    style="
+                      font-family: Georgia, serif;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Georgia
+                  </button>
+                  <button
+                    class="font-btn"
+                    data-font="system-ui, sans-serif"
+                    style="
+                      font-family: system-ui, sans-serif;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    System
+                  </button>
+                  <button
+                    class="font-btn"
+                    data-font="monospace"
+                    style="
+                      font-family: monospace;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Mono
+                  </button>
+                  <button
+                    class="font-btn"
+                    data-font="Arial, Helvetica, sans-serif"
+                    style="
+                      font-family: Arial, Helvetica, sans-serif;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Arial
+                  </button>
+                  <button
+                    class="font-btn"
+                    data-font="'Times New Roman', Times, serif"
+                    style="
+                      font-family: &quot;Times New Roman&quot;, Times, serif;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Times
+                  </button>
+                  <button
+                    class="font-btn"
+                    data-font="Verdana, Geneva, sans-serif"
+                    style="
+                      font-family: Verdana, Geneva, sans-serif;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Verdana
+                  </button>
+                  <button
+                    class="font-btn"
+                    data-font="'Courier New', Courier, monospace"
+                    style="
+                      font-family: &quot;Courier New&quot;, Courier, monospace;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Courier New
+                  </button>
+                  <button
+                    class="font-btn"
+                    data-font="'Palatino Linotype', 'Book Antiqua', Palatino, serif"
+                    style="
+                      font-family:
+                        &quot;Palatino Linotype&quot;, &quot;Book Antiqua&quot;,
+                        Palatino, serif;
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Palatino
+                  </button>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Reading Theme</div>
+                  <div class="setting-desc">Story background color</div>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 8px;
+                    margin-left: 16px;
+                    flex-wrap: wrap;
+                    justify-content: flex-end;
+                    max-width: 60%;
+                  "
+                >
+                  <button
+                    class="read-theme-btn active"
+                    data-theme-val="default"
+                    style="
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Default
+                  </button>
+                  <button
+                    class="read-theme-btn"
+                    data-theme-val="sepia"
+                    style="
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Sepia
+                  </button>
+                  <button
+                    class="read-theme-btn"
+                    data-theme-val="grey"
+                    style="
+                      padding: 6px 12px;
+                      font-size: 0.85rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    Grey
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-group-label">Data</div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Export Report</div>
+                  <div class="setting-desc">
+                    Download your chronological history as a beautiful journal
+                  </div>
+                </div>
+                <button
+                  id="exportTimelineBtn"
+                  class="secondary btn-sm"
+                  style="white-space: nowrap"
+                >
+                  Export
+                </button>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Export Permanent Library</div>
+                  <div class="setting-desc">
+                    Download all categories and articles to permanently save in
+                    stories.js
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button
+                    id="exportBackupBtn"
+                    class="secondary btn-sm"
+                    style="white-space: nowrap"
+                  >
+                    Export
+                  </button>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Import Library (Paste JS)</div>
+                  <div class="setting-desc">
+                    Paste the contents of stories.js to import and sync
+                    custom content to this device
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button
+                    id="openImportModalBtn"
+                    class="secondary btn-sm"
+                    style="white-space: nowrap"
+                  >
+                    Import
+                  </button>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Reset Everything</div>
+                  <div class="setting-desc">
+                    Permanently delete all notes, progress and settings
+                  </div>
+                </div>
+                <button
+                  id="resetDataBtn"
+                  class="btn-danger btn-sm"
+                  style="white-space: nowrap"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div class="settings-group-label">Support</div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">App Tutorial</div>
+                  <div class="setting-desc">Replay the introductory guide</div>
+                </div>
+                <button
+                  id="replayTutorialBtn"
+                  class="secondary btn-sm"
+                  style="white-space: nowrap"
+                >
+                  Replay
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <nav class="bottom-nav">
+      <button id="navHome" class="nav-item active" title="The Library">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+        </svg>
+      </button>
+      <button id="navTimeline" class="nav-item" title="Timeline">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v5h5"></path>
+          <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+          <polyline points="12 7 12 12 15 15"></polyline>
+        </svg>
+      </button>
+      <button id="navDashboard" class="nav-item" title="Dashboard">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+      </button>
+      <button id="navGenerator" class="nav-item" title="Create">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+      </button>
+      <button id="navMenuBtn" class="nav-item" title="Settings">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </nav>
+
+    <!-- MENU DRAWER -->
+    <div id="navDrawer" style="position: fixed; bottom: 60px; right: 12px; width: 200px; background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: 12px; padding: 8px; z-index: 900; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); opacity: 0; pointer-events: none; transform: translateY(10px); transition: all 0.2s ease; max-height: calc(100vh - 80px); overflow-y: auto;">
+      <button id="drawerSettings" style="display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; background: none; border: none; cursor: pointer; color: var(--dark-text); font-size: 0.95rem; border-radius: 8px; transition: all 0.2s; margin-bottom: 4px;" onmouseover="this.style.background='var(--glass-border)'" onmouseout="this.style.background='none'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6"></path>
+          <path d="M4.22 4.22l4.24 4.24m2.54 2.54l4.24 4.24"></path>
+          <path d="M1 12h6m6 0h6"></path>
+          <path d="M4.22 19.78l4.24-4.24m2.54-2.54l4.24-4.24"></path>
+        </svg>
+        <span>Settings</span>
+      </button>
+    </div>
+    </nav>
+
+    <!-- OLD PROFILE BUTTON - WILL REPLACE WITH DRAWER -->
+    <button id="profileBtn" class="nav-item" style="display: none;">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+          ></path>
+        </svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+    <!-- Activity Detail Modal -->
+    <div id="activityDetailModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; overflow-y: auto;">
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 500px; background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: 12px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <button id="closeActivityModal" style="position: absolute; top: 16px; right: 16px; background: none; border: none; cursor: pointer; font-size: 1.5rem; color: var(--dark-text); padding: 4px;">✕</button>
+
+        <h2 style="margin-top: 0; margin-bottom: 16px; font-size: 1.2rem;" id="activityModalType">Activity</h2>
+
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="color: var(--subtitle-color); font-size: 0.9rem;">Date & Time</span>
+            <span id="activityModalDateTime" style="font-weight: 600; color: var(--dark-text);">-</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="color: var(--subtitle-color); font-size: 0.9rem;">Domain</span>
+            <span id="activityModalDomain" style="font-weight: 600; color: var(--dark-text);">-</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--subtitle-color); font-size: 0.9rem;">Story</span>
+            <span id="activityModalArticle" style="font-weight: 600; color: var(--dark-text);">-</span>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid var(--glass-border); padding-top: 16px;">
+          <h3 style="margin: 0 0 12px 0; font-size: 0.95rem; font-weight: 600;">Content</h3>
+          <div id="activityModalContent" style="padding: 12px; background: var(--glass-border); border-radius: 8px; line-height: 1.6; color: var(--dark-text); word-break: break-word; max-height: 400px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="mobileSelectionActions" class="mobile-selection-actions">
+      <button id="mobileHighlightBtn" class="mobile-action-btn">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path d="M12 20h9"></path>
+          <path
+            d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+          ></path>
+        </svg>
+        Highlight
+      </button>
+      <div class="mobile-action-divider"></div>
+      <button id="mobileAddNoteBtn" class="mobile-action-btn">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path
+            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+          ></path>
+        </svg>
+        Note
+      </button>
+      <div class="mobile-action-divider"></div>
+      <button id="mobileBookmarkBtn" class="mobile-action-btn">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--accent)"
+          stroke-width="2.5"
+        >
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+        </svg>
+        Bookmark
+      </button>
+    </div>
+    <div id="overlayRoot"></div>
+
+    <!-- PRINCIPLE MODALS -->
+    <!-- ADD EVIDENCE MODAL -->
+    <div id="addEvidenceModal" class="modal" style="z-index: 3000;">
+      <div class="glass-panel modal-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+          <h3 style="margin: 0;">Add Story as Evidence</h3>
+          <button onclick="document.getElementById('addEvidenceModal').classList.remove('active')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--subtitle-color);">×</button>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--dark-text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">Select from your stories</label>
+          <div id="availableStoriesList" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; margin-bottom: 12px;"></div>
+        </div>
+
+        <div style="border-top: 1px solid var(--glass-border); padding-top: 16px; margin-bottom: 20px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--dark-text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Or type your own</label>
+          <textarea id="evidenceQuoteInput" placeholder="Quote from your reflection or explain the connection..." style="width: 100%; padding: 12px 16px; border: 1px solid var(--glass-border); border-radius: 12px; background: var(--glass-solid); font-family: Georgia, serif; font-size: 0.95rem; outline: none; transition: border-color 0.2s; min-height: 100px; resize: vertical;" maxlength="300"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button onclick="document.getElementById('addEvidenceModal').classList.remove('active')" class="secondary">Cancel</button>
+          <button id="saveEvidenceBtn" class="primary">Add Evidence</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="floatingSelectionMenu" class="floating-selection-menu">
+      <button id="fabHighlight" class="fab-btn" title="Quick Highlight">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path d="M12 20h9"></path>
+          <path
+            d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+          ></path>
+        </svg>
+      </button>
+      <div class="fab-divider"></div>
+      <button id="fabNote" class="fab-btn">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+        >
+          <path
+            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+          ></path>
+        </svg>
+        Add Note
+      </button>
+      <div class="fab-divider"></div>
+      <button id="fabBookmark" class="fab-btn" title="Bookmark">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--accent)"
+          stroke-width="2.5"
+        >
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+        </svg>
+        Bookmark
+      </button>
+    </div>
+
+    <div id="notesBackdrop" class="drawer-backdrop"></div>
+    <div
+      id="notesSection"
+      class="notes-section"
+      style="
+        padding: 0;
+        overflow-y: hidden;
+        display: flex;
+        flex-direction: column;
+      "
+    >
+      <div
+        class="drawer-drag-handle"
+        style="margin-top: 16px; margin-bottom: 8px"
+      ></div>
+
+      <div
+        class="carousel-header"
+        style="
+          border-bottom: 1px solid var(--glass-border);
+          padding: 0 20px 12px;
+        "
+      >
+        <h3 class="section-title-spaced" style="margin: 0">Workspace</h3>
+      </div>
+
+      <div
+        class="carousel-viewport"
+        id="mainCarouselViewport"
+        style="flex: 1; overflow-y: hidden; min-height: 0"
+      >
+        <div
+          class="carousel-track"
+          id="mainCarouselTrack"
+          style="
+            height: 100%;
+            display: flex;
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+          "
+        >
+          <!-- Slide 1: Reflection -->
+          <div
+            class="carousel-slide"
+            style="
+              flex: 0 0 100%;
+              width: 100%;
+              height: 100%;
+              padding: 20px;
+              overflow-y: auto;
+              overscroll-behavior: none;
+            "
+          >
+            <div class="section-header">
+              <h3>Deep Reflection</h3>
+              <button class="text-btn accent-btn" id="socraticBtn">
+                Inspire Me
+              </button>
+            </div>
+            <div id="socraticPromptsBox" class="glass-panel socratic-box"></div>
+
+            <p
+              style="
+                color: var(--subtitle-color);
+                font-size: 0.95rem;
+                margin-bottom: 12px;
+              "
+            >
+              Synthesize this concept in your own words. Write down your raw
+              thoughts or arguments.
+            </p>
+            <textarea
+              id="reflectionInput"
+              class="reflection-input"
+              placeholder="Draft your insights here..."
+              style="min-height: 140px"
+            ></textarea>
+
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                justify-content: space-between;
+                align-items: center;
+                margin-top: 12px;
+              "
+            >
+              <div style="display: flex; gap: 8px">
+                <button
+                  class="icon-btn-small"
+                  id="undoRefBtn"
+                  title="Undo"
+                  style="
+                    background: var(--glass-solid);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 8px;
+                    width: 32px;
+                    height: 32px;
+                  "
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M3 7v6h6"></path>
+                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+                  </svg>
+                </button>
+                <button
+                  class="icon-btn-small"
+                  id="redoRefBtn"
+                  title="Redo"
+                  style="
+                    background: var(--glass-solid);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 8px;
+                    width: 32px;
+                    height: 32px;
+                  "
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M21 7v6h-6"></path>
+                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+                  </svg>
+                </button>
+              </div>
+              <div style="display: flex; gap: 8px">
+                <button class="primary btn-sm" id="saveReflectionBtn">
+                  Save Reflection
+                </button>
+              </div>
+            </div>
+
+            <div id="reflectionHistory" class="reflection-history"></div>
+          </div>
+
+          <!-- Slide 2: Notes -->
+          <div
+            class="carousel-slide"
+            style="
+              flex: 0 0 100%;
+              width: 100%;
+              height: 100%;
+              padding: 20px;
+              overflow-y: auto;
+              overscroll-behavior: none;
+            "
+          >
+            <div class="section-header">
+              <h3>Knowledge Extraction</h3>
+            </div>
+            <p
+              style="
+                color: var(--subtitle-color);
+                font-size: 0.95rem;
+                margin-bottom: 12px;
+              "
+              id="selectedTextPreview"
+            >
+              Select text in the article, then type a note below.
+            </p>
+
+            <div
+              style="
+                flex-grow: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+                <textarea
+                  id="annotationInput"
+                  class="reflection-input"
+                  style="min-height: 100px; padding: 16px; border-radius: 16px"
+                  placeholder="Add a note..."
+                ></textarea>
+                <div style="display: flex; justify-content: flex-end">
+                  <button class="primary btn-sm" id="addAnnotationBtn">
+                    Save Note
+                  </button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px; position: relative">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--subtitle-color)"
+                stroke-width="2"
+                style="
+                  position: absolute;
+                  left: 14px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                "
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                id="notesSearch"
+                placeholder="Search annotations..."
+                style="
+                  width: 100%;
+                  padding: 10px 14px 10px 38px;
+                  border-radius: 12px;
+                  border: 1px solid var(--glass-border);
+                  background: var(--glass-solid);
+                  color: var(--dark-text);
+                  font-family: &quot;Outfit&quot;, sans-serif;
+                  font-size: 0.9rem;
+                  outline: none;
+                  transition:
+                    border-color 0.2s,
+                    box-shadow 0.2s;
+                "
+              />
+            </div>
+
+            <div id="annotationsList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Buttons at the bottom -->
+      <div class="drawer-tabs" id="mainCarouselTabs">
+        <button class="drawer-tab active" data-step="0">Reflection</button>
+        <button class="drawer-tab" data-step="1">Notes</button>
+      </div>
+    </div>
+
+    <div id="importModal" class="modal" style="z-index: 3000">
+      <div
+        class="glass-panel modal-content"
+        style="max-width: 600px; padding: 2.5rem 2rem"
+      >
+        <button id="closeImportModalBtn" class="icon-btn-small modal-close">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <h2 class="modal-title">Import Library</h2>
+        <p
+          style="
+            font-size: 0.95rem;
+            color: var(--subtitle-color);
+            margin-bottom: 16px;
+            line-height: 1.5;
+          "
+        >
+          Choose your exported <strong>stories.js</strong> file to merge it
+          into this device — or paste its contents below.
+        </p>
+        <input
+          type="file"
+          id="importFileInput"
+          accept=".js,.json,.txt,application/javascript,application/json,text/plain"
+          style="
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-solid);
+            color: var(--dark-text);
+            font-size: 0.9rem;
+            outline: none;
+            box-sizing: border-box;
+            cursor: pointer;
+            margin-bottom: 14px;
+          "
+        />
+        <textarea
+          id="importInput"
+          class="reflection-input"
+          placeholder="…or paste the file contents here"
+          style="
+            min-height: 160px;
+            margin-bottom: 16px;
+            font-family: monospace;
+            font-size: 0.85rem;
+          "
+        ></textarea>
+        <button id="submitImportBtn" class="primary btn-full">
+          Import & Reload
+        </button>
+      </div>
+    </div>
+
+    <div id="onboardingModal" class="modal" style="z-index: 9999">
+      <div
+        class="glass-panel modal-content"
+        style="padding: 2.5rem 2rem; max-width: 480px; text-align: center; max-height: 88vh; overflow-y: auto"
+      >
+        <div
+          id="tutorialSlides"
+          style="
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          "
+        >
+          <!-- Slide 1 -->
+          <div class="tutorial-slide active">
+            <div style="color: var(--accent); margin-bottom: 20px; display: flex; justify-content: center;">
+              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+            </div>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Welcome to Osmosis</h2>
+            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
+              Osmosis turns reading into <strong>lasting knowledge</strong>. Instead of passively scrolling, you capture what matters, reflect on it, and revisit it over time — building a private library that compounds. Everything lives <strong>locally on your device</strong>: no account, no cloud, fully yours.
+            </p>
+          </div>
+          <!-- Slide 2 -->
+          <div class="tutorial-slide" style="display: none">
+            <div style="color: var(--sage); margin-bottom: 20px; display: flex; justify-content: center;">
+              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            </div>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Library</h2>
+            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
+              Your home base. Each story card shows its <strong>read time</strong>, a <strong>progress bar</strong> for ones you've started, and how many notes you've made. The count beside the title shows your totals and how many you've read, and finished stories dim so unread ones stand out. Tap the <strong>✎ Create</strong> tab to add your own — just a Title, Summary, and Content (Markdown supported).
+            </p>
+          </div>
+          <!-- Slide 3 -->
+          <div class="tutorial-slide" style="display: none">
+            <div style="color: var(--earth); margin-bottom: 20px; display: flex; justify-content: center;">
+              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            </div>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Read &amp; Capture</h2>
+            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
+              While reading, select any text to <strong>Highlight</strong> it, attach a <strong>Note</strong>, or <strong>Bookmark</strong> your place. A highlight carrying a note gets a dotted underline — tap it anytime to read what you wrote. Use <strong>Focus mode</strong> for a distraction-free view (tap or press Esc to leave), or <strong>Listen</strong> to hear the story read aloud in a natural voice.
+            </p>
+          </div>
+          <!-- Slide 4 -->
+          <div class="tutorial-slide" style="display: none">
+            <div style="color: var(--accent); margin-bottom: 20px; display: flex; justify-content: center;">
+              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+            </div>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Workstation</h2>
+            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
+              Open <strong>Notes</strong> from the reading view to manage everything you've captured for a story. Edit or delete any note, jump back to where it sits in the text, and write <strong>Reflections</strong> — your own synthesis in your own words. Stuck? <strong>Socratic prompts</strong> spark deeper thinking. Add note text to a plain highlight and it automatically becomes a Note.
+            </p>
+          </div>
+          <!-- Slide 5 -->
+          <div class="tutorial-slide" style="display: none">
+            <div style="color: var(--sage); margin-bottom: 20px; display: flex; justify-content: center;">
+              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Timeline</h2>
+            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
+              A chronological record of your whole intellectual journey — every highlight, note, bookmark, reflection, and story you've read. <strong>Filter by type</strong> (each chip shows its count), tap the <strong>♥</strong> to favorite the ones that matter, switch between <strong>Daily and Weekly</strong> views, and edit or delete any entry. "View in Story" jumps you straight back to the source.
+            </p>
+          </div>
+          <!-- Slide 6 -->
+          <div class="tutorial-slide" style="display: none">
+            <div style="color: var(--earth); margin-bottom: 20px; display: flex; justify-content: center;">
+              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            </div>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Dashboard</h2>
+            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
+              Your progress at a glance, as expandable cards: <strong>Overview Stats</strong>, a 28-day <strong>Activity Heatmap</strong>, the <strong>Reflection Tracker</strong>, and the <strong>Serendipity Engine</strong> — which resurfaces a random story or note to spark unexpected connections across your library.
+            </p>
+          </div>
+          <!-- Slide 7 -->
+          <div class="tutorial-slide" style="display: none">
+            <div style="color: var(--accent); margin-bottom: 20px; display: flex; justify-content: center;">
+              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.36 2.64L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+            </div>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Daily Review</h2>
+            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
+              This is where reading becomes <strong>remembering</strong>. Osmosis schedules your highlights and notes for review using <strong>spaced repetition</strong>. From the Dashboard, open <strong>Daily Review</strong>: you'll see a highlight, try to recall it, then rate yourself <strong>Again, Good, or Easy</strong>. Things you know well space out over weeks; ones you struggle with return soon — so knowledge actually sticks.
+            </p>
+          </div>
+          <!-- Slide 8 -->
+          <div class="tutorial-slide" style="display: none">
+            <div style="color: var(--sage); margin-bottom: 20px; display: flex; justify-content: center;">
+              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </div>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Make it yours</h2>
+            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
+              In <strong>Settings</strong> (the gear) you can switch themes, adjust reading size and background, pick a reading voice, and <strong>export or import</strong> your entire library as a backup. Everything stays on your device. You can replay this tour anytime from Settings. That's it — pick a story and begin.
+            </p>
+          </div>
+        </div>
+        <!-- Carousel Controls -->
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+          "
+        >
+          <button
+            id="tutPrevBtn"
+            class="text-btn"
+            style="
+              visibility: hidden;
+              font-size: 1rem;
+              color: var(--subtitle-color);
+            "
+          >
+            Back
+          </button>
+          <div id="tutDots" style="display: flex; gap: 8px">
+            <span class="tut-dot active"></span><span class="tut-dot"></span
+            ><span class="tut-dot"></span><span class="tut-dot"></span
+            ><span class="tut-dot"></span><span class="tut-dot"></span
+            ><span class="tut-dot"></span><span class="tut-dot"></span>
+          </div>
+          <button
+            id="tutNextBtn"
+            class="primary btn-sm"
+            style="padding: 10px 24px; border-radius: 20px"
+          >
+            Next
+          </button>
+          <button
+            id="startExploringBtn"
+            class="primary btn-sm"
+            style="display: none; padding: 10px 24px; border-radius: 20px"
+          >
+            Begin
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="dwModal" class="modal">
+      <div class="glass-panel modal-content">
+        <h2 class="modal-title">Session Complete</h2>
+        <div
+          class="modal-badge"
+          style="margin: 15px 0; display: flex; justify-content: center"
+        >
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--accent)"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <p
+          style="
+            font-size: 1.1rem;
+            color: var(--dark-text);
+            margin-bottom: 20px;
+          "
+        >
+          You focused deeply for <strong id="dwMins">25</strong> minutes and
+          processed roughly <strong id="dwWords">1500</strong> words.
+        </p>
+        <button id="closeDwModalBtn" class="primary btn-full">Return</button>
+      </div>
+    </div>
+
+
+    <div id="toast" class="toast">Message</div>
+
+    <script src="stories.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

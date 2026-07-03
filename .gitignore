@@ -1,0 +1,8 @@
+# Editor / OS / session junk
+.claude/
+.vscode/
+desktop.ini
+Thumbs.db
+.DS_Store
+*.log
+node_modules/
