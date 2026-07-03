@@ -9993,12 +9993,24 @@ function applyImportedLibrary(rawText) {
         imported = true;
       }
     } else if (text.includes("topicsData")) {
-      // Exported stories file (JS that assigns window.topicsData)
-      const script = document.createElement("script");
-      script.textContent = text;
-      document.body.appendChild(script);
-      document.body.removeChild(script);
-      imported = !!window.topicsData;
+      // Exported stories file (JS that assigns window.topicsData). Run it with a
+      // private sandbox as `window` so we capture the data reliably — no global
+      // <script> injection (which iOS Safari can block).
+      const sandbox = {};
+      new Function("window", text)(sandbox);
+      if (sandbox.topicsData && typeof sandbox.topicsData === "object") {
+        window.topicsData = Object.assign(
+          window.topicsData || {},
+          sandbox.topicsData,
+        );
+        imported = true;
+      }
+      if (sandbox.pathsData && typeof sandbox.pathsData === "object") {
+        window.pathsData = Object.assign(
+          window.pathsData || {},
+          sandbox.pathsData,
+        );
+      }
     }
 
     if (!imported) throw new Error("Unrecognized library format");
