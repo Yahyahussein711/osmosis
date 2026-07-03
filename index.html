@@ -15,8 +15,9 @@
     <meta name="apple-mobile-web-app-title" content="Osmosis" />
     <meta name="theme-color" content="#FAF8F0" id="themeColorMeta" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="icon" type="image/svg+xml" href="logo.svg" />
-    <link rel="apple-touch-icon" href="logo.svg" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <title>Osmosis</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1673,10 +1674,29 @@
               </div>
               <div class="setting-row">
                 <div class="setting-info">
+                  <div class="setting-name">Full Backup (All Data)</div>
+                  <div class="setting-desc">
+                    Download everything — stories, timeline, highlights, notes,
+                    reflections, bookmarks, favorites, reading progress &amp;
+                    settings — as one backup file. Restore it with Import.
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <button
+                    id="exportFullBackupBtn"
+                    class="secondary btn-sm"
+                    style="white-space: nowrap"
+                  >
+                    Export
+                  </button>
+                </div>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
                   <div class="setting-name">Export Permanent Library</div>
                   <div class="setting-desc">
-                    Download all categories and articles to permanently save in
-                    stories.js
+                    Download only the stories (no notes/progress) as stories.js —
+                    for baking content into the app.
                   </div>
                 </div>
                 <div style="display: flex; gap: 8px">
@@ -1691,10 +1711,10 @@
               </div>
               <div class="setting-row">
                 <div class="setting-info">
-                  <div class="setting-name">Import Library (Paste JS)</div>
+                  <div class="setting-name">Import / Restore</div>
                   <div class="setting-desc">
-                    Paste the contents of stories.js to import and sync
-                    custom content to this device
+                    Restore a Full Backup file, or import a stories.js library,
+                    onto this device.
                   </div>
                 </div>
                 <div style="display: flex; gap: 8px">

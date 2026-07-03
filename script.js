@@ -3179,6 +3179,9 @@ function setupEvents() {
   document
     .getElementById("exportBackupBtn")
     ?.addEventListener("click", exportBackup);
+  document
+    .getElementById("exportFullBackupBtn")
+    ?.addEventListener("click", exportFullBackup);
 
   document
     .getElementById("openImportModalBtn")
@@ -9963,6 +9966,23 @@ function applyImportedLibrary(rawText) {
     if (text[0] === "{" || text[0] === "[") {
       // JSON blob
       const parsed = JSON.parse(text);
+
+      // Full backup: restore every saved key verbatim
+      if (parsed && parsed.__osmosisBackup && parsed.data) {
+        Object.keys(parsed.data).forEach((k) => {
+          try {
+            localStorage.setItem(k, parsed.data[k]);
+          } catch (e) {
+            /* skip a key if storage is full */
+          }
+        });
+        const modal = document.getElementById("importModal");
+        if (modal) modal.classList.remove("active");
+        alert("Backup restored! Reloading…");
+        setTimeout(() => window.location.reload(), 400);
+        return;
+      }
+
       const topics = parsed.topicsData || parsed.topics || parsed;
       if (topics && typeof topics === "object") {
         window.topicsData = Object.assign(window.topicsData || {}, topics);
@@ -10004,6 +10024,28 @@ function applyImportedLibrary(rawText) {
       "Import failed — please choose your exported stories.js file (or paste its contents).",
     );
   }
+}
+
+// Full backup: every piece of the user's data (stories, timeline, highlights,
+// notes, reflections, bookmarks, favorites, progress, settings) as one JSON file.
+function exportFullBackup() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key) data[key] = localStorage.getItem(key);
+  }
+  const backup = {
+    __osmosisBackup: true,
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data,
+  };
+  download(
+    JSON.stringify(backup),
+    "osmosis-backup.json",
+    "application/json",
+  );
+  showToast("Full backup downloaded.");
 }
 
 function exportBackup() {
