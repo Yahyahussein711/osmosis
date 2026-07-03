@@ -900,7 +900,7 @@ function applyProgressiveDisclosure(unlocks) {
       navTimeline.classList.add("new-feature");
   }
   if (dwBtn) {
-    dwBtn.style.display = unlocks.deepwork ? "flex" : "none";
+    dwBtn.style.display = "flex"; // Focus is always available
   }
 }
 
@@ -3394,10 +3394,9 @@ function setupEvents() {
     });
   }
 
-  // Setup Voice Selector dynamically in Settings
-  initVoiceSettings();
-
+  // Voice / audio feature removed — no voice selector in Settings.
   function initVoiceSettings() {
+    return;
     const resetBtn = document.getElementById("resetDataBtn");
     if (!resetBtn || document.getElementById("voiceSelectorContainer")) return;
 
@@ -4282,7 +4281,7 @@ function renderArticleGrid() {
       <p style="font-size:0.9rem;color:var(--subtitle-color);margin-bottom:0; margin-top:6px;">${item.description}</p>
       ${genresHTML}
       ${statsHTML}
-      ${isFav ? `<div style="position:absolute; bottom:10px; right:10px; color:var(--accent); font-size:22px; line-height:1; font-weight:bold; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">♥</div>` : ""}
+      ${isFav ? `<div style="position:absolute; bottom:10px; right:10px; color:var(--accent); font-size:22px; line-height:1; font-weight:bold; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">♥︎</div>` : ""}
       ${progressBarHTML}`;
 
     // Click to open article
@@ -5404,14 +5403,10 @@ function loadReflections() {
             <div style="font-size:0.8rem;color:var(--subtitle-color);margin-bottom:4px;">${new Date(ref.created).toLocaleDateString()}</div>
             <div class="annotation-note">${ref.text}</div>
             <div class="annotation-actions" style="display: flex; gap: 8px; align-items: center;">
-                <button class="text-btn sage-btn">Listen</button>
                 <button class="text-btn sage-btn" data-reflection-id="${ref.id}">•••</button>
             </div>`;
 
-    const listenBtn = entry.querySelector(".annotation-actions button:first-child");
-    const menuBtn = entry.querySelector(".annotation-actions button:last-child");
-
-    listenBtn.onclick = () => readAloud(ref.text);
+    const menuBtn = entry.querySelector(".annotation-actions button");
     menuBtn.onclick = (e) => {
       e.stopPropagation();
       showReflectionContextMenu(e, ref.id);
@@ -6987,7 +6982,7 @@ function createTimelineElement(item, delayIndex, forceExpand = false) {
                 <div class="timeline-content">${contentHtml}</div>
                 <div class="timeline-actions" style="display: flex; gap: 8px; padding-left: 8px; align-items: center;">
                     <button class="text-btn sage-btn" onclick="event.stopPropagation(); ${jumpAction}" style="font-size: 0.9rem;">${viewBtnText}</button>
-                    <button class="text-btn" data-fav-date="${item.date}" onclick="event.stopPropagation(); toggleTimelineFavorite('${item.date}')" style="white-space: nowrap; font-size: 1.1rem; color: ${item.isFavorite ? 'var(--accent)' : 'var(--subtitle-color)'}; background: transparent; border: none; cursor: pointer; padding: 4px 8px;">♥</button>
+                    <button class="text-btn" data-fav-date="${item.date}" onclick="event.stopPropagation(); toggleTimelineFavorite('${item.date}')" style="white-space: nowrap; font-size: 1.1rem; color: ${item.isFavorite ? 'var(--accent)' : 'var(--subtitle-color)'}; background: transparent; border: none; cursor: pointer; padding: 4px 8px;">♥︎</button>
                     <button class="text-btn sage-btn" onclick="event.stopPropagation(); showTimelineContextMenu(event, '${item.date}')" style="font-size: 0.9rem;">•••</button>
                 </div>
             </div>
@@ -7118,7 +7113,7 @@ function createArticleTimelineElement(items, delayIndex) {
           </span>
           <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
              <button class="text-btn sage-btn" style="font-size: 0.65rem; padding: 3px 6px; white-space: nowrap;" onclick="event.stopPropagation(); ${jumpAction}">${viewBtnText}</button>
-             <button class="text-btn" data-fav-date="${item.date}" style="font-size: 1rem; padding: 3px 6px; color: ${item.isFavorite ? 'var(--accent)' : 'var(--subtitle-color)'}; background: transparent; border: none; cursor: pointer;" onclick="event.stopPropagation(); toggleTimelineFavorite('${item.date}')">♥</button>
+             <button class="text-btn" data-fav-date="${item.date}" style="font-size: 1rem; padding: 3px 6px; color: ${item.isFavorite ? 'var(--accent)' : 'var(--subtitle-color)'}; background: transparent; border: none; cursor: pointer;" onclick="event.stopPropagation(); toggleTimelineFavorite('${item.date}')">♥︎</button>
              <button class="text-btn sage-btn" style="font-size: 0.65rem; padding: 3px 6px;" onclick="event.stopPropagation(); showTimelineContextMenu(event, '${item.date}')">•••</button>
           </div>
         </div>
@@ -9993,23 +9988,44 @@ function applyImportedLibrary(rawText) {
         imported = true;
       }
     } else if (text.includes("topicsData")) {
-      // Exported stories file (JS that assigns window.topicsData). Run it with a
-      // private sandbox as `window` so we capture the data reliably — no global
-      // <script> injection (which iOS Safari can block).
-      const sandbox = {};
-      new Function("window", text)(sandbox);
-      if (sandbox.topicsData && typeof sandbox.topicsData === "object") {
-        window.topicsData = Object.assign(
-          window.topicsData || {},
-          sandbox.topicsData,
-        );
-        imported = true;
+      // Exported stories file: window.topicsData = ...; Object.assign(window.topicsData, {JSON});
+      let topics = null;
+
+      // Method 1 (preferred, no eval): pull the JSON object out directly.
+      const marker = "Object.assign(window.topicsData,";
+      const mi = text.indexOf(marker);
+      if (mi >= 0) {
+        let part = text.slice(mi + marker.length).trim();
+        part = part.replace(/\)\s*;?\s*$/, "").trim(); // drop trailing ");"
+        try {
+          topics = JSON.parse(part);
+        } catch (e) {
+          topics = null;
+        }
       }
-      if (sandbox.pathsData && typeof sandbox.pathsData === "object") {
-        window.pathsData = Object.assign(
-          window.pathsData || {},
-          sandbox.pathsData,
-        );
+
+      // Method 2 (fallback): run it in a private sandbox as `window`.
+      if (!topics) {
+        try {
+          const sandbox = {};
+          new Function("window", text)(sandbox);
+          if (sandbox.topicsData && typeof sandbox.topicsData === "object") {
+            topics = sandbox.topicsData;
+          }
+          if (sandbox.pathsData && typeof sandbox.pathsData === "object") {
+            window.pathsData = Object.assign(
+              window.pathsData || {},
+              sandbox.pathsData,
+            );
+          }
+        } catch (e) {
+          /* handled below */
+        }
+      }
+
+      if (topics && typeof topics === "object") {
+        window.topicsData = Object.assign(window.topicsData || {}, topics);
+        imported = true;
       }
     }
 
@@ -10033,7 +10049,9 @@ function applyImportedLibrary(rawText) {
   } catch (err) {
     console.error(err);
     alert(
-      "Import failed — please choose your exported stories.js file (or paste its contents).",
+      "Import failed: " +
+        (err && err.message ? err.message : "unknown error") +
+        "\n\nMake sure you picked your exported stories.js or a backup file.",
     );
   }
 }
