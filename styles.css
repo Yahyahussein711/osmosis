@@ -31,6 +31,15 @@
   --glass-shadow: none;
   --glass-highlight: transparent;
 
+  /* Reading "paper sheet" — a warm page lifted off a soft desk */
+  --reader-desk: #efece3;
+  --reader-paper: #fdfbf4;
+  --reader-paper-edge: rgba(60, 50, 30, 0.1);
+  --reader-paper-line: rgba(90, 72, 40, 0.028);
+  --reader-paper-shadow:
+    0 1px 2px rgba(45, 38, 25, 0.05), 0 10px 28px rgba(45, 38, 25, 0.08),
+    0 30px 60px rgba(45, 38, 25, 0.06);
+
   /* Reader Preferences */
   --article-font-size: 1.05rem;
   --article-line-height: 1.6;
@@ -119,6 +128,10 @@
   --glass-border: #e8dfcc;
   --glass-solid: #fdf6e3;
   --glass-shadow: 0 4px 6px -1px rgba(74, 59, 44, 0.05);
+  --reader-desk: #efe3ca;
+  --reader-paper: #fbf4e0;
+  --reader-paper-edge: rgba(90, 70, 40, 0.12);
+  --reader-paper-line: rgba(120, 90, 50, 0.032);
 }
 [data-read-theme="grey"] {
   --cream: #f1f5f9;
@@ -128,6 +141,10 @@
   --glass-border: #cbd5e1;
   --glass-solid: #f1f5f9;
   --glass-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
+  --reader-desk: #e2e8f0;
+  --reader-paper: #f8fafc;
+  --reader-paper-edge: rgba(30, 41, 59, 0.1);
+  --reader-paper-line: rgba(30, 41, 59, 0.02);
 }
 
 /* Dark Mode Overrides */
@@ -142,6 +159,12 @@
   --glass-shadow: none;
   --subtitle-color: #a3a3a3;
   --glass-highlight: transparent;
+  --reader-desk: #0c0c0e;
+  --reader-paper: #1a1917;
+  --reader-paper-edge: rgba(255, 255, 255, 0.06);
+  --reader-paper-line: rgba(255, 255, 255, 0.015);
+  --reader-paper-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.4), 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* OLED Midnight Mode Overrides */
@@ -156,6 +179,11 @@
   --glass-shadow: none;
   --subtitle-color: #a3a3a3;
   --glass-highlight: transparent;
+  --reader-desk: #000000;
+  --reader-paper: #0e0e10;
+  --reader-paper-edge: rgba(255, 255, 255, 0.05);
+  --reader-paper-line: rgba(255, 255, 255, 0.012);
+  --reader-paper-shadow: 0 12px 44px rgba(0, 0, 0, 0.6);
 }
 
 /* Dark Mode Reading Themes */
@@ -167,6 +195,10 @@
   --glass-bg: rgba(26, 22, 20, 0.75);
   --glass-border: rgba(232, 220, 203, 0.06);
   --glass-solid: rgba(26, 22, 20, 0.98);
+  --reader-desk: #120f0d;
+  --reader-paper: #221b16;
+  --reader-paper-edge: rgba(232, 220, 203, 0.08);
+  --reader-paper-line: rgba(232, 220, 203, 0.02);
 }
 [data-theme="dark"][data-read-theme="grey"],
 [data-theme="midnight"][data-read-theme="grey"] {
@@ -176,6 +208,10 @@
   --glass-bg: rgba(20, 23, 26, 0.75);
   --glass-border: rgba(220, 228, 232, 0.06);
   --glass-solid: rgba(20, 23, 26, 0.98);
+  --reader-desk: #0d1013;
+  --reader-paper: #1b2024;
+  --reader-paper-edge: rgba(220, 228, 232, 0.07);
+  --reader-paper-line: rgba(220, 228, 232, 0.02);
 }
 
 /* Custom Scrollbar for Premium Feel */
@@ -807,29 +843,29 @@ input[type="text"].search-input:not(:placeholder-shown) {
 /* Bottom Nav */
 .bottom-nav {
   position: fixed;
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  bottom: 0;
   left: 0;
   right: 0;
-  margin: 0 auto;
-  width: max-content;
-  max-width: calc(100% - 32px);
+  margin: 0;
+  width: 100%;
+  max-width: none;
   box-sizing: border-box;
   display: flex;
-  justify-content: center;
-  gap: 4px;
-  align-items: center;
-  padding: 10px 20px;
+  justify-content: space-around;
+  gap: 0;
+  align-items: stretch;
+  padding: 8px 6px calc(18px + env(safe-area-inset-bottom, 0px));
   z-index: 1000;
-  border: 1px solid var(--glass-border);
-  border-radius: 100px;
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  border-radius: 0;
   background: var(--glass-solid);
-  backdrop-filter: blur(32px) saturate(120%);
-  -webkit-backdrop-filter: blur(32px) saturate(120%);
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
   box-shadow: none;
   transition:
     transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.8s ease,
-    bottom 0.8s ease;
+    opacity 0.8s ease;
 }
 .bottom-nav-hidden {
   transform: translateY(150%);
@@ -837,34 +873,36 @@ input[type="text"].search-input:not(:placeholder-shown) {
 }
 .nav-item {
   position: relative;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--subtitle-color);
-  font-size: 0.75rem;
-  font-weight: 600;
-  gap: 4px;
-  padding: 8px 14px;
-  border-radius: var(--radius-md);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-size: 0.68rem;
+  font-weight: 500;
+  gap: 5px;
+  padding: 6px 2px;
+  border-radius: 0;
+  transition: color 0.2s ease;
   box-shadow: none;
+}
+.nav-item svg {
+  width: 23px;
+  height: 23px;
+}
+.nav-item .nav-label {
+  font-size: 0.68rem;
+  line-height: 1;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
 }
 .nav-item.active {
-  color: var(--accent);
+  color: var(--dark-text);
   background: transparent;
-  transform: translateY(-2px);
-}
-.nav-item.active::after {
-  content: "";
-  position: absolute;
-  bottom: 0px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: none;
+  transform: none;
 }
 .nav-item.new-feature::before {
   content: none;
@@ -1084,6 +1122,69 @@ input[type="text"].search-input:not(:placeholder-shown) {
   font-size: 2.2rem;
   margin-top: 1rem;
   line-height: 1.2;
+}
+
+/* ============================================================
+   PAPER SHEET — make the reading view feel like a printed page
+   resting on a soft desk. Scoped to #articleView; the Editorial
+   skin opts out below and keeps its own full-bleed look.
+   ============================================================ */
+#articleView {
+  background-color: var(--reader-desk);
+  transition: background-color 0.4s ease;
+}
+
+.article-main-col {
+  /* Sheet width = the reader's chosen text measure + page margins,
+     so the line length stays exactly what the width slider sets. */
+  max-width: calc(var(--article-max-width, 800px) + 8rem);
+  margin: 0 auto;
+  background-color: var(--reader-paper);
+  border: 1px solid var(--reader-paper-edge);
+  border-radius: 4px;
+  box-shadow: var(--reader-paper-shadow);
+  padding: clamp(2rem, 4vw, 3.5rem) clamp(1.25rem, 5vw, 4rem);
+  /* Faint warm paper grain — barely perceptible, no printed lines. */
+  background-image: radial-gradient(
+    140% 90% at 50% -10%,
+    var(--reader-paper-line),
+    transparent 55%
+  );
+}
+
+/* The header + body + completion now share one sheet, so drop their
+   individual centering/measure and let the sheet's padding define the
+   page margins instead. */
+.article-main-col > .article-header,
+.article-main-col > .article-content,
+.article-main-col > .article-completion-section {
+  max-width: none;
+  width: auto;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+@media (max-width: 640px) {
+  .article-main-col {
+    border-radius: 3px;
+    box-shadow:
+      0 1px 2px rgba(45, 38, 25, 0.06), 0 6px 18px rgba(45, 38, 25, 0.07);
+  }
+}
+
+/* Editorial skin keeps its own full-bleed paper — neutralise the sheet. */
+[data-skin="editorial"] #articleView {
+  background-color: var(--cream);
+}
+[data-skin="editorial"] .article-main-col {
+  max-width: var(--article-max-width, 800px);
+  background: transparent;
+  background-image: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* Immersive Default Content */
@@ -3352,13 +3453,16 @@ body.compact-mode .annotation-item {
    16. RESPONSIVE TABLET & DESKTOP MEDIA QUERIES
    ============================================================ */
 @media (min-width: 768px) {
-  /* Floating Apple-style Dock for Tablet/Desktop */
+  /* Full-width bottom bar keeps its look on tablet — just center the
+     items with breathing room instead of stretching edge-to-edge. */
   .bottom-nav {
-    gap: 12px;
-    padding: 12px 32px;
+    justify-content: center;
+    gap: clamp(24px, 6vw, 80px);
+    padding: 10px 32px calc(10px + env(safe-area-inset-bottom, 0px));
   }
   .nav-item {
-    padding: 8px 16px;
+    flex: 0 0 auto;
+    padding: 6px 8px;
   }
 
   .top-app-bar {
@@ -3366,7 +3470,7 @@ body.compact-mode .annotation-item {
   }
 
   .container {
-    padding-bottom: 140px; /* Ensure content clears floating dock */
+    padding-bottom: 120px;
   }
 
   /* 2-Column Grids for Tablet */
@@ -3501,56 +3605,57 @@ body.compact-mode .annotation-item {
     background: rgba(160, 181, 172, 0.08);
   }
 
-  /* Settings Group & Cards */
+  /* Settings: clean grouped cards (section header + inset rows), centered. */
   .settings-masonry {
     display: flex;
     flex-direction: column;
-    gap: 48px;
+    gap: 22px;
     width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
   }
   .settings-group {
-    background: transparent;
-    border: none;
-    box-shadow: none;
+    background: var(--glass-solid);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
     margin-bottom: 0;
-    border-radius: 0;
+    box-shadow: none;
   }
   .settings-group:hover {
     box-shadow: none;
   }
   .settings-group-label {
-    background: transparent;
-    border-bottom: none;
-    padding: 0 0 20px 8px;
-    font-size: var(--fs-base);
+    background: rgba(0, 0, 0, 0.02);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 14px 24px;
+    font-size: 0.72rem;
     color: var(--accent);
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
   }
   .settings-group .setting-row {
-    background: var(--glass-solid);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 32px 40px;
-    margin-bottom: 20px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 18px 24px;
+    margin-bottom: 0;
     box-shadow: none;
-    transition:
-      transform 0.3s ease,
-      box-shadow 0.3s ease;
+    transition: background 0.2s ease;
+  }
+  .settings-group .setting-row:not(:last-child) {
+    border-bottom: 1px solid var(--glass-border);
   }
   .settings-group .setting-row:hover {
-    transform: translateY(-2px);
+    transform: none;
     box-shadow: none;
-  }
-  .settings-group .setting-row:last-child {
-    margin-bottom: 0;
   }
 
   .reading-preview-box {
-    background: var(--glass-solid);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 40px;
-    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.02);
+    border: none;
+    border-radius: 0;
+    padding: 18px 24px;
+    margin-bottom: 0;
     box-shadow: none;
   }
 
@@ -3596,23 +3701,18 @@ body.compact-mode .annotation-item {
     box-shadow: none;
   }
 
-  /* Desktop Navigation Enhancements */
+  /* Desktop keeps the same full-width labeled bar, spaced a bit wider. */
   .bottom-nav {
-    max-width: 600px;
-    padding: 12px 44px;
-    border-radius: 999px;
-    gap: 16px;
+    gap: clamp(40px, 8vw, 120px);
+    padding: 12px 44px calc(12px + env(safe-area-inset-bottom, 0px));
   }
   .nav-item {
-    flex-direction: row;
-    justify-content: center;
-    gap: 10px;
-    font-size: var(--fs-base);
-    padding: 10px 20px;
+    font-size: 0.72rem;
+    padding: 6px 10px;
   }
   .nav-item svg {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
   }
 
   /* Larger Typography for Desktop */
@@ -4007,9 +4107,8 @@ body.compact-mode .annotation-item {
   display: none;
 }
 
-/* ---- Palette: light editorial (warm paper) ---- */
-[data-skin="editorial"] #exploreView,
-[data-skin="editorial"] #articleView {
+/* ---- Palette: light editorial (warm paper) — applied to every page ---- */
+[data-skin="editorial"] .view {
   /* Follow the app's own background so the skin matches the rest of
      the app in every theme (light + dark). */
   --ed-paper: var(--cream);
@@ -4036,10 +4135,8 @@ body.compact-mode .annotation-item {
 }
 
 /* ---- Palette: dark editorial (night press) ---- */
-[data-theme="dark"][data-skin="editorial"] #exploreView,
-[data-theme="dark"][data-skin="editorial"] #articleView,
-[data-theme="midnight"][data-skin="editorial"] #exploreView,
-[data-theme="midnight"][data-skin="editorial"] #articleView {
+[data-theme="dark"][data-skin="editorial"] .view,
+[data-theme="midnight"][data-skin="editorial"] .view {
   --ed-paper: var(--cream);
   --ed-ink: #e9e3d5;
   --ed-muted: #998d7b;
@@ -4048,10 +4145,8 @@ body.compact-mode .annotation-item {
   --ed-rule-soft: rgba(233, 227, 213, 0.08);
 }
 
-/* Paint the page paper ONLY while a reading view is active, so the
-   other views keep their own background even with the skin on. */
-html[data-skin="editorial"]:has(#exploreView.active),
-html[data-skin="editorial"]:has(#articleView.active) {
+/* Paint the whole page background to match, on every editorial page. */
+html[data-skin="editorial"] {
   background-color: var(--cream);
 }
 

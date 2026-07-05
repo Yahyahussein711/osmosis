@@ -699,6 +699,8 @@ let scrollVelocityTimeout = null;
 let hasTriggeredCompletion = false;
 let currentExploreSort = "newest";
 let currentExploreFilter = "all";
+let libraryGenreFilter = null;
+let libraryAuthorFilter = null;
 
 // Article Favorites Storage
 function getFavoriteArticles() {
@@ -1031,26 +1033,103 @@ function loadCustomContent() {
       localStorage.getItem("osmosis_custom_content") || "{}",
     );
     if (!window.topicsData) window.topicsData = {};
+    const isEmptyVal = (v) =>
+      v == null || v === "" || (Array.isArray(v) && v.length === 0);
+    // Merge one article's fields over another WITHOUT letting empty custom
+    // values erase real (e.g. baked-in) data like a cover photo.
+    const mergeArticle = (base, cust) => {
+      const out = Object.assign({}, base || {});
+      Object.keys(cust || {}).forEach((k) => {
+        if (!isEmptyVal(cust[k])) out[k] = cust[k];
+      });
+      return out;
+    };
+
     Object.keys(custom).forEach((domain) => {
       if (!window.topicsData[domain]) {
         window.topicsData[domain] = custom[domain];
-      } else {
-        Object.keys(custom[domain].subtopics).forEach((sub) => {
-          if (!window.topicsData[domain].subtopics[sub]) {
-            window.topicsData[domain].subtopics[sub] =
-              custom[domain].subtopics[sub];
-          } else {
-            Object.assign(
-              window.topicsData[domain].subtopics[sub].articles,
-              custom[domain].subtopics[sub].articles,
-            );
-          }
-        });
+        return;
       }
+      Object.keys(custom[domain].subtopics || {}).forEach((sub) => {
+        const subData = window.topicsData[domain].subtopics[sub];
+        if (!subData) {
+          window.topicsData[domain].subtopics[sub] =
+            custom[domain].subtopics[sub];
+          return;
+        }
+        const custArticles = custom[domain].subtopics[sub].articles || {};
+        Object.keys(custArticles).forEach((art) => {
+          subData.articles[art] = mergeArticle(
+            subData.articles[art],
+            custArticles[art],
+          );
+        });
+      });
     });
   } catch (e) {
     console.error("Failed to load custom content", e);
   }
+  // Free up localStorage: move any inline base64 cover photos already saved
+  // in osmosis_custom_content into IndexedDB (runs once, then no-ops).
+  try {
+    migrateInlineImagesToIdb();
+  } catch (e) {}
+}
+
+// One-time migration of previously-saved inline "data:" cover images out of
+// localStorage and into IndexedDB, replacing each with a small reference.
+// This reclaims the space that was causing "storage is full" errors.
+function migrateInlineImagesToIdb() {
+  if (typeof indexedDB === "undefined") return;
+  let custom;
+  try {
+    custom = JSON.parse(localStorage.getItem("osmosis_custom_content") || "{}");
+  } catch (e) {
+    return;
+  }
+  const tasks = [];
+  Object.keys(custom).forEach((d) => {
+    const subs = custom[d]?.subtopics || {};
+    Object.keys(subs).forEach((s) => {
+      const arts = subs[s]?.articles || {};
+      Object.keys(arts).forEach((a) => {
+        const art = arts[a];
+        if (
+          art &&
+          typeof art.image === "string" &&
+          art.image.startsWith("data:")
+        ) {
+          const id = genNewImageId();
+          const dataUrl = art.image;
+          tasks.push(
+            idbSetImage(id, dataUrl)
+              .then(() => {
+                _imgCache[id] = dataUrl;
+                art.image = "idb:" + id;
+                // Keep the live library in sync so it shrinks too.
+                try {
+                  const t =
+                    window.topicsData?.[d]?.subtopics?.[s]?.articles?.[a];
+                  if (
+                    t &&
+                    typeof t.image === "string" &&
+                    t.image.startsWith("data:")
+                  )
+                    t.image = "idb:" + id;
+                } catch (e) {}
+              })
+              .catch(() => {}),
+          );
+        }
+      });
+    });
+  });
+  if (!tasks.length) return;
+  Promise.all(tasks).then(() => {
+    try {
+      localStorage.setItem("osmosis_custom_content", JSON.stringify(custom));
+    } catch (e) {}
+  });
 }
 
 function validateKnowledgeData() {
@@ -1736,7 +1815,6 @@ function setupEvents() {
             .map((g) => g.trim())
             .filter(Boolean)
         : [];
-      const image = genImageData || "";
       const imagePos = genImagePos || "50% 50%";
 
       // Validate inputs
@@ -1786,6 +1864,26 @@ function setupEvents() {
             if (Object.keys(window.topicsData[oldD].subtopics).length === 0)
               delete window.topicsData[oldD];
           }
+        }
+      }
+
+      // Move the cover photo into IndexedDB and keep only a small reference
+      // in localStorage, so photos no longer blow the ~5MB storage cap.
+      let image = "";
+      if (genImageData) {
+        if (genImageRef && genImageRef.startsWith("idb:")) {
+          image = genImageRef; // unchanged photo from an edit — reuse it
+        } else if (genImageData.startsWith("data:")) {
+          try {
+            const id = genNewImageId();
+            await idbSetImage(id, genImageData);
+            _imgCache[id] = genImageData;
+            image = "idb:" + id;
+          } catch (e) {
+            image = genImageData; // last resort: keep inline
+          }
+        } else {
+          image = genImageData;
         }
       }
 
@@ -4054,6 +4152,39 @@ function closeArticleContextMenu() {
 // ============================================================
 // CATEGORIES & SUBTOPICS
 // ============================================================
+// Escape a value for safe use inside an onclick="fn('...')" attribute.
+function escJsAttr(s) {
+  return String(s == null ? "" : s)
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/"/g, "&quot;");
+}
+
+function filterByGenre(g) {
+  libraryGenreFilter = g;
+  libraryAuthorFilter = null;
+  updateActiveNav("navHome");
+  renderArticleGrid(); // switches to the Library view
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+function filterByAuthor(a) {
+  libraryAuthorFilter = a;
+  libraryGenreFilter = null;
+  updateActiveNav("navHome");
+  renderArticleGrid();
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+function clearLibraryFilter() {
+  libraryGenreFilter = null;
+  libraryAuthorFilter = null;
+  renderArticleGrid();
+}
+window.filterByGenre = filterByGenre;
+window.filterByAuthor = filterByAuthor;
+window.clearLibraryFilter = clearLibraryFilter;
+
 function renderArticleGrid() {
   currentState.mode = "explore";
   const grid = document.getElementById("articlesGrid");
@@ -4168,6 +4299,36 @@ function renderArticleGrid() {
     );
   }
 
+  // Genre / author filtering (from clicking a pill or author name)
+  if (libraryGenreFilter) {
+    const gf = libraryGenreFilter.toLowerCase();
+    displayArticles = displayArticles.filter((item) =>
+      (item.genres || []).some((g) => (g || "").toLowerCase() === gf),
+    );
+  }
+  if (libraryAuthorFilter) {
+    const af = libraryAuthorFilter.toLowerCase();
+    displayArticles = displayArticles.filter(
+      (item) => (item.author || "").toLowerCase() === af,
+    );
+  }
+
+  // Show a clearable chip when a genre/author filter is active
+  const chipEl = document.getElementById("libraryFilterChip");
+  if (chipEl) {
+    const active = libraryGenreFilter || libraryAuthorFilter;
+    if (active) {
+      const label = libraryGenreFilter
+        ? libraryGenreFilter
+        : `by ${libraryAuthorFilter}`;
+      chipEl.innerHTML = `<button onclick="clearLibraryFilter()" style="display:inline-flex; align-items:center; gap:8px; background:var(--glass-solid); border:1px solid var(--accent); color:var(--accent); font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; padding:4px 12px; border-radius:999px; cursor:pointer;">${label} <span style="font-size:1rem; line-height:1;">×</span></button>`;
+      chipEl.style.display = "block";
+    } else {
+      chipEl.innerHTML = "";
+      chipEl.style.display = "none";
+    }
+  }
+
   if (currentExploreSort === "newest") {
     displayArticles.sort((a, b) => b.originalIndex - a.originalIndex);
   } else if (currentExploreSort === "oldest") {
@@ -4243,17 +4404,17 @@ function renderArticleGrid() {
       : "";
 
     const coverHTML = item.image
-      ? `<img src="${item.image}" alt="" class="story-cover" style="width:100%; aspect-ratio:4/3; object-fit:cover; object-position:${item.imagePos || "50% 50%"}; border-radius:10px; margin-bottom:14px; display:block;" />`
+      ? `<img ${item.image.startsWith("data:") ? `src="${item.image}"` : `data-img-ref="${item.image}"`} alt="" class="story-cover" style="width:100%; aspect-ratio:4/3; object-fit:cover; object-position:${item.imagePos || "50% 50%"}; border-radius:10px; margin-bottom:14px; display:block;" />`
       : "";
     const authorHTML = item.author
-      ? `<p style="font-size:0.8rem; color:var(--subtitle-color); margin:4px 0 0; font-style:italic;">by ${item.author}</p>`
+      ? `<p onclick="event.stopPropagation(); filterByAuthor('${escJsAttr(item.author)}')" title="See all by ${item.author}" style="font-size:0.8rem; color:var(--subtitle-color); margin:4px 0 0; font-style:italic; cursor:pointer;">by ${item.author}</p>`
       : "";
     const genresHTML =
       item.genres && item.genres.length
         ? `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">${item.genres
             .map(
               (g) =>
-                `<span style="font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); border:1px solid var(--glass-border); padding:2px 8px; border-radius:999px;">${g}</span>`,
+                `<span onclick="event.stopPropagation(); filterByGenre('${escJsAttr(g)}')" title="Filter by ${g}" style="font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); border:1px solid var(--glass-border); padding:2px 8px; border-radius:999px; cursor:pointer;">${g}</span>`,
             )
             .join("")}</div>`
         : "";
@@ -4283,6 +4444,7 @@ function renderArticleGrid() {
       ${statsHTML}
       ${isFav ? `<div style="position:absolute; bottom:10px; right:10px; color:var(--accent); font-size:22px; line-height:1; font-weight:bold; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">♥︎</div>` : ""}
       ${progressBarHTML}`;
+    hydrateImages(card);
 
     // Click to open article
     card.addEventListener("click", () => {
@@ -4321,6 +4483,9 @@ function renderArticleGrid() {
 
 function goToExploreView() {
   stopTTS();
+  // A fresh Library visit shows everything (clear any genre/author filter).
+  libraryGenreFilter = null;
+  libraryAuthorFilter = null;
   renderArticleGrid();
   updateActiveNav("navHome");
   updateWelcomeLine();
@@ -4353,9 +4518,16 @@ function loadArticleView(options = {}) {
   const frontEl = document.getElementById("articleFrontispiece");
   if (frontEl) {
     if (article.image) {
-      frontEl.src = article.image;
       frontEl.style.objectPosition = article.imagePos || "50% 50%";
-      frontEl.style.display = "block";
+      resolveImageRef(article.image).then((src) => {
+        if (src) {
+          frontEl.src = src;
+          frontEl.style.display = "block";
+        } else {
+          frontEl.removeAttribute("src");
+          frontEl.style.display = "none";
+        }
+      });
     } else {
       frontEl.removeAttribute("src");
       frontEl.style.display = "none";
@@ -4364,7 +4536,8 @@ function loadArticleView(options = {}) {
   const authorEl = document.getElementById("articleAuthor");
   if (authorEl) {
     if (article.author) {
-      authorEl.textContent = `by ${article.author}`;
+      const auth = article.author;
+      authorEl.innerHTML = `by <span style="cursor:pointer; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:2px;" onclick="filterByAuthor('${escJsAttr(auth)}')">${auth}</span>`;
       authorEl.style.display = "block";
     } else {
       authorEl.style.display = "none";
@@ -4377,7 +4550,7 @@ function loadArticleView(options = {}) {
       genresEl.innerHTML = genres
         .map(
           (g) =>
-            `<span style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); border:1px solid var(--glass-border); padding:3px 10px; border-radius:999px;">${g}</span>`,
+            `<span onclick="filterByGenre('${escJsAttr(g)}')" title="Filter by ${g}" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); border:1px solid var(--glass-border); padding:3px 10px; border-radius:999px; cursor:pointer;">${g}</span>`,
         )
         .join("");
       genresEl.style.display = "flex";
@@ -5886,10 +6059,15 @@ function setupSearch() {
     Object.keys(window.topicsData || {}).forEach((d) => {
       Object.keys(window.topicsData[d].subtopics).forEach((s) => {
         Object.keys(window.topicsData[d].subtopics[s].articles).forEach((a) => {
-          const content = window.topicsData[d].subtopics[s].articles[a].content;
+          const art = window.topicsData[d].subtopics[s].articles[a] || {};
+          const content = art.content || "";
+          const author = art.author || "";
+          const genres = Array.isArray(art.genres) ? art.genres.join(" ") : "";
           if (
             a.toLowerCase().includes(query) ||
-            content.toLowerCase().includes(query)
+            content.toLowerCase().includes(query) ||
+            author.toLowerCase().includes(query) ||
+            genres.toLowerCase().includes(query)
           ) {
             results.push({ d, s, a });
           }
@@ -9949,7 +10127,7 @@ function exportObsidian() {
 
 // Import a library from the exported file (JS that assigns window.topicsData)
 // or a JSON blob. Merges into the current library and persists it.
-function applyImportedLibrary(rawText) {
+async function applyImportedLibrary(rawText) {
   const text = (rawText || "").trim();
   if (!text) {
     alert("Choose a file or paste the library contents first.");
@@ -9971,6 +10149,14 @@ function applyImportedLibrary(rawText) {
             /* skip a key if storage is full */
           }
         });
+        // Restore cover photos into IndexedDB (backups v2+).
+        if (parsed.images && typeof parsed.images === "object") {
+          await Promise.all(
+            Object.keys(parsed.images).map((id) =>
+              idbSetImage(id, parsed.images[id]).catch(() => {}),
+            ),
+          );
+        }
         const modal = document.getElementById("importModal");
         if (modal) modal.classList.remove("active");
         alert("Backup restored! Reloading…");
@@ -10031,6 +10217,10 @@ function applyImportedLibrary(rawText) {
 
     if (!imported) throw new Error("Unrecognized library format");
 
+    // Move any inline photos into IndexedDB first so the localStorage copy
+    // stays small enough to actually save.
+    await externalizeInlineImages(window.topicsData);
+
     localStorage.setItem(
       "osmosis_custom_content",
       JSON.stringify(window.topicsData || {}),
@@ -10058,17 +10248,20 @@ function applyImportedLibrary(rawText) {
 
 // Full backup: every piece of the user's data (stories, timeline, highlights,
 // notes, reflections, bookmarks, favorites, progress, settings) as one JSON file.
-function exportFullBackup() {
+async function exportFullBackup() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key) data[key] = localStorage.getItem(key);
   }
+  // Cover photos now live in IndexedDB, so include them explicitly.
+  const images = await idbGetAllImages();
   const backup = {
     __osmosisBackup: true,
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     data,
+    images,
   };
   download(
     JSON.stringify(backup),
@@ -10078,9 +10271,11 @@ function exportFullBackup() {
   showToast("Full backup downloaded.");
 }
 
-function exportBackup() {
-  // Compiles all default and custom-generated content into the permanent format
-  const jsContent = `window.topicsData = window.topicsData || {};\n\nObject.assign(window.topicsData, ${JSON.stringify(window.topicsData || {}, null, 2)});\n`;
+async function exportBackup() {
+  // Compiles all default and custom-generated content into the permanent
+  // format, inlining cover photos so the file is fully self-contained.
+  const topics = await inlineTopicsImages(window.topicsData || {});
+  const jsContent = `window.topicsData = window.topicsData || {};\n\nObject.assign(window.topicsData, ${JSON.stringify(topics, null, 2)});\n`;
 
   download(jsContent, `stories.js`, "application/javascript");
   showToast("Ready! Replace stories.js with this file.");
@@ -10485,7 +10680,9 @@ function editCustomArticle(domain, sub, art) {
   const gGenres = document.getElementById("genGenres");
   if (gGenres) gGenres.value = (artObj.genres || []).join(", ");
   genImagePos = artObj.imagePos || "50% 50%";
-  setGenImagePreview(artObj.image || "");
+  resolveImageRef(artObj.image || "").then((dataUrl) =>
+    setGenImagePreview(dataUrl, artObj.image || ""),
+  );
   updateGenContentCount();
 
   document.getElementById("btnGenNew").click();
@@ -10601,10 +10798,16 @@ function saveGenDraft() {
     content: document.getElementById("genContent").value,
     author: document.getElementById("genAuthor")?.value || "",
     genres: document.getElementById("genGenres")?.value || "",
-    image: genImageData || "",
+    // Only persist a lightweight reference in the draft — never the base64
+    // image bytes (those would refill localStorage and break autosave).
+    image: genImageRef && genImageRef.startsWith("idb:") ? genImageRef : "",
     imagePos: genImagePos || "50% 50%",
   };
-  localStorage.setItem("osmosis_gen_draft", JSON.stringify(draft));
+  try {
+    localStorage.setItem("osmosis_gen_draft", JSON.stringify(draft));
+  } catch (e) {
+    /* draft is best-effort; ignore quota errors */
+  }
 }
 
 function updateGenContentCount() {
@@ -10617,12 +10820,193 @@ function updateGenContentCount() {
   out.textContent = `${words} word${words === 1 ? "" : "s"} · ~${mins} min read`;
 }
 
+/* ============================================================
+   IMAGE STORAGE — cover photos live in IndexedDB, not localStorage.
+   localStorage caps at ~5MB (tighter on iPhone), so a few base64
+   photos fill it and saving fails. IndexedDB has hundreds of MB and
+   is more persistent. We keep only a tiny "idb:<id>" reference in
+   osmosis_custom_content; the real image bytes go to IndexedDB.
+   Legacy stories that still hold an inline "data:" URL keep working.
+   ============================================================ */
+let _osmosisDbPromise = null;
+function _osmosisIdb() {
+  if (_osmosisDbPromise) return _osmosisDbPromise;
+  _osmosisDbPromise = new Promise((resolve, reject) => {
+    let req;
+    try {
+      req = indexedDB.open("osmosis", 1);
+    } catch (e) {
+      reject(e);
+      return;
+    }
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains("images"))
+        req.result.createObjectStore("images");
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return _osmosisDbPromise;
+}
+function idbSetImage(id, dataUrl) {
+  return _osmosisIdb().then(
+    (db) =>
+      new Promise((res, rej) => {
+        const tx = db.transaction("images", "readwrite");
+        tx.objectStore("images").put(dataUrl, id);
+        tx.oncomplete = () => res();
+        tx.onerror = () => rej(tx.error);
+      }),
+  );
+}
+function idbGetImage(id) {
+  return _osmosisIdb().then(
+    (db) =>
+      new Promise((res, rej) => {
+        const tx = db.transaction("images", "readonly");
+        const r = tx.objectStore("images").get(id);
+        r.onsuccess = () => res(r.result || "");
+        r.onerror = () => rej(r.error);
+      }),
+  );
+}
+function genNewImageId() {
+  return (
+    "img_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8)
+  );
+}
+
+// In-memory cache of resolved images (by idb id) so we don't hit
+// IndexedDB repeatedly and freshly-saved photos show instantly.
+const _imgCache = {};
+
+// Turn a stored image value into a usable src. Accepts a data URL
+// (used directly), an "idb:<id>" reference (loaded from IndexedDB),
+// or "" (no image). Always returns a Promise<string>.
+function resolveImageRef(ref) {
+  if (!ref) return Promise.resolve("");
+  if (ref.startsWith("data:")) return Promise.resolve(ref);
+  if (ref.startsWith("idb:")) {
+    const id = ref.slice(4);
+    if (_imgCache[id] != null) return Promise.resolve(_imgCache[id]);
+    return idbGetImage(id)
+      .then((data) => {
+        _imgCache[id] = data || "";
+        return _imgCache[id];
+      })
+      .catch(() => "");
+  }
+  return Promise.resolve(ref);
+}
+
+// Fill in any <img data-img-ref="..."> inside root by resolving the ref.
+function hydrateImages(root) {
+  (root || document).querySelectorAll("img[data-img-ref]").forEach((img) => {
+    const ref = img.getAttribute("data-img-ref");
+    img.removeAttribute("data-img-ref");
+    resolveImageRef(ref).then((src) => {
+      if (src) img.src = src;
+      else img.style.display = "none";
+    });
+  });
+}
+window.hydrateImages = hydrateImages;
+
+// Read every stored image out of IndexedDB as { id: dataUrl } (for backups).
+function idbGetAllImages() {
+  return _osmosisIdb()
+    .then(
+      (db) =>
+        new Promise((res) => {
+          const out = {};
+          const tx = db.transaction("images", "readonly");
+          const req = tx.objectStore("images").openCursor();
+          req.onsuccess = () => {
+            const cur = req.result;
+            if (cur) {
+              out[cur.key] = cur.value;
+              cur.continue();
+            } else res(out);
+          };
+          req.onerror = () => res(out);
+        }),
+    )
+    .catch(() => ({}));
+}
+
+// Walk a topicsData tree; move any inline "data:" cover image into IndexedDB
+// and replace it with an "idb:<id>" reference (mutates in place). Used on
+// import so a photo-heavy library never overflows localStorage.
+async function externalizeInlineImages(topics) {
+  if (typeof indexedDB === "undefined") return;
+  const jobs = [];
+  Object.keys(topics || {}).forEach((d) => {
+    const subs = topics[d]?.subtopics || {};
+    Object.keys(subs).forEach((s) => {
+      const arts = subs[s]?.articles || {};
+      Object.keys(arts).forEach((a) => {
+        const art = arts[a];
+        if (
+          art &&
+          typeof art.image === "string" &&
+          art.image.startsWith("data:")
+        ) {
+          const id = genNewImageId();
+          const dataUrl = art.image;
+          jobs.push(
+            idbSetImage(id, dataUrl)
+              .then(() => {
+                _imgCache[id] = dataUrl;
+                art.image = "idb:" + id;
+              })
+              .catch(() => {}),
+          );
+        }
+      });
+    });
+  });
+  await Promise.all(jobs);
+}
+
+// Return a deep copy of a topicsData tree with every "idb:" reference expanded
+// back into a real "data:" URL, so an exported file is fully self-contained.
+async function inlineTopicsImages(topics) {
+  const clone = JSON.parse(JSON.stringify(topics || {}));
+  const jobs = [];
+  Object.keys(clone).forEach((d) => {
+    const subs = clone[d]?.subtopics || {};
+    Object.keys(subs).forEach((s) => {
+      const arts = subs[s]?.articles || {};
+      Object.keys(arts).forEach((a) => {
+        const art = arts[a];
+        if (
+          art &&
+          typeof art.image === "string" &&
+          art.image.startsWith("idb:")
+        ) {
+          jobs.push(
+            resolveImageRef(art.image).then((src) => {
+              art.image = src || "";
+            }),
+          );
+        }
+      });
+    });
+  });
+  await Promise.all(jobs);
+  return clone;
+}
+
 // ---- Frontispiece image upload (stored as a downscaled data URL) ----
 let genImageData = "";
 let genImagePos = "50% 50%";
+// Reference ("idb:<id>") for an already-stored image being edited, so a
+// re-save without changing the photo reuses it instead of duplicating.
+let genImageRef = "";
 
-function setGenImagePreview(dataUrl) {
+function setGenImagePreview(dataUrl, ref) {
   genImageData = dataUrl || "";
+  genImageRef = ref || "";
   const prev = document.getElementById("genImagePreview");
   if (!prev) return;
   if (!dataUrl) {
@@ -10702,6 +11086,7 @@ function attachGenCropDrag() {
 
 function clearGenImage() {
   genImageData = "";
+  genImageRef = "";
   genImagePos = "50% 50%";
   const input = document.getElementById("genImage");
   if (input) input.value = "";
@@ -10765,7 +11150,9 @@ function restoreGenDraft() {
       const gG = document.getElementById("genGenres");
       if (gG) gG.value = draft.genres || "";
       genImagePos = draft.imagePos || "50% 50%";
-      setGenImagePreview(draft.image || "");
+      resolveImageRef(draft.image || "").then((dataUrl) =>
+        setGenImagePreview(dataUrl, draft.image || ""),
+      );
       updateGenContentCount();
     }
   } catch (e) {}
