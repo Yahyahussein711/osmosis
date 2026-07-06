@@ -85,41 +85,51 @@ function renderDashboardCards() {
   const reflections = timeline.filter((t) => t.type === "Reflection").length;
   const dueCount = getDueReviewItems().length;
 
-  const box =
-    "background:var(--glass-solid); border:1px solid var(--glass-border); border-radius:12px; padding:14px 16px; box-sizing:border-box;";
-  const label =
-    "font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; color:var(--accent); margin-bottom:6px;";
-  const stat = (n, l) =>
-    `<div style="text-align:center; flex:1; min-width:0;"><div style="font-size:1.4rem; font-weight:700; color:var(--dark-text);">${n}</div><div style="font-size:0.6rem; text-transform:uppercase; letter-spacing:0.4px; color:var(--subtitle-color); margin-top:2px;">${l}</div></div>`;
+  // "The Study" layout — a stats ledger, one feature card, two minis,
+  // and the activity calendar. Same data and click actions as before.
+  const ledgerStat = (n, l) =>
+    `<div class="study-stat"><div class="study-stat-num">${n}</div><div class="study-stat-name">${l}</div></div>`;
 
-  grid.style.gridTemplateColumns = "repeat(auto-fit, minmax(150px, 1fr))";
-  grid.style.gap = "10px";
+  grid.style.display = "flex";
+  grid.style.flexDirection = "column";
+  grid.style.gridTemplateColumns = "";
+  grid.style.gap = "18px";
 
   grid.innerHTML = `
-    <div style="${box} grid-column: 1 / -1;">
-      <div style="display:flex; gap:8px;">
-        ${stat(stories, "Stories")}${stat(highlights, "Highlights")}${stat(notes, "Notes")}${stat(reflections, "Reflections")}
+    <div class="study-ledger">
+      ${ledgerStat(stories, "Stories")}
+      <div class="study-ledger-div" aria-hidden="true"></div>
+      ${ledgerStat(highlights, "Highlights")}
+      <div class="study-ledger-div" aria-hidden="true"></div>
+      ${ledgerStat(notes, "Notes")}
+      <div class="study-ledger-div" aria-hidden="true"></div>
+      ${ledgerStat(reflections, "Reflections")}
+    </div>
+
+    <div class="study-actions">
+      <div class="study-feature" onclick="openReviewSession()">
+        <div class="study-feature-label">Daily Review</div>
+        <div class="study-feature-num">${dueCount}</div>
+        <div class="study-feature-sub">${dueCount ? (dueCount === 1 ? "item due to review" : "items due to review") : "all caught up"}</div>
+        <div class="study-feature-cta">${dueCount ? "Begin session →" : "Come back tomorrow"}</div>
+      </div>
+      <div class="study-minis">
+        <div class="study-mini" onclick="expandDashboardCard('reflection')">
+          <div class="study-mini-name">Reflect</div>
+          <div class="study-mini-desc">Write &amp; review your reflections</div>
+        </div>
+        <div class="study-mini" onclick="var b=document.getElementById('serendipityBtn'); if(b) b.click();">
+          <div class="study-mini-name">Serendipity</div>
+          <div class="study-mini-desc">Resurface a random story or note</div>
+        </div>
       </div>
     </div>
 
-    <div onclick="openReviewSession()" style="${box} cursor:pointer;">
-      <div style="${label}">Daily Review</div>
-      <div style="font-size:1.4rem; font-weight:700; color:var(--dark-text);">${dueCount}</div>
-      <div style="font-size:0.75rem; color:var(--subtitle-color);">${dueCount ? "due to review" : "all caught up"}</div>
-    </div>
-
-    <div onclick="expandDashboardCard('reflection')" style="${box} cursor:pointer;">
-      <div style="${label}">Reflect</div>
-      <div style="font-size:0.8rem; color:var(--subtitle-color); line-height:1.4;">Write &amp; review your reflections</div>
-    </div>
-
-    <div onclick="var b=document.getElementById('serendipityBtn'); if(b) b.click();" style="${box} cursor:pointer;">
-      <div style="${label}">Serendipity</div>
-      <div style="font-size:0.8rem; color:var(--subtitle-color); line-height:1.4;">Resurface a random story or note</div>
-    </div>
-
-    <div style="${box} grid-column: 1 / -1;">
-      <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; color:var(--subtitle-color); margin-bottom:10px;">Activity — last 28 days</div>
+    <div class="study-activity">
+      <div class="study-activity-head">
+        <span>Activity</span>
+        <span class="study-activity-range">Last 28 days</span>
+      </div>
       <div id="habitHeatmap" class="heatmap-grid"></div>
     </div>
   `;
@@ -2725,10 +2735,14 @@ function setupEvents() {
       endDeepWork(false);
     }
   });
+  let dwLastTapTime = 0;
   document.addEventListener("click", (e) => {
     if (!document.body.classList.contains("deep-work-active")) return;
     // Don't exit while selecting/highlighting text
-    if (window.getSelection && String(window.getSelection()).trim()) return;
+    if (window.getSelection && String(window.getSelection()).trim()) {
+      dwLastTapTime = 0;
+      return;
+    }
     // Don't exit when interacting with a highlight, note, link, or control
     if (
       e.target.closest(
@@ -2736,7 +2750,14 @@ function setupEvents() {
       )
     )
       return;
-    endDeepWork(false);
+    // Exit only on a DOUBLE tap, so a stray tap doesn't break focus
+    const now = Date.now();
+    if (now - dwLastTapTime < 350) {
+      dwLastTapTime = 0;
+      endDeepWork(false);
+    } else {
+      dwLastTapTime = now;
+    }
   });
 
   document.getElementById("closeDwModalBtn").addEventListener("click", () => {
@@ -4450,30 +4471,6 @@ function renderArticleGrid() {
     card.addEventListener("click", () => {
       currentState.mode = "explore";
       navigateToArticle(item.domain, item.subtopic, item.article);
-    });
-
-    // Long press to show favorite option
-    let longPressTimer = null;
-    card.addEventListener("mousedown", () => {
-      longPressTimer = setTimeout(() => {
-        showArticleContextMenu(card, item.domain, item.article);
-      }, 500);
-    });
-    card.addEventListener("mouseup", () => {
-      clearTimeout(longPressTimer);
-    });
-    card.addEventListener("mouseleave", () => {
-      clearTimeout(longPressTimer);
-    });
-
-    // Touch support for mobile
-    card.addEventListener("touchstart", () => {
-      longPressTimer = setTimeout(() => {
-        showArticleContextMenu(card, item.domain, item.article);
-      }, 500);
-    });
-    card.addEventListener("touchend", () => {
-      clearTimeout(longPressTimer);
     });
 
     grid.appendChild(card);
@@ -6961,11 +6958,37 @@ function renderTimeline(filterType) {
   let delay = 0;
   Object.keys(groups).forEach((key) => {
     const groupWrap = document.createElement("div");
+    groupWrap.className = "tl-group";
+
+    // Date plate: a big calendar tile that anchors each group visually.
+    const groupItems = groups[key];
+    const d0 = new Date(groupItems[0].date);
+    let plateTop, plateBottom;
+    if (currentZoom === "weekly") {
+      plateTop = String(d0.getDate());
+      plateBottom =
+        d0.toLocaleDateString(undefined, { month: "short" }) + " · Wk";
+    } else if (currentZoom === "daily") {
+      plateTop = String(d0.getDate());
+      plateBottom = d0.toLocaleDateString(undefined, { month: "short" });
+    } else {
+      plateTop = d0.toLocaleDateString(undefined, { month: "short" });
+      plateBottom = String(d0.getFullYear());
+    }
+    const n = groupItems.length;
 
     const header = document.createElement("div");
     header.className = "timeline-group-header";
-    header.style.cursor = "pointer";
-    header.innerHTML = `<span class="toggle-icon" style="display:inline-block; transition:transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); margin-right:4px; font-size:0.7rem; transform: rotate(${isFiltered ? "0deg" : "-90deg"});">▼</span>${key}`;
+    header.innerHTML = `
+      <div class="tl-plate" aria-hidden="true">
+        <div class="tl-plate-top">${plateTop}</div>
+        <div class="tl-plate-bottom">${plateBottom}</div>
+      </div>
+      <div class="tl-group-label">
+        <div class="tl-group-title">${key}</div>
+        <div class="tl-group-count">${n} ${n === 1 ? "entry" : "entries"}</div>
+      </div>
+      <span class="toggle-icon" style="display:inline-block; transition:transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); font-size:0.7rem; transform: rotate(${isFiltered ? "0deg" : "-90deg"});">▼</span>`;
 
     const content = document.createElement("div");
     content.style.display = "grid";
@@ -7873,37 +7896,37 @@ function renderReflectionTracker(viewRange = "all") {
   container.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
       <h3 style="margin: 0;">Reflection Depth Over Time</h3>
-      <div style="display: flex; gap: 8px; background: rgba(0,0,0,0.1); padding: 4px; border-radius: 8px;">
-        <button class="text-btn ${viewRange === "all" ? "sage-btn active" : ""}" style="font-size: 0.8rem; padding: 6px 10px; ${viewRange === "all" ? "background:var(--sage); color:#fff;" : "color:var(--subtitle-color);"}" onclick="renderReflectionTracker('all')">All Time</button>
-        <button class="text-btn ${viewRange === "30days" ? "sage-btn active" : ""}" style="font-size: 0.8rem; padding: 6px 10px; ${viewRange === "30days" ? "background:var(--sage); color:#fff;" : "color:var(--subtitle-color);"}" onclick="renderReflectionTracker('30days')">Last 30 Days</button>
+      <div class="rfx-range">
+        <button class="rfx-btn ${viewRange === "all" ? "active" : ""}" onclick="renderReflectionTracker('all')">All Time</button>
+        <button class="rfx-btn ${viewRange === "30days" ? "active" : ""}" onclick="renderReflectionTracker('30days')">Last 30 Days</button>
       </div>
     </div>
-    <div style="background: rgba(250, 248, 240, 0.03); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
+    <div style="background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; box-shadow: var(--lift-shadow);">
 
       <div style="position: relative; height: 220px; width: 100%; margin-bottom: 24px;">
         <canvas id="reflectionChartCanvas" style="width: 100%; height: 100%; display: block;"></canvas>
-        <div id="reflectionChartTooltip" style="position: absolute; opacity: 0; pointer-events: none; background: rgba(250, 248, 240, 0.95); border: 1px solid #4A3B32; box-shadow: 0 8px 24px rgba(0,0,0,0.15); padding: 12px; border-radius: 8px; z-index: 10; width: max-content; max-width: 250px; transform: translate(-50%, -100%); transition: opacity 0.2s ease;"></div>
+        <div id="reflectionChartTooltip" style="position: absolute; opacity: 0; pointer-events: none; background: var(--glass-solid); border: 1px solid var(--glass-border); box-shadow: var(--lift-shadow-hover); padding: 12px; border-radius: var(--radius-md); z-index: 10; width: max-content; max-width: 250px; transform: translate(-50%, -100%); transition: opacity 0.2s ease;"></div>
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
-        <div style="padding: 16px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
-          <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--subtitle-color); font-weight: bold; margin-bottom: 6px;">Average Length</div>
-          <div style="font-size: 1.4rem; color: var(--dark-text); font-weight: 600;">${avgWords} <span style="font-size: 0.8rem; font-weight: normal; color: var(--subtitle-color);">words</span></div>
+        <div style="padding: 14px 16px; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
+          <div style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--subtitle-color); font-weight: 700; margin-bottom: 6px;">Average Length</div>
+          <div style="font-family: var(--article-font-family, Georgia, serif); font-size: 1.5rem; color: var(--dark-text); font-weight: 600;">${avgWords} <span style="font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 500; color: var(--subtitle-color);">words</span></div>
         </div>
-        <div style="padding: 16px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
-          <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--subtitle-color); font-weight: bold; margin-bottom: 6px;">Longest</div>
-          <div style="font-size: 1.4rem; color: var(--accent); font-weight: 600;">${maxWords} <span style="font-size: 0.8rem; font-weight: normal; color: var(--subtitle-color);">words</span></div>
+        <div style="padding: 14px 16px; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
+          <div style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--subtitle-color); font-weight: 700; margin-bottom: 6px;">Longest</div>
+          <div style="font-family: var(--article-font-family, Georgia, serif); font-size: 1.5rem; color: var(--accent); font-weight: 600;">${maxWords} <span style="font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 500; color: var(--subtitle-color);">words</span></div>
         </div>
-        <div style="padding: 16px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
-          <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--subtitle-color); font-weight: bold; margin-bottom: 6px;">Most Recent</div>
-          <div style="font-size: 1.4rem; color: var(--dark-text); font-weight: 600;">${latestWords} <span style="font-size: 0.8rem; font-weight: normal; color: var(--subtitle-color);">words</span></div>
+        <div style="padding: 14px 16px; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
+          <div style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--subtitle-color); font-weight: 700; margin-bottom: 6px;">Most Recent</div>
+          <div style="font-family: var(--article-font-family, Georgia, serif); font-size: 1.5rem; color: var(--dark-text); font-weight: 600;">${latestWords} <span style="font-family: 'Outfit', sans-serif; font-size: 0.72rem; font-weight: 500; color: var(--subtitle-color);">words</span></div>
         </div>
         ${
           trendHtml
             ? `
-        <div style="padding: 16px; background: rgba(0,0,0,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
-          <div style="font-size: 0.7rem; text-transform: uppercase; color: var(--subtitle-color); font-weight: bold; margin-bottom: 6px;">Growth Trend</div>
-          <div style="font-size: 1rem; margin-top: 8px;">${trendHtml}</div>
+        <div style="padding: 14px 16px; background: var(--glass-bg); border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
+          <div style="font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--subtitle-color); font-weight: 700; margin-bottom: 6px;">Growth Trend</div>
+          <div style="font-size: 0.95rem; margin-top: 8px;">${trendHtml}</div>
         </div>`
             : ""
         }
@@ -7929,9 +7952,38 @@ function renderReflectionTracker(viewRange = "all") {
   const innerWidth = width - padLeft - padRight;
   const innerHeight = height - padTop - padBottom;
 
+  // Resolve theme colors once — canvas can't read CSS variables itself,
+  // so the chart follows whatever theme/skin is active.
+  const themeCss = getComputedStyle(document.body);
+  const accentColor = themeCss.getPropertyValue("--accent").trim() || "#0d9488";
+  const mutedColor =
+    themeCss.getPropertyValue("--subtitle-color").trim() || "#737373";
+  const surfaceColor =
+    themeCss.getPropertyValue("--glass-solid").trim() || "#ffffff";
+
+  // Turn any resolved CSS color into rgba() at a given opacity.
+  const withAlpha = (color, a) => {
+    ctx.save();
+    ctx.fillStyle = color;
+    const norm = ctx.fillStyle;
+    ctx.restore();
+    if (norm.startsWith("#")) {
+      const r = parseInt(norm.slice(1, 3), 16);
+      const g = parseInt(norm.slice(3, 5), 16);
+      const b = parseInt(norm.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    const m = norm.match(/rgba?\(([^)]+)\)/);
+    if (m) {
+      const parts = m[1].split(",").map((s) => parseFloat(s));
+      return `rgba(${parts[0]},${parts[1]},${parts[2]},${a})`;
+    }
+    return norm;
+  };
+
   if (reflections.length === 1) {
-    ctx.fillStyle = "var(--subtitle-color)";
-    ctx.font = "14px var(--article-font-family, 'Crimson Text', serif)";
+    ctx.fillStyle = mutedColor;
+    ctx.font = "13px Outfit, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(
       "Keep going! Write more reflections to form a trend line.",
@@ -7951,20 +8003,27 @@ function renderReflectionTracker(viewRange = "all") {
     points.push({ x, y, data: r });
   });
 
+  const maxIndex = reflections.findIndex((r) => r.wordCount === maxWords);
+  const fmtDate = (d) =>
+    d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+  let hoveredIndex = -1;
   let animProgress = 0;
+
   function drawChart() {
     ctx.clearRect(0, 0, width, height);
 
-    // Axes
-    ctx.strokeStyle = "#4A3B32"; // Dark brown axis
-    ctx.lineWidth = 1;
-    ctx.beginPath();
+    // --- Grid: whisper-thin horizontal guides + soft labels ---
+    ctx.font = "10px Outfit, sans-serif";
     for (let i = 0; i <= 3; i++) {
       const y = padTop + (innerHeight / 3) * i;
+      ctx.strokeStyle = withAlpha(mutedColor, i === 3 ? 0.35 : 0.12);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
       ctx.moveTo(padLeft, y);
       ctx.lineTo(width - padRight, y);
-      ctx.fillStyle = "#4A3B32";
-      ctx.font = "10px sans-serif";
+      ctx.stroke();
+      ctx.fillStyle = withAlpha(mutedColor, 0.8);
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
       ctx.fillText(
@@ -7973,78 +8032,104 @@ function renderReflectionTracker(viewRange = "all") {
         y,
       );
     }
-    // Base axis line
-    ctx.moveTo(padLeft, padTop + innerHeight);
-    ctx.lineTo(width - padRight, padTop + innerHeight);
-    ctx.stroke();
 
-    // Draw Line & Gradient
-    const accentColor =
-      getComputedStyle(document.body).getPropertyValue("--accent").trim() ||
-      "#E07A5F"; // Terracotta fallback
-
-    ctx.beginPath();
-    ctx.moveTo(
-      points[0].x,
-      padTop +
-        innerHeight -
-        (padTop + innerHeight - points[0].y) * animProgress,
+    // --- X-axis date labels: first and last entry ---
+    ctx.fillStyle = withAlpha(mutedColor, 0.8);
+    ctx.textBaseline = "alphabetic";
+    ctx.textAlign = "left";
+    ctx.fillText(fmtDate(reflections[0].dateObj), padLeft, height - 8);
+    ctx.textAlign = "right";
+    ctx.fillText(
+      fmtDate(reflections[reflections.length - 1].dateObj),
+      width - padRight,
+      height - 8,
     );
 
+    // --- Average guide: dashed line at the mean depth ---
+    const yAvg =
+      padTop + innerHeight - (avgWords / maxWordVal) * innerHeight;
+    ctx.save();
+    ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = withAlpha(mutedColor, 0.45);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padLeft, yAvg);
+    ctx.lineTo(width - padRight, yAvg);
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = withAlpha(mutedColor, 0.75);
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+    ctx.font = "9px Outfit, sans-serif";
+    ctx.fillText("avg", width - padRight, yAvg - 3);
+    ctx.font = "10px Outfit, sans-serif";
+
+    // --- The curve, rising with the entry animation ---
+    const yAt = (p) =>
+      padTop + innerHeight - (padTop + innerHeight - p.y) * animProgress;
+
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, yAt(points[0]));
     for (let i = 1; i < points.length; i++) {
-      const currY =
-        padTop +
-        innerHeight -
-        (padTop + innerHeight - points[i].y) * animProgress;
-      const prevY =
-        padTop +
-        innerHeight -
-        (padTop + innerHeight - points[i - 1].y) * animProgress;
-
-      const cp1x = points[i - 1].x + (points[i].x - points[i - 1].x) / 2;
-      const cp1y = prevY;
-      const cp2x = points[i - 1].x + (points[i].x - points[i - 1].x) / 2;
-      const cp2y = currY;
-      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, points[i].x, currY);
+      const currY = yAt(points[i]);
+      const prevY = yAt(points[i - 1]);
+      const cpx = points[i - 1].x + (points[i].x - points[i - 1].x) / 2;
+      ctx.bezierCurveTo(cpx, prevY, cpx, currY, points[i].x, currY);
     }
-
+    ctx.save();
+    ctx.shadowColor = withAlpha(accentColor, 0.45);
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 4;
     ctx.strokeStyle = accentColor;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke();
+    ctx.restore();
 
-    // Gradient
+    // --- Area fill under the curve ---
     const gradient = ctx.createLinearGradient(0, padTop, 0, height - padBottom);
-    gradient.addColorStop(
-      0,
-      `color-mix(in srgb, ${accentColor} 30%, transparent)`,
-    );
-    gradient.addColorStop(
-      1,
-      `color-mix(in srgb, ${accentColor} 0%, transparent)`,
-    );
-
+    gradient.addColorStop(0, withAlpha(accentColor, 0.26));
+    gradient.addColorStop(1, withAlpha(accentColor, 0));
     ctx.lineTo(points[points.length - 1].x, height - padBottom);
     ctx.lineTo(points[0].x, height - padBottom);
+    ctx.closePath();
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Draw Points
-    points.forEach((p) => {
-      const currY =
-        padTop + innerHeight - (padTop + innerHeight - p.y) * animProgress;
-      ctx.beginPath();
-      ctx.arc(p.x, currY, 4, 0, Math.PI * 2);
-      ctx.fillStyle = "#FAF8F0"; // Cream
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = accentColor;
-      ctx.stroke();
-    });
+    // --- Data points (skip when the series is dense) ---
+    if (points.length <= 40) {
+      points.forEach((p, i) => {
+        const cy = yAt(p);
+        if (i === hoveredIndex) {
+          ctx.beginPath();
+          ctx.arc(p.x, cy, 9, 0, Math.PI * 2);
+          ctx.fillStyle = withAlpha(accentColor, 0.22);
+          ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, cy, i === hoveredIndex ? 5 : 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = surfaceColor;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = accentColor;
+        ctx.stroke();
+      });
+    }
+
+    // --- Crown the deepest reflection ---
+    if (maxIndex > -1 && animProgress >= 1 && maxIndex !== hoveredIndex) {
+      const mp = points[maxIndex];
+      ctx.fillStyle = accentColor;
+      ctx.font = "bold 10px Outfit, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(String(maxWords), mp.x, mp.y - 10);
+      ctx.font = "10px Outfit, sans-serif";
+    }
 
     if (animProgress < 1) {
-      animProgress += 0.05;
+      animProgress = Math.min(1, animProgress + (1 - animProgress) * 0.14 + 0.01);
       requestAnimationFrame(drawChart);
     }
   }
@@ -8052,7 +8137,6 @@ function renderReflectionTracker(viewRange = "all") {
   drawChart();
 
   // Interaction
-  let hoveredIndex = -1;
   canvas.addEventListener("mousemove", (e) => {
     const rectCanvas = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rectCanvas.left;
@@ -8069,13 +8153,14 @@ function renderReflectionTracker(viewRange = "all") {
 
     if (found !== hoveredIndex) {
       hoveredIndex = found;
+      if (animProgress >= 1) drawChart();
       if (found > -1) {
         const p = points[found];
         tooltip.innerHTML = `
-          <div style="font-size: 0.7rem; color: #4A3B32; font-weight: bold; text-transform: uppercase; margin-bottom: 2px;">${new Date(p.data.dateObj).toLocaleDateString()}</div>
-          <div style="font-size: 1rem; font-weight: bold; color: var(--accent); margin-bottom: 4px;">${p.data.wordCount} words</div>
-          <div style="font-size: 0.8rem; color: #4A3B32; white-space: normal; line-height: 1.3;">${p.data.article}</div>
-          <div style="font-size: 0.7rem; color: #6B8E23; margin-top: 6px; font-style: italic;">Click to view in timeline</div>
+          <div style="font-size: 0.68rem; color: var(--subtitle-color); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">${new Date(p.data.dateObj).toLocaleDateString()}</div>
+          <div style="font-family: var(--article-font-family, Georgia, serif); font-size: 1.05rem; font-weight: 600; color: var(--accent); margin-bottom: 4px;">${p.data.wordCount} words</div>
+          <div style="font-size: 0.8rem; color: var(--dark-text); white-space: normal; line-height: 1.3;">${p.data.article}</div>
+          <div style="font-size: 0.68rem; color: var(--subtitle-color); margin-top: 6px; font-style: italic;">Click to view in timeline</div>
         `;
         tooltip.style.left = `${p.x}px`;
         tooltip.style.top = `${p.y - 15}px`;
@@ -8090,6 +8175,7 @@ function renderReflectionTracker(viewRange = "all") {
 
   canvas.addEventListener("mouseleave", () => {
     hoveredIndex = -1;
+    if (animProgress >= 1) drawChart();
     tooltip.style.opacity = "0";
     canvas.style.cursor = "default";
   });
@@ -11253,40 +11339,58 @@ async function scheduleBackgroundReminder(timeStr) {
 // it does not touch initTheme()/toggleTheme()/applyAutoDark().
 // ============================================================
 (function () {
-  function skinOn() {
-    return localStorage.getItem("osmosis_skin") === "editorial";
+  var SKINS = ["editorial", "luxe"];
+  function currentSkin() {
+    var s = localStorage.getItem("osmosis_skin") || "";
+    return SKINS.indexOf(s) >= 0 ? s : "";
   }
-  function applyEditorialSkin(on) {
-    if (on) {
-      document.documentElement.setAttribute("data-skin", "editorial");
+  function applySkin(skin) {
+    if (skin) {
+      document.documentElement.setAttribute("data-skin", skin);
     } else {
       document.documentElement.removeAttribute("data-skin");
     }
   }
-  function setEditorialSkin(on) {
-    localStorage.setItem("osmosis_skin", on ? "editorial" : "");
-    applyEditorialSkin(on);
-    var toggle = document.getElementById("editorialToggle");
-    if (toggle) toggle.checked = on;
+  // Skins are mutually exclusive — turning one on turns the other off.
+  function setSkin(skin) {
+    localStorage.setItem("osmosis_skin", skin || "");
+    applySkin(skin);
+    var ed = document.getElementById("editorialToggle");
+    if (ed) ed.checked = skin === "editorial";
+    var lx = document.getElementById("luxeToggle");
+    if (lx) lx.checked = skin === "luxe";
   }
   // Exposed for any future caller (e.g. a command palette).
-  window.setEditorialSkin = setEditorialSkin;
+  window.setEditorialSkin = function (on) {
+    setSkin(on ? "editorial" : "");
+  };
+  window.setLuxeSkin = function (on) {
+    setSkin(on ? "luxe" : "");
+  };
 
   // Safety net — the inline <head> script already applied this
   // pre-paint, but keep the attribute in sync with storage.
-  applyEditorialSkin(skinOn());
+  applySkin(currentSkin());
 
-  function wireEditorialToggle() {
-    var toggle = document.getElementById("editorialToggle");
-    if (!toggle) return;
-    toggle.checked = skinOn();
-    toggle.addEventListener("change", function (e) {
-      setEditorialSkin(e.target.checked);
-    });
+  function wireSkinToggles() {
+    var ed = document.getElementById("editorialToggle");
+    if (ed) {
+      ed.checked = currentSkin() === "editorial";
+      ed.addEventListener("change", function (e) {
+        setSkin(e.target.checked ? "editorial" : "");
+      });
+    }
+    var lx = document.getElementById("luxeToggle");
+    if (lx) {
+      lx.checked = currentSkin() === "luxe";
+      lx.addEventListener("change", function (e) {
+        setSkin(e.target.checked ? "luxe" : "");
+      });
+    }
   }
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", wireEditorialToggle);
+    document.addEventListener("DOMContentLoaded", wireSkinToggles);
   } else {
-    wireEditorialToggle();
+    wireSkinToggles();
   }
 })();

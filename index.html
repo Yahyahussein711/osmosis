@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
@@ -120,10 +120,11 @@
       }
     </style>
     <script>
-      // Apply the Editorial ("The Quarterly") skin before first paint to avoid a flash.
+      // Apply the selected skin (Editorial or Midnight Luxe) before first paint to avoid a flash.
       try {
-        if (localStorage.getItem("osmosis_skin") === "editorial") {
-          document.documentElement.setAttribute("data-skin", "editorial");
+        var _skin = localStorage.getItem("osmosis_skin");
+        if (_skin === "editorial" || _skin === "luxe") {
+          document.documentElement.setAttribute("data-skin", _skin);
         }
       } catch (e) {}
     </script>
@@ -727,69 +728,29 @@
           </div>
         </div>
         <div class="dash-column">
-          <div
-            class="timeline-header-row"
-            style="justify-content: space-between; align-items: center"
-          >
-            <button
-              id="toggleAllTimelineBtn"
-              class="text-btn sage-btn icon-text-btn"
-              style="font-size: 0.8rem; font-weight: 600"
-            >
+          <div class="tl-toolbar">
+            <div class="tl-search">
               <svg
-                width="14"
-                height="14"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
               >
-                <polyline points="6 9 12 15 18 9"></polyline>
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-              Expand All
-            </button>
+              <input
+                type="text"
+                id="timelineSearch"
+                placeholder="Search your thoughts, highlights, and history..."
+              />
+            </div>
             <div class="zoom-controls">
               <button class="zoom-btn active" data-zoom="daily">Daily</button>
               <button class="zoom-btn" data-zoom="weekly">Weekly</button>
             </div>
-          </div>
-          <div style="margin-bottom: 12px; position: relative">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--subtitle-color)"
-              stroke-width="2"
-              style="
-                position: absolute;
-                left: 14px;
-                top: 50%;
-                transform: translateY(-50%);
-              "
-            >
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input
-              type="text"
-              id="timelineSearch"
-              placeholder="Search your thoughts, highlights, and history..."
-              style="
-                width: 100%;
-                padding: 10px 14px 10px 38px;
-                border-radius: 12px;
-                border: 1px solid var(--glass-border);
-                background: var(--glass-solid);
-                color: var(--dark-text);
-                font-family: &quot;Outfit&quot;, sans-serif;
-                font-size: 0.9rem;
-                outline: none;
-                transition:
-                  border-color 0.2s,
-                  box-shadow 0.2s;
-              "
-            />
           </div>
           <div class="timeline-filters" id="timelineFilters">
             <button class="timeline-filter-btn active" data-filter="All">
@@ -812,6 +773,9 @@
             </button>
             <button class="timeline-filter-btn" data-filter="Read">
               Read Stories
+            </button>
+            <button id="toggleAllTimelineBtn" class="tl-expand-chip">
+              Expand All
             </button>
           </div>
           <div id="journeyTimeline" class="timeline-container"></div>
@@ -853,237 +817,88 @@
         </div>
 
         <div id="genCreateFlow" style="margin-bottom: 24px;">
-          <!-- Step 1: Title -->
-          <div style="margin-bottom: 32px;">
-            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Title</h3>
-                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">Main topic or concept</p>
-              </div>
-            </div>
-            <input
-              type="text"
-              id="genTitle"
-              placeholder="e.g. The Dichotomy of Control"
-              style="
-                width: 100%;
-                padding: 12px 16px;
-                border-radius: 12px;
-                border: 1px solid var(--glass-border);
-                background: var(--glass-solid);
-                color: var(--dark-text);
-                font-family: &quot;Outfit&quot;, sans-serif;
-                font-size: 0.95rem;
-                outline: none;
-                transition: all 0.2s;
-                box-sizing: border-box;
-              "
-              onfocus="this.style.borderColor='var(--accent)'"
-              onblur="this.style.borderColor='var(--glass-border)'"
-            />
-          </div>
-
-          <!-- Step 3: Description -->
-          <div style="margin-bottom: 32px;">
-            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Summary</h3>
-                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">Hook or brief explanation</p>
-              </div>
-            </div>
-            <input
-              type="text"
-              id="genHook"
-              placeholder="e.g. A practical guide to focusing on what matters"
-              style="
-                width: 100%;
-                padding: 12px 16px;
-                border-radius: 12px;
-                border: 1px solid var(--glass-border);
-                background: var(--glass-solid);
-                color: var(--dark-text);
-                font-family: &quot;Outfit&quot;, sans-serif;
-                font-size: 0.95rem;
-                outline: none;
-                transition: all 0.2s;
-                box-sizing: border-box;
-              "
-              onfocus="this.style.borderColor='var(--accent)'"
-              onblur="this.style.borderColor='var(--glass-border)'"
-            />
-          </div>
-
-          <!-- Author -->
-          <div style="margin-bottom: 32px;">
-            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Author</h3>
-                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">Who wrote this story</p>
-              </div>
-            </div>
-            <input
-              type="text"
-              id="genAuthor"
-              placeholder="e.g. Marcus Aurelius"
-              style="
-                width: 100%;
-                padding: 12px 16px;
-                border-radius: 12px;
-                border: 1px solid var(--glass-border);
-                background: var(--glass-solid);
-                color: var(--dark-text);
-                font-family: &quot;Outfit&quot;, sans-serif;
-                font-size: 0.95rem;
-                outline: none;
-                transition: all 0.2s;
-                box-sizing: border-box;
-              "
-              onfocus="this.style.borderColor='var(--accent)'"
-              onblur="this.style.borderColor='var(--glass-border)'"
-            />
-          </div>
-
-          <!-- Genres -->
-          <div style="margin-bottom: 32px;">
-            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Genres</h3>
-                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">One or more, separated by commas</p>
-              </div>
-            </div>
-            <input
-              type="text"
-              id="genGenres"
-              placeholder="e.g. Philosophy, Essay, Stoicism"
-              style="
-                width: 100%;
-                padding: 12px 16px;
-                border-radius: 12px;
-                border: 1px solid var(--glass-border);
-                background: var(--glass-solid);
-                color: var(--dark-text);
-                font-family: &quot;Outfit&quot;, sans-serif;
-                font-size: 0.95rem;
-                outline: none;
-                transition: all 0.2s;
-                box-sizing: border-box;
-              "
-              onfocus="this.style.borderColor='var(--accent)'"
-              onblur="this.style.borderColor='var(--glass-border)'"
-            />
-          </div>
-
-          <!-- Frontispiece Image -->
-          <div style="margin-bottom: 32px;">
-            <div style="margin-bottom: 8px;">
-              <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Frontispiece Image</h3>
-              <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">An optional cover image from your device</p>
-            </div>
-            <input
-              type="file"
-              id="genImage"
-              accept="image/*"
-              style="
-                width: 100%;
-                padding: 12px 16px;
-                border-radius: 12px;
-                border: 1px solid var(--glass-border);
-                background: var(--glass-solid);
-                color: var(--dark-text);
-                font-family: &quot;Outfit&quot;, sans-serif;
-                font-size: 0.9rem;
-                outline: none;
-                box-sizing: border-box;
-                cursor: pointer;
-              "
-            />
-            <div
-              id="genImagePreview"
-              style="margin-top: 12px; display: none; align-items: center; gap: 12px;"
-            >
-              <img
-                id="genImagePreviewImg"
-                alt="Cover preview"
-                style="max-width: 120px; max-height: 120px; border-radius: 12px; border: 1px solid var(--glass-border); object-fit: cover;"
+          <div class="studio-grid">
+            <!-- The manuscript: you write directly on the sheet -->
+            <div class="studio-manuscript">
+              <input
+                type="text"
+                id="genTitle"
+                class="ms-title"
+                placeholder="Title of your story…"
+                maxlength="200"
               />
-              <button
-                type="button"
-                onclick="clearGenImage()"
-                style="background: var(--glass-solid); border: 1px solid var(--glass-border); padding: 6px 12px; cursor: pointer; color: var(--subtitle-color); font-size: 0.8rem; border-radius: 6px;"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-
-          <!-- Step 4: Content -->
-          <div style="margin-bottom: 28px;">
-            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <h3 style="margin: 0 0 4px 0; font-size: 1rem; font-weight: 600; color: var(--dark-text);">Content</h3>
-                <p style="margin: 0; font-size: 0.85rem; color: var(--subtitle-color);">Full story text (Markdown supported)</p>
+              <input
+                type="text"
+                id="genHook"
+                class="ms-hook"
+                placeholder="A one-line summary or hook…"
+              />
+              <div class="ms-rule" aria-hidden="true"></div>
+              <textarea
+                id="genContent"
+                class="ms-body"
+                placeholder="Begin writing, or paste your story here…"
+              ></textarea>
+              <div id="genContentCount" class="ms-count">
+                0 words · ~1 min read
               </div>
             </div>
-            <textarea
-              id="genContent"
-              placeholder="Paste your story content here..."
-              style="
-                width: 100%;
-                padding: 16px;
-                border-radius: 12px;
-                border: 1px solid var(--glass-border);
-                background: var(--glass-solid);
-                color: var(--dark-text);
-                font-family: &quot;Lora&quot;, serif;
-                font-size: 0.95rem;
-                outline: none;
-                transition: all 0.2s;
-                min-height: 300px;
-                resize: vertical;
-                box-sizing: border-box;
-              "
-              onfocus="this.style.borderColor='var(--accent)'"
-              onblur="this.style.borderColor='var(--glass-border)'"
-            ></textarea>
-            <div
-              id="genContentCount"
-              style="margin-top: 6px; font-size: 0.75rem; color: var(--subtitle-color); text-align: right;"
-            >
-              0 words · ~1 min read
-            </div>
+
+            <!-- The colophon: story details beside the sheet -->
+            <aside class="studio-side">
+              <div class="studio-side-label">Details</div>
+              <div class="side-field">
+                <span class="side-field-name">Author</span>
+                <input
+                  type="text"
+                  id="genAuthor"
+                  placeholder="e.g. Marcus Aurelius"
+                />
+              </div>
+              <div class="side-field">
+                <span class="side-field-name">Genres</span>
+                <input
+                  type="text"
+                  id="genGenres"
+                  placeholder="Philosophy, Essay, Stoicism"
+                />
+                <span class="side-field-hint">Separate with commas</span>
+              </div>
+              <div class="side-field">
+                <span class="side-field-name">Cover Photo</span>
+                <label class="side-upload" for="genImage">
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                  Choose a photo…
+                </label>
+                <input
+                  type="file"
+                  id="genImage"
+                  accept="image/*"
+                  style="display: none"
+                />
+                <div id="genImagePreview" style="margin-top: 12px; display: none"></div>
+              </div>
+            </aside>
           </div>
 
-          <!-- Action Buttons -->
-          <div style="display: flex; gap: 12px;">
-            <button
-              id="genSubmitBtn"
-              class="primary"
-              style="flex: 1; padding: 14px; font-size: 1rem; font-weight: 600;"
-            >
-              Save Story
-            </button>
-            <button
-              id="genEditNextBtn"
-              class="secondary"
-              style="
-                display: none;
-                flex: 1;
-                padding: 14px;
-                font-size: 1rem;
-              "
-            >
+          <!-- Action bar -->
+          <div class="studio-actions">
+            <button id="genSubmitBtn" class="primary">Save Story</button>
+            <button id="genEditNextBtn" class="secondary" style="display: none">
               Edit Next
             </button>
-            <button
-              id="genCancelEditBtn"
-              class="secondary"
-              style="
-                display: none;
-                flex: 1;
-                padding: 14px;
-                font-size: 1rem;
-              "
-            >
+            <button id="genCancelEditBtn" class="secondary" style="display: none">
               Cancel
             </button>
           </div>
@@ -1214,6 +1029,19 @@
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" id="editorialToggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Midnight Luxe</div>
+                  <div class="setting-desc">
+                    Deep charcoal & gold — a private-library look for the
+                    whole app
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="luxeToggle" />
                   <span class="toggle-slider"></span>
                 </label>
               </div>
@@ -2330,7 +2158,7 @@
             </div>
             <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Read &amp; Capture</h2>
             <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              While reading, select any text to <strong>Highlight</strong> it, attach a <strong>Note</strong>, or <strong>Bookmark</strong> your place. A highlight carrying a note gets a dotted underline — tap it anytime to read what you wrote. Use <strong>Focus mode</strong> for a distraction-free, full-screen view (tap the screen or press Esc to leave).
+              While reading, select any text to <strong>Highlight</strong> it, attach a <strong>Note</strong>, or <strong>Bookmark</strong> your place. A highlight carrying a note gets a dotted underline — tap it anytime to read what you wrote. Use <strong>Focus mode</strong> for a distraction-free, full-screen view (double-tap the screen or press Esc to leave).
             </p>
           </div>
           <!-- Slide 4 -->

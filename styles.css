@@ -2239,35 +2239,163 @@ body.multi-select-active .timeline-actions {
   transform: translateY(-2px);
 }
 
+/* ============================================================
+   TIMELINE — "The Ledger" layout
+   ------------------------------------------------------------
+   Each day is anchored by a calendar plate on the left; its
+   entries hang from a thin rail beneath the plate. Toolbar:
+   search + zoom on one line, filter chips (with Expand All)
+   on the next. Works across all themes and skins.
+   ============================================================ */
+.tl-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.tl-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.tl-search svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--subtitle-color);
+  pointer-events: none;
+}
+.tl-search input {
+  width: 100%;
+  padding: 11px 14px 11px 40px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-solid);
+  color: var(--dark-text);
+  font-family: "Outfit", sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.tl-search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.tl-expand-chip {
+  padding: 6px 14px;
+  border-radius: var(--radius-xl);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-family: "Outfit", sans-serif;
+  color: var(--accent);
+  background: transparent;
+  border: 1px dashed var(--accent);
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .timeline-container {
   position: relative;
-  padding-left: 16px;
-  border-left: 2px solid var(--glass-border);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 18px;
   padding-bottom: 18px;
   width: 100%;
   box-sizing: border-box;
   transition: opacity 0.2s ease;
 }
-.timeline-group-header {
-  font-family: "Outfit";
-  font-weight: bold;
-  font-size: 0.72rem;
-  color: var(--accent);
-  margin: 10px 0 2px -8px;
-  background: var(--cream);
-  display: inline-block;
-  padding: 2px 7px;
-  border-radius: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+
+/* ---- Day group: plate + rail ---- */
+.tl-group {
+  position: relative;
 }
-[data-theme="dark"] .timeline-group-header,
-[data-theme="midnight"] .timeline-group-header {
-  background: transparent;
-  backdrop-filter: blur(5px);
+/* the rail: drops from under the plate to the end of the group */
+.tl-group::before {
+  content: "";
+  position: absolute;
+  left: 26px;
+  top: 58px;
+  bottom: 2px;
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--accent),
+    var(--glass-border) 45%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+.timeline-group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 2px 10px 0;
+}
+.tl-plate {
+  flex-shrink: 0;
+  width: 52px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-solid);
+  text-align: center;
+  padding: 6px 2px 5px;
+  line-height: 1;
+}
+.tl-plate-top {
+  font-family: var(--article-font-family, Georgia, serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--dark-text);
+}
+.tl-plate-bottom {
+  font-family: "Outfit", sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--accent);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tl-group-label {
+  min-width: 0;
+  flex: 1;
+}
+.tl-group-title {
+  font-family: "Outfit", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--dark-text);
+  letter-spacing: 0.3px;
+}
+.tl-group-count {
+  font-size: 0.68rem;
+  color: var(--subtitle-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+.timeline-group-header .toggle-icon {
+  color: var(--subtitle-color);
+  padding: 4px;
+}
+
+/* entries hang off the rail, indented past the plate */
+.tl-group > div:last-child > div {
+  padding-left: 64px;
 }
 
 .timeline-item {
@@ -2298,7 +2426,7 @@ body.multi-select-active .timeline-actions {
 .timeline-item::before {
   content: "";
   position: absolute;
-  left: -21.5px;
+  left: -41px;
   top: 16px;
   width: 8px;
   height: 8px;
@@ -4107,8 +4235,10 @@ body.compact-mode .annotation-item {
   display: none;
 }
 
-/* ---- Palette: light editorial (warm paper) — applied to every page ---- */
-[data-skin="editorial"] .view {
+/* ---- Palette: light editorial (warm paper) — applied to every page
+   (and to the Workstation drawer, which lives outside .view) ---- */
+[data-skin="editorial"] .view,
+[data-skin="editorial"] .notes-section {
   /* Follow the app's own background so the skin matches the rest of
      the app in every theme (light + dark). */
   --ed-paper: var(--cream);
@@ -4136,7 +4266,9 @@ body.compact-mode .annotation-item {
 
 /* ---- Palette: dark editorial (night press) ---- */
 [data-theme="dark"][data-skin="editorial"] .view,
-[data-theme="midnight"][data-skin="editorial"] .view {
+[data-theme="midnight"][data-skin="editorial"] .view,
+[data-theme="dark"][data-skin="editorial"] .notes-section,
+[data-theme="midnight"][data-skin="editorial"] .notes-section {
   --ed-paper: var(--cream);
   --ed-ink: #e9e3d5;
   --ed-muted: #998d7b;
@@ -4354,4 +4486,1536 @@ html[data-skin="editorial"] {
   margin-top: 1.75rem;
 }
 /* End of editorial skin */
+
+/* ============================================================
+   PREMIUM POLISH — Timeline, Dashboard, Studio & Settings
+   ------------------------------------------------------------
+   The Library (Explore) page already feels right; this layer
+   brings the other pages up to the same standard: soft layered
+   depth, refined headers, calmer controls. Pure styling — no
+   functionality or layout logic changes. Explore and the reader
+   are deliberately NOT touched.
+   ============================================================ */
+
+/* ---- Shared depth tokens ---- */
+:root {
+  --lift-shadow:
+    0 1px 2px rgba(20, 18, 12, 0.04), 0 8px 24px rgba(20, 18, 12, 0.06);
+  --lift-shadow-hover:
+    0 2px 4px rgba(20, 18, 12, 0.05), 0 14px 36px rgba(20, 18, 12, 0.1);
+}
+[data-theme="dark"],
+[data-theme="midnight"] {
+  --lift-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 30px rgba(0, 0, 0, 0.35);
+  --lift-shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.4), 0 16px 44px rgba(0, 0, 0, 0.45);
+}
+
+/* ---- Page headers: quiet, editorial, consistent ---- */
+#dashboardView .view-header,
+#timelineView .view-header,
+#generatorView .view-header {
+  padding-bottom: 18px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--glass-border);
+}
+#dashboardView .view-header h2,
+#timelineView .view-header h2,
+#generatorView .view-header h2,
+#profileView .profile-page-title {
+  letter-spacing: -0.4px;
+}
+#dashboardView .view-header .subtitle,
+#timelineView .view-header .subtitle,
+#generatorView .view-header .subtitle {
+  margin-bottom: 0;
+  margin-top: 4px;
+  font-size: 0.92rem;
+}
+#profileView .profile-page-title {
+  padding-bottom: 18px;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* ---- Panels & cards on these pages get gentle depth ---- */
+#timelineView .glass-panel,
+#dashboardView .glass-panel,
+#generatorView .glass-panel,
+#profileView .settings-group,
+#profileView .profile-card {
+  box-shadow: var(--lift-shadow);
+}
+
+/* ---- Dashboard tiles ---- */
+.dash-tile {
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-sizing: border-box;
+  box-shadow: var(--lift-shadow);
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.dash-tile-tap {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .dash-tile-tap:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lift-shadow-hover);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--glass-border));
+  }
+}
+.dash-tile-tap:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* ---- Segmented + pill controls: soft inset track, lifted thumb ---- */
+#timelineView .zoom-controls,
+#generatorView .gen-mode-row {
+  background: color-mix(in srgb, var(--dark-text) 4%, transparent);
+  border-color: transparent;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+#timelineView .zoom-btn.active,
+#generatorView .gen-mode-btn.active {
+  background: var(--glass-solid);
+  color: var(--accent);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 3px 8px rgba(0, 0, 0, 0.08);
+}
+#timelineView .timeline-filter-btn.active {
+  box-shadow:
+    0 2px 6px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 8px 18px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* ---- Inputs: calm at rest, glowing focus ring ----
+   (manuscript fields on the Studio sheet are exempt — they are
+   borderless writing surfaces, not form wells) */
+#timelineView input[type="text"]:focus,
+#generatorView input[type="text"]:not(.ms-title):not(.ms-hook):focus,
+#generatorView textarea:not(.ms-body):focus,
+#profileView input:focus,
+#profileView textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* ---- Primary actions on these pages feel weightier ---- */
+#generatorView button.primary,
+#dashboardView button.primary,
+#profileView button.primary {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 90%, white),
+    var(--accent)
+  );
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 28%, transparent);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+@media (hover: hover) {
+  #generatorView button.primary:hover,
+  #dashboardView button.primary:hover,
+  #profileView button.primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 36%, transparent);
+  }
+}
+#generatorView button.primary:active,
+#dashboardView button.primary:active,
+#profileView button.primary:active {
+  transform: translateY(0);
+  filter: brightness(0.96);
+}
+
+/* ---- Timeline plates carry the premium depth ---- */
+#timelineView .tl-plate {
+  box-shadow: var(--lift-shadow);
+}
+
+/* Editorial skin: its warm paper already carries these pages — soften
+   the premium shadows so nothing floats above the print. */
+[data-skin="editorial"] .dash-tile,
+[data-skin="editorial"] #timelineView .glass-panel,
+[data-skin="editorial"] #dashboardView .glass-panel,
+[data-skin="editorial"] #generatorView .glass-panel,
+[data-skin="editorial"] #profileView .settings-group,
+[data-skin="editorial"] #profileView .profile-card {
+  box-shadow: none;
+}
+
+/* ============================================================
+   MIDNIGHT LUXE SKIN — "The Private Collection"
+   ------------------------------------------------------------
+   A selectable skin activated by data-skin="luxe" on <html>.
+   Not a color swap — a full design language:
+     · candle-lit charcoal room with a vignette, brass-gold foil
+     · Cormorant Garamond display serif, engraved small-caps labels
+     · crisp plaque geometry (2–6px corners) instead of soft pills
+     · framed "gallery print" photographs, fleuron ornaments
+   Tokens remap at <body> level so every surface inherits.
+   Mutually exclusive with the Editorial skin.
+   ============================================================ */
+[data-skin="luxe"] body {
+  /* Palette */
+  --luxe-bg: #131110;
+  --luxe-surface: #1b1815;
+  --luxe-surface-2: #221e19;
+  --luxe-ink: #ece4d4;
+  --luxe-muted: #a2957e;
+  --luxe-gold: #c8a45d;
+  --luxe-gold-bright: #ddbc78;
+  --luxe-gold-deep: #b8914a;
+  --luxe-rule: rgba(200, 164, 93, 0.26);
+  --luxe-rule-soft: rgba(200, 164, 93, 0.12);
+  --lx-display: "Cormorant Garamond", "Lora", Georgia, serif;
+  --lx-foil: linear-gradient(
+    104deg,
+    #9c7c3c 0%,
+    #e8d195 32%,
+    #c8a45d 52%,
+    #efdca0 74%,
+    #a98a49 100%
+  );
+
+  /* Remap the app's core tokens */
+  --cream: var(--luxe-bg);
+  --dark-text: var(--luxe-ink);
+  --subtitle-color: var(--luxe-muted);
+  --sage: var(--luxe-muted);
+  --earth: #2a251e;
+  --accent: var(--luxe-gold);
+  --accent-hover: var(--luxe-gold-bright);
+  --glass-bg: var(--luxe-surface);
+  --glass-solid: var(--luxe-surface);
+  --glass-border: var(--luxe-rule-soft);
+  --glass-shadow: none;
+  --glass-highlight: transparent;
+
+  /* Plaque geometry — luxury is crisp, not bubbly */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-pill: 4px;
+
+  /* Reading paper sheet, tuned to the luxe desk */
+  --reader-desk: #0d0c0a;
+  --reader-paper: #1b1815;
+  --reader-paper-edge: rgba(200, 164, 93, 0.16);
+  --reader-paper-line: rgba(200, 164, 93, 0.03);
+  --reader-paper-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.5), 0 14px 44px rgba(0, 0, 0, 0.55);
+
+  /* Premium depth, deepened for the dark room */
+  --lift-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.45);
+  --lift-shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.45), 0 18px 48px rgba(0, 0, 0, 0.55);
+
+  background-color: var(--luxe-bg);
+  color: var(--luxe-ink);
+}
+
+/* The room: a candle-lit vignette behind everything */
+html[data-skin="luxe"] {
+  background-color: #131110;
+  background-image: radial-gradient(
+    130% 90% at 50% -10%,
+    #1e1a14 0%,
+    #131110 48%,
+    #0c0b0a 100%
+  );
+  background-attachment: fixed;
+}
+[data-skin="luxe"] body {
+  background: transparent;
+}
+[data-skin="luxe"] .view {
+  background: transparent;
+}
+[data-skin="luxe"] ::selection {
+  background: rgba(200, 164, 93, 0.35);
+}
+[data-skin="luxe"] ::-webkit-scrollbar {
+  width: 10px;
+}
+[data-skin="luxe"] ::-webkit-scrollbar-thumb {
+  background: #2a251e;
+  border-radius: 5px;
+}
+[data-skin="luxe"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ============================================================
+   TYPOGRAPHY — engraved headlines, gold foil, small-caps labels
+   ============================================================ */
+[data-skin="luxe"] h1,
+[data-skin="luxe"] h2,
+[data-skin="luxe"] h3,
+[data-skin="luxe"] h4,
+[data-skin="luxe"] .view-title {
+  font-family: var(--lx-display);
+  letter-spacing: 0.3px;
+  font-weight: 600;
+}
+
+/* Gold-foil page titles, with a slow living sheen */
+[data-skin="luxe"] .view-header h2,
+[data-skin="luxe"] #exploreView > h2,
+[data-skin="luxe"] .profile-page-title {
+  font-size: 2.7rem;
+  line-height: 1.1;
+  font-weight: 600;
+  background: var(--lx-foil);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--luxe-gold);
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-skin="luxe"] .view-header h2,
+  [data-skin="luxe"] #exploreView > h2,
+  [data-skin="luxe"] .profile-page-title,
+  [data-skin="luxe"] .article-title {
+    animation: lx-foil-sheen 9s linear infinite;
+  }
+}
+@keyframes lx-foil-sheen {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 220% 50%;
+  }
+}
+
+/* Engraved eyebrow above each page title */
+[data-skin="luxe"] .view-header > div::before,
+[data-skin="luxe"] .profile-page-title::before {
+  display: block;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--luxe-gold);
+  -webkit-text-fill-color: var(--luxe-gold);
+  margin-bottom: 10px;
+}
+[data-skin="luxe"] #dashboardView .view-header > div::before {
+  content: "The Study";
+}
+[data-skin="luxe"] #timelineView .view-header > div::before {
+  content: "The Archive";
+}
+[data-skin="luxe"] #generatorView .view-header > div::before {
+  content: "The Atelier";
+}
+[data-skin="luxe"] .profile-page-title::before {
+  content: "The Concierge";
+}
+
+/* Page headers close with a double rule, like a ledger */
+[data-skin="luxe"] #dashboardView .view-header,
+[data-skin="luxe"] #timelineView .view-header,
+[data-skin="luxe"] #generatorView .view-header {
+  border-bottom: 4px double var(--luxe-rule);
+}
+[data-skin="luxe"] .profile-page-title {
+  padding-bottom: 18px;
+  margin-bottom: 26px;
+  border-bottom: 4px double var(--luxe-rule);
+}
+[data-skin="luxe"] .view-header .subtitle {
+  font-family: var(--lx-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  letter-spacing: 0.3px;
+}
+
+/* ============================================================
+   THE LIBRARY — masthead + gallery-plate story cards
+   ============================================================ */
+[data-skin="luxe"] #exploreView::before {
+  content: "Maison Osmosis ✦ Private Collection ✦ Est. MMXVI";
+  display: block;
+  text-align: center;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--luxe-gold);
+  border-top: 1px solid var(--luxe-rule);
+  border-bottom: 1px solid var(--luxe-rule);
+  padding: 10px 0;
+  margin-bottom: 28px;
+}
+[data-skin="luxe"] #exploreView > h2 {
+  flex-wrap: wrap;
+}
+
+/* Cards become framed gallery plates */
+[data-skin="luxe"] .glass-panel,
+[data-skin="luxe"] .category-card,
+[data-skin="luxe"] .subtopic-card,
+[data-skin="luxe"] .dash-tile,
+[data-skin="luxe"] .settings-group {
+  background: linear-gradient(
+    180deg,
+    var(--luxe-surface-2),
+    var(--luxe-surface) 60%
+  );
+  border: 1px solid var(--luxe-rule-soft);
+}
+[data-skin="luxe"] .category-card,
+[data-skin="luxe"] .subtopic-card {
+  border-radius: 6px;
+  /* inner hairline frame in the padding gutter */
+  outline: 1px solid var(--luxe-rule-soft);
+  outline-offset: -7px;
+}
+@media (hover: hover) {
+  [data-skin="luxe"] .category-card:hover,
+  [data-skin="luxe"] .subtopic-card:hover,
+  [data-skin="luxe"] .dash-tile-tap:hover {
+    border-color: var(--luxe-rule);
+    outline-color: var(--luxe-rule);
+  }
+}
+/* Retire the default gradient-border mask; it fights the frame */
+[data-skin="luxe"] .subtopic-card::before {
+  content: none;
+}
+/* Auction-catalogue lot numbers: № 01, № 02… in gold, per card */
+[data-skin="luxe"] #articlesGrid {
+  counter-reset: lot;
+}
+[data-skin="luxe"] #articlesGrid .category-card {
+  counter-increment: lot;
+}
+[data-skin="luxe"] #articlesGrid .category-card::before {
+  content: "№ " counter(lot, decimal-leading-zero);
+  position: static;
+  inset: auto;
+  display: block;
+  padding: 0;
+  background: none;
+  -webkit-mask: none;
+  mask: none;
+  opacity: 0.75;
+  text-align: right;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  color: var(--luxe-gold);
+  margin-bottom: 10px;
+  pointer-events: none;
+}
+/* A small gold fleuron closes each card */
+[data-skin="luxe"] .category-card::after {
+  content: "✦";
+  display: block;
+  position: static;
+  inset: auto;
+  opacity: 0.55;
+  text-align: center;
+  color: var(--luxe-gold);
+  font-size: 0.7rem;
+  margin-top: 14px;
+  background: none;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+[data-skin="luxe"] .category-card:hover::after {
+  opacity: 1;
+}
+/* Serif card titles, larger */
+[data-skin="luxe"] .category-card h3 {
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+/* Photographs hang as matted, framed prints */
+[data-skin="luxe"] .story-cover {
+  border-radius: 2px !important;
+  padding: 5px;
+  background: #0d0b09;
+  border: 1px solid var(--luxe-rule-soft);
+  filter: saturate(0.94) sepia(0.05);
+  box-sizing: border-box;
+}
+
+/* Genre tags become engraved plaques */
+[data-skin="luxe"] .category-card span[onclick],
+[data-skin="luxe"] #articleGenres span {
+  border-radius: 2px !important;
+  letter-spacing: 1.4px !important;
+  border-color: var(--luxe-rule-soft) !important;
+}
+
+/* Library filter selects: crisp, dark */
+[data-skin="luxe"] #exploreView select {
+  border-radius: 3px !important;
+  background-color: #171412 !important;
+}
+
+/* ============================================================
+   CONTROLS — brass plaques, engraved buttons
+   ============================================================ */
+[data-skin="luxe"] button {
+  border-radius: 3px;
+}
+[data-skin="luxe"] button.primary {
+  background: linear-gradient(
+    180deg,
+    var(--luxe-gold-bright),
+    var(--luxe-gold-deep)
+  );
+  color: #201a10;
+  font-family: "Outfit", sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 245, 220, 0.45),
+    0 6px 18px rgba(200, 164, 93, 0.22);
+}
+[data-skin="luxe"] button.secondary {
+  background: transparent;
+  color: var(--luxe-gold);
+  border: 1px solid var(--luxe-rule);
+  font-family: "Outfit", sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+}
+/* Active pills read as brass plaques — dark ink, not white */
+[data-skin="luxe"] .timeline-filter-btn,
+[data-skin="luxe"] .zoom-btn,
+[data-skin="luxe"] .gen-mode-btn {
+  border-radius: 3px;
+}
+[data-skin="luxe"] .timeline-filter-btn.active,
+[data-skin="luxe"] .zoom-btn.active,
+[data-skin="luxe"] #timelineView .zoom-btn.active,
+[data-skin="luxe"] #generatorView .gen-mode-btn.active {
+  background: linear-gradient(
+    180deg,
+    var(--luxe-gold-bright),
+    var(--luxe-gold-deep)
+  );
+  color: #201a10;
+  box-shadow: inset 0 1px 0 rgba(255, 245, 220, 0.45);
+}
+[data-skin="luxe"] .zoom-controls,
+[data-skin="luxe"] .gen-mode-row {
+  border-radius: 4px;
+  background: #100e0c;
+  border: 1px solid var(--luxe-rule-soft);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Inputs: dark wells that wake with gold */
+[data-skin="luxe"] input[type="text"],
+[data-skin="luxe"] textarea,
+[data-skin="luxe"] select {
+  background-color: #171412;
+  border-radius: 4px !important;
+}
+[data-skin="luxe"] input[type="text"]:focus,
+[data-skin="luxe"] textarea:focus {
+  border-color: var(--luxe-gold) !important;
+  box-shadow: 0 0 0 3px rgba(200, 164, 93, 0.16);
+}
+
+/* ============================================================
+   CHROME — top bar, bottom nav
+   ============================================================ */
+[data-skin="luxe"] .top-app-bar {
+  border-radius: 4px;
+  background: rgba(19, 17, 16, 0.9);
+  border: 1px solid var(--luxe-rule-soft);
+}
+[data-skin="luxe"] .bottom-nav {
+  background: rgba(14, 12, 11, 0.96);
+  border-top: 1px solid var(--luxe-rule);
+  box-shadow: 0 -1px 0 rgba(200, 164, 93, 0.06);
+}
+[data-skin="luxe"] .nav-item {
+  color: #7d7263;
+}
+[data-skin="luxe"] .nav-item .nav-label {
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  font-size: 0.56rem;
+  font-weight: 600;
+}
+[data-skin="luxe"] .nav-item.active {
+  color: var(--luxe-gold-bright);
+}
+
+/* ============================================================
+   THE READER — an illuminated manuscript
+   ============================================================ */
+/* The paper sheet gets an inner gold hairline, like a plate frame */
+[data-skin="luxe"] .article-main-col {
+  outline: 1px solid rgba(200, 164, 93, 0.1);
+  outline-offset: -12px;
+}
+[data-skin="luxe"] .article-title {
+  font-family: var(--lx-display);
+  font-size: 2.6rem;
+  background: var(--lx-foil);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--luxe-gold);
+}
+/* Gold illuminated drop cap on the first paragraph */
+[data-skin="luxe"] .article-content > p:first-of-type::first-letter {
+  font-family: var(--lx-display);
+  font-size: 3.6em;
+  line-height: 0.8;
+  float: left;
+  padding: 0.08em 0.12em 0 0;
+  color: var(--luxe-gold);
+  font-weight: 600;
+}
+/* …and the opening line whispers in small caps, manuscript-style */
+[data-skin="luxe"] .article-content > p:first-of-type::first-line {
+  font-variant: small-caps;
+  letter-spacing: 0.5px;
+}
+/* Manuscript corner brackets on the paper sheet */
+[data-skin="luxe"] .article-main-col {
+  position: relative;
+}
+[data-skin="luxe"] .article-main-col::before,
+[data-skin="luxe"] .article-main-col::after {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  opacity: 0.5;
+  pointer-events: none;
+}
+[data-skin="luxe"] .article-main-col::before {
+  top: 7px;
+  left: 7px;
+  border-top: 1px solid var(--luxe-gold);
+  border-left: 1px solid var(--luxe-gold);
+}
+[data-skin="luxe"] .article-main-col::after {
+  bottom: 7px;
+  right: 7px;
+  border-bottom: 1px solid var(--luxe-gold);
+  border-right: 1px solid var(--luxe-gold);
+}
+/* Chapter-end fleuron before the completion card */
+[data-skin="luxe"] .article-completion-section {
+  border: 1px solid var(--luxe-rule-soft);
+  background: transparent;
+}
+[data-skin="luxe"] .article-completion-section::before {
+  content: "❦";
+  display: block;
+  color: var(--luxe-gold);
+  font-size: 1.4rem;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+/* Highlights lean gold instead of yellow */
+[data-skin="luxe"] mark.highlighted-text {
+  background-color: var(--highlight-bg, rgba(200, 164, 93, 0.26));
+  border-bottom-color: var(--highlight-border, rgba(200, 164, 93, 0.6));
+}
+
+/* ============================================================
+   DETAILS — settings, tiles, section labels
+   ============================================================ */
+[data-skin="luxe"] .settings-group {
+  border-radius: 6px;
+}
+[data-skin="luxe"] .settings-group-label {
+  background: rgba(200, 164, 93, 0.05);
+  border-bottom-color: var(--luxe-rule-soft);
+  font-family: "Outfit", sans-serif;
+  letter-spacing: 3px;
+}
+[data-skin="luxe"] .dash-tile {
+  border-radius: 6px;
+}
+[data-skin="luxe"] #timelineView .dash-column > h3,
+[data-skin="luxe"] .dash-column > h3 {
+  font-family: "Outfit", sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 3px;
+  color: var(--luxe-gold);
+}
+/* Timeline: brass calendar plates on a gold-thread rail */
+[data-skin="luxe"] .tl-group::before {
+  background: linear-gradient(
+    to bottom,
+    var(--luxe-gold),
+    var(--luxe-rule-soft) 45%,
+    transparent
+  );
+}
+[data-skin="luxe"] .tl-plate {
+  border: 1px solid var(--luxe-rule);
+  background: linear-gradient(180deg, var(--luxe-surface-2), var(--luxe-surface));
+  border-radius: 3px;
+  box-shadow: inset 0 1px 0 rgba(255, 245, 220, 0.06);
+}
+[data-skin="luxe"] .tl-plate-top {
+  font-family: var(--lx-display);
+  background: var(--lx-foil);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--luxe-gold);
+}
+[data-skin="luxe"] .tl-group-title {
+  font-family: var(--lx-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+[data-skin="luxe"] .tl-group-count {
+  color: var(--luxe-gold);
+  letter-spacing: 2px;
+  font-size: 0.58rem;
+}
+[data-skin="luxe"] .tl-expand-chip {
+  border-radius: 3px;
+  border-color: var(--luxe-rule);
+  color: var(--luxe-gold);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-size: 0.68rem;
+}
+/* End of luxe skin */
+
+/* ============================================================
+   CONTENT STUDIO — "The Writing Desk"
+   ------------------------------------------------------------
+   The create form is no longer a stack of labeled inputs: you
+   write directly on a manuscript sheet (title, hook, body are
+   borderless surfaces on paper), while story details live in a
+   colophon card beside it. Two columns on desktop, stacked on
+   mobile. All ids/behavior unchanged.
+   ============================================================ */
+.studio-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 900px) {
+  .studio-grid {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    align-items: start;
+  }
+}
+
+/* ---- The manuscript sheet ---- */
+.studio-manuscript {
+  background: var(--reader-paper, var(--glass-solid));
+  border: 1px solid var(--reader-paper-edge, var(--glass-border));
+  border-radius: 4px;
+  box-shadow: var(--reader-paper-shadow, var(--lift-shadow));
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+}
+.ms-title,
+.ms-hook,
+.ms-body {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  box-sizing: border-box;
+  color: var(--dark-text);
+  border-radius: 0;
+}
+.ms-title {
+  font-family: var(--article-font-family, Georgia, serif);
+  font-size: 1.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0 0 6px;
+}
+.ms-hook {
+  font-family: var(--article-font-family, Georgia, serif);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--subtitle-color);
+  padding: 0 0 14px;
+}
+.ms-title::placeholder,
+.ms-hook::placeholder,
+.ms-body::placeholder {
+  color: var(--subtitle-color);
+  opacity: 0.45;
+}
+.ms-title:focus,
+.ms-hook:focus {
+  box-shadow: inset 0 -1px 0 var(--accent);
+}
+.ms-rule {
+  height: 1px;
+  background: var(--glass-border);
+  margin-bottom: 18px;
+}
+.ms-body {
+  font-family: var(--article-font-family, "Lora", serif);
+  font-size: 0.98rem;
+  line-height: 1.7;
+  min-height: 320px;
+  resize: vertical;
+}
+.ms-count {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--subtitle-color);
+  text-align: right;
+  letter-spacing: 0.4px;
+}
+
+/* ---- The colophon (details card) ---- */
+.studio-side {
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 18px;
+  box-shadow: var(--lift-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.studio-side-label {
+  font-family: "Outfit", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: var(--accent);
+}
+.side-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.side-field-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--subtitle-color);
+}
+.side-field input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--dark-text);
+  font-family: "Outfit", sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.side-field-hint {
+  font-size: 0.66rem;
+  color: var(--subtitle-color);
+  opacity: 0.8;
+}
+.side-upload {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  cursor: pointer;
+  color: var(--subtitle-color);
+  font-size: 0.85rem;
+  font-family: "Outfit", sans-serif;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+.side-upload:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* the drag-to-position crop editor fills the card width */
+.studio-side #genCropBox {
+  max-width: 100% !important;
+}
+
+/* ---- Action bar ---- */
+.studio-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+.studio-actions button {
+  flex: 1;
+  padding: 14px;
+  font-size: 1rem;
+}
+
+/* ---- Luxe flourishes for the desk ---- */
+[data-skin="luxe"] .studio-manuscript {
+  outline: 1px solid rgba(200, 164, 93, 0.1);
+  outline-offset: -10px;
+}
+[data-skin="luxe"] .ms-title {
+  font-family: var(--lx-display);
+  font-size: 2.2rem;
+  background: transparent;
+}
+[data-skin="luxe"] .ms-hook,
+[data-skin="luxe"] .ms-body {
+  background: transparent;
+}
+[data-skin="luxe"] .ms-title:focus,
+[data-skin="luxe"] .ms-hook:focus {
+  box-shadow: inset 0 -1px 0 var(--luxe-gold);
+}
+[data-skin="luxe"] .side-upload {
+  border-color: var(--luxe-rule);
+  color: var(--luxe-gold);
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-size: 0.7rem;
+}
+[data-skin="luxe"] .studio-side-label {
+  letter-spacing: 3px;
+}
+
+/* ============================================================
+   DASHBOARD — "The Study"
+   ------------------------------------------------------------
+   A stats ledger (open, hairline-ruled — not boxes), a Daily
+   Review feature card with a big numeral, two quiet mini-cards,
+   and the activity calendar. Rendered by renderDashboardCards.
+   ============================================================ */
+.study-ledger {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+  padding: 18px 6px;
+  gap: 4px;
+}
+.study-stat {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+.study-stat-num {
+  font-family: var(--article-font-family, Georgia, serif);
+  font-size: 2.1rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--dark-text);
+}
+.study-stat-name {
+  font-family: "Outfit", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  color: var(--subtitle-color);
+  margin-top: 8px;
+}
+.study-ledger-div {
+  width: 1px;
+  background: var(--glass-border);
+  flex-shrink: 0;
+}
+
+.study-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 640px) {
+  .study-actions {
+    grid-template-columns: 1.15fr 1fr;
+    align-items: stretch;
+  }
+}
+.study-feature {
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--lift-shadow);
+  padding: 22px 24px;
+  cursor: pointer;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.study-feature-label {
+  font-family: "Outfit", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.2px;
+  color: var(--accent);
+}
+.study-feature-num {
+  font-family: var(--article-font-family, Georgia, serif);
+  font-size: 3.2rem;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--dark-text);
+  margin-top: 10px;
+}
+.study-feature-sub {
+  font-size: 0.8rem;
+  color: var(--subtitle-color);
+  margin-top: 2px;
+}
+.study-feature-cta {
+  font-family: "Outfit", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 14px;
+}
+.study-minis {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.study-mini {
+  flex: 1;
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--lift-shadow);
+  padding: 16px 20px;
+  cursor: pointer;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.study-mini-name {
+  font-family: var(--article-font-family, Georgia, serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--dark-text);
+}
+.study-mini-desc {
+  font-size: 0.76rem;
+  color: var(--subtitle-color);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+@media (hover: hover) {
+  .study-feature:hover,
+  .study-mini:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--lift-shadow-hover);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--glass-border));
+  }
+}
+.study-feature:active,
+.study-mini:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.study-activity {
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--lift-shadow);
+  padding: 18px 20px;
+}
+.study-activity-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.study-activity-head > span:first-child {
+  font-family: "Outfit", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.2px;
+  color: var(--accent);
+}
+.study-activity-range {
+  font-size: 0.68rem;
+  color: var(--subtitle-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ---- Luxe flourishes for the Study ---- */
+[data-skin="luxe"] .study-ledger {
+  border-top: 4px double var(--luxe-rule);
+  border-bottom: 4px double var(--luxe-rule);
+}
+[data-skin="luxe"] .study-stat-num {
+  font-family: var(--lx-display);
+  background: var(--lx-foil);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--luxe-gold);
+}
+[data-skin="luxe"] .study-stat-name {
+  color: var(--luxe-gold);
+  letter-spacing: 2.2px;
+}
+[data-skin="luxe"] .study-feature,
+[data-skin="luxe"] .study-mini,
+[data-skin="luxe"] .study-activity {
+  background: linear-gradient(
+    180deg,
+    var(--luxe-surface-2),
+    var(--luxe-surface) 60%
+  );
+  border-radius: 6px;
+}
+[data-skin="luxe"] .study-feature {
+  outline: 1px solid var(--luxe-rule-soft);
+  outline-offset: -6px;
+}
+[data-skin="luxe"] .study-feature-num {
+  font-family: var(--lx-display);
+  background: var(--lx-foil);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--luxe-gold);
+}
+[data-skin="luxe"] .study-mini-name {
+  font-family: var(--lx-display);
+}
+
+/* ---- Reflection chart range toggle ---- */
+.rfx-range {
+  display: flex;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 2px;
+}
+.rfx-btn {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: "Outfit", sans-serif;
+  border: none;
+  background: transparent;
+  color: var(--subtitle-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  box-shadow: none;
+  transition: all 0.2s ease;
+}
+.rfx-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+[data-skin="luxe"] .rfx-btn.active {
+  background: linear-gradient(
+    180deg,
+    var(--luxe-gold-bright),
+    var(--luxe-gold-deep)
+  );
+  color: #201a10;
+}
+
+/* ============================================================
+   EDITORIAL REFINEMENTS — deeper print aesthetics
+   ------------------------------------------------------------
+   True magazine typesetting in the reader, the Library as a
+   printed index with rules instead of floating cards, ink-plate
+   buttons, and letterpress details across the app.
+   ============================================================ */
+/* Justified, hyphenated body text — real print typesetting */
+[data-skin="editorial"] .article-content p {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+/* The opening line whispers in small caps after the drop cap */
+[data-skin="editorial"] .article-content > p:first-of-type::first-line {
+  font-variant: small-caps;
+  letter-spacing: 0.5px;
+}
+/* Classic magazine end-slug closes the piece */
+[data-skin="editorial"] .article-content > p:last-of-type::after {
+  content: " ▪";
+  color: var(--ed-accent, var(--accent));
+  font-size: 0.85em;
+}
+
+/* The Library becomes a printed index: flat entries divided by rules */
+[data-skin="editorial"] #articlesGrid {
+  gap: 0;
+}
+[data-skin="editorial"] #articlesGrid .category-card {
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--ed-rule, var(--glass-border));
+  border-radius: 0;
+  box-shadow: none;
+  padding: 1.6rem 0.4rem;
+}
+[data-skin="editorial"] #articlesGrid .category-card:first-child {
+  border-top: 3px double var(--ed-rule, var(--glass-border));
+}
+[data-skin="editorial"] #articlesGrid .category-card::before {
+  content: none;
+}
+[data-skin="editorial"] #articlesGrid .category-card:hover {
+  transform: none;
+}
+/* Photographs print slightly warm, like good paper stock */
+[data-skin="editorial"] .story-cover {
+  border-radius: 2px !important;
+  filter: sepia(0.12) contrast(1.02) saturate(0.9);
+}
+
+/* Page headers close with double rules; subtitles set in italic serif */
+[data-skin="editorial"] #dashboardView .view-header,
+[data-skin="editorial"] #timelineView .view-header,
+[data-skin="editorial"] #generatorView .view-header {
+  border-bottom: 4px double var(--ed-rule, var(--glass-border));
+}
+[data-skin="editorial"] .profile-page-title {
+  border-bottom: 4px double var(--ed-rule, var(--glass-border));
+}
+[data-skin="editorial"] .view-header .subtitle {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+}
+
+/* Ink-plate buttons and letterpress chips */
+[data-skin="editorial"] button.primary {
+  background: var(--ed-ink, var(--dark-text));
+  color: var(--ed-paper, var(--cream));
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  box-shadow: none;
+}
+[data-skin="editorial"] button.secondary {
+  background: transparent;
+  border: 1px solid var(--ed-ink, var(--dark-text));
+  color: var(--ed-ink, var(--dark-text));
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  font-size: 0.78rem;
+}
+[data-skin="editorial"] .timeline-filter-btn,
+[data-skin="editorial"] .zoom-btn,
+[data-skin="editorial"] .gen-mode-btn,
+[data-skin="editorial"] .rfx-btn,
+[data-skin="editorial"] .tl-expand-chip {
+  border-radius: 2px;
+}
+[data-skin="editorial"] .timeline-filter-btn.active,
+[data-skin="editorial"] .zoom-btn.active,
+[data-skin="editorial"] .gen-mode-btn.active,
+[data-skin="editorial"] .rfx-btn.active {
+  background: var(--ed-ink, var(--dark-text));
+  border-color: var(--ed-ink, var(--dark-text));
+  color: var(--ed-paper, var(--cream));
+  box-shadow: none;
+}
+/* Timeline plates set like dates in a printed almanac */
+[data-skin="editorial"] .tl-plate {
+  border: 1px solid var(--ed-rule, var(--glass-border));
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none !important;
+}
+[data-skin="editorial"] .tl-group::before {
+  background: linear-gradient(
+    to bottom,
+    var(--ed-rule, var(--glass-border)),
+    transparent
+  );
+}
+
+/* ============================================================
+   WORKSTATION — the reading workspace drawer, redesigned
+   ------------------------------------------------------------
+   Token-driven so it follows every theme and skin: refined
+   panel, segmented tabs, accent-spined annotation cards, and a
+   proper manuscript feel for the Socratic prompts.
+   ============================================================ */
+.notes-section {
+  border-radius: var(--radius-xl);
+}
+.notes-section .drawer-tabs {
+  background: color-mix(in srgb, var(--dark-text) 4%, transparent);
+  border-top: 1px solid var(--glass-border);
+  box-shadow: none;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  gap: 6px;
+}
+.notes-section .drawer-tab {
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+}
+.notes-section .drawer-tab.active {
+  background: var(--glass-solid);
+  color: var(--accent);
+  border: none;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 3px 8px rgba(0, 0, 0, 0.08);
+}
+.annotation-item {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--lift-shadow);
+}
+/* the item's spine takes the accent — a bound-notebook edge */
+.annotation-item::before {
+  background: var(--accent);
+  opacity: 0.75;
+}
+.socratic-box {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-family: var(--article-font-family, Georgia, serif);
+}
+
+/* Luxe: the workstation as a private desk drawer */
+[data-skin="luxe"] .notes-section {
+  background: linear-gradient(
+    180deg,
+    var(--luxe-surface-2),
+    var(--luxe-surface) 40%
+  );
+  border: 1px solid var(--luxe-rule);
+}
+[data-skin="luxe"] .notes-section .drawer-tab {
+  border-radius: 3px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-size: 0.7rem;
+}
+[data-skin="luxe"] .notes-section .drawer-tab.active {
+  background: linear-gradient(
+    180deg,
+    var(--luxe-gold-bright),
+    var(--luxe-gold-deep)
+  );
+  color: #201a10;
+}
+[data-skin="luxe"] .annotation-item {
+  background: linear-gradient(
+    180deg,
+    var(--luxe-surface-2),
+    var(--luxe-surface) 60%
+  );
+  border-radius: 4px;
+}
+[data-skin="luxe"] .notes-section .section-header h3,
+[data-skin="luxe"] .notes-section h3.section-title-spaced {
+  letter-spacing: 3px;
+}
+
+/* Editorial: the workstation as a proof-reading desk */
+[data-skin="editorial"] .notes-section {
+  border-radius: 4px;
+}
+[data-skin="editorial"] .notes-section .drawer-tab {
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-size: 0.72rem;
+}
+[data-skin="editorial"] .notes-section .drawer-tab.active {
+  background: var(--ed-ink, var(--dark-text));
+  color: var(--ed-paper, var(--cream));
+  box-shadow: none;
+}
+[data-skin="editorial"] .annotation-item {
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+/* ============================================================
+   MOTION & MICRO-INTERACTIONS
+   ------------------------------------------------------------
+   Page entrances, dashboard cascade, press feedback, heart pop.
+   All wrapped in prefers-reduced-motion so nothing moves for
+   users who've asked it not to.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  /* Every page glides in instead of snapping */
+  .view.active {
+    animation: viewEnter 0.38s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* The Study assembles top-to-bottom */
+  .study-ledger,
+  .study-actions,
+  .study-activity {
+    animation: riseIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  .study-actions {
+    animation-delay: 0.08s;
+  }
+  .study-activity {
+    animation-delay: 0.16s;
+  }
+
+  /* Opening a story: the paper sheet settles onto the desk */
+  #articleView.active .article-main-col {
+    animation: paperRise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+@keyframes viewEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes paperRise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/* Press feedback: controls physically respond to touch */
+button.primary:active,
+button.secondary:active,
+.timeline-filter-btn:active,
+.zoom-btn:active,
+.gen-mode-btn:active,
+.rfx-btn:active,
+.drawer-tab:active,
+.tl-expand-chip:active {
+  transform: scale(0.96);
+}
+.category-card:active,
+.study-feature:active,
+.study-mini:active {
+  transform: scale(0.985);
+}
+.nav-item svg {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.nav-item:active svg {
+  transform: scale(0.85);
+}
+/* Hearts pop when tapped */
+.timeline-item button[data-fav-date] {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.timeline-item button[data-fav-date]:active {
+  transform: scale(1.35);
+}
+
+/* ============================================================
+   READING FINISH TOUCHES
+   ============================================================ */
+/* Progress bar: gradient trail with a glowing tip */
+#articleProgressBar {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 55%, transparent),
+    var(--accent)
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 0 3px 3px 0;
+}
+
+/* Selection menu dressed per skin (it lives at body level, so the
+   Luxe body remap would otherwise invert its colors) */
+[data-skin="luxe"] .floating-selection-menu {
+  background: #241f18;
+  border: 1px solid var(--luxe-rule);
+  border-radius: 3px;
+}
+[data-skin="luxe"] .floating-selection-menu::before {
+  border-bottom-color: #241f18;
+}
+[data-skin="luxe"] .fab-btn {
+  color: var(--luxe-gold-bright);
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 1.2px;
+}
+[data-skin="luxe"] .fab-btn:hover {
+  background: rgba(200, 164, 93, 0.12);
+}
+[data-skin="luxe"] .fab-divider {
+  background: rgba(200, 164, 93, 0.25);
+}
+
+[data-skin="editorial"] .floating-selection-menu {
+  background: #211d18;
+  border-radius: 2px;
+}
+[data-skin="editorial"] .floating-selection-menu::before {
+  border-bottom-color: #211d18;
+}
+[data-skin="editorial"] .fab-btn {
+  color: #f2ead8;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 1.2px;
+}
+
+/* Editorial text selection tint (Luxe already has its own) */
+[data-skin="editorial"] .view ::selection {
+  background: rgba(158, 70, 50, 0.25);
+}
+
 /* End of stylesheet */
