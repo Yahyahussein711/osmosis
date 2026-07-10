@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Outfit:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
@@ -120,13 +120,8 @@
       }
     </style>
     <script>
-      // Apply the selected skin (Editorial or Midnight Luxe) before first paint to avoid a flash.
-      try {
-        var _skin = localStorage.getItem("osmosis_skin");
-        if (_skin === "editorial" || _skin === "luxe") {
-          document.documentElement.setAttribute("data-skin", _skin);
-        }
-      } catch (e) {}
+      // Editorial ("The Quarterly") is the app's permanent design.
+      document.documentElement.setAttribute("data-skin", "editorial");
     </script>
   </head>
   <body>
@@ -256,6 +251,7 @@
           <div class="ed-mh-title">The Quarterly</div>
           <div class="ed-mh-tag">A Field Guide to the Examined Life</div>
         </div>
+        <div id="edStoryCount" class="ed-issue-count"></div>
         <h2 style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
           <span style="display: flex; align-items: center; gap: 10px">
             <svg
@@ -289,12 +285,10 @@
             style="font-size: 0.85rem; font-weight: 600; color: var(--subtitle-color); white-space: nowrap;"
           ></span>
         </h2>
-        <div
-          id="exploreStreakRow"
-          class="streak-row"
-          style="margin-bottom: 20px"
-        ></div>
-        <div style="display: flex; align-items: center; margin-bottom: 16px">
+        <div id="exploreStreakRow" class="streak-row"></div>
+        <div id="archivesSlot" class="archives-slot" style="display: none"></div>
+        <div class="ed-issue-eyebrow" aria-hidden="true">In This Issue</div>
+        <div class="issue-index-bar">
           <button
             id="continueReadingBtn"
             class="primary btn-sm"
@@ -322,15 +316,7 @@
               ></path>
             </svg>
           </button>
-          <div
-            style="
-              display: flex;
-              gap: 8px;
-              margin-left: auto;
-              flex-wrap: wrap;
-              justify-content: flex-end;
-            "
-          >
+          <div class="issue-controls">
             <select
               id="exploreFilterSelect"
               style="
@@ -353,8 +339,6 @@
               <option value="all">All Stories</option>
               <option value="unread">Unread Only</option>
               <option value="read">Read Only</option>
-              <option value="favorite">Favorited Only</option>
-              <option value="not-favorite">Not Favorited</option>
             </select>
             <select
               id="exploreSortSelect"
@@ -382,7 +366,6 @@
             </select>
           </div>
         </div>
-        <div class="ed-issue-eyebrow" aria-hidden="true">In This Issue</div>
         <div id="libraryFilterChip" style="display: none; margin-bottom: 14px"></div>
         <div id="articlesGrid" class="categories-grid"></div>
       </div>
@@ -504,29 +487,7 @@
         <div class="article-view-wrapper">
           <div class="article-main-col">
         <div class="article-header">
-          <div class="article-meta">
-            <button
-              class="text-btn icon-text-btn"
-              id="scrollToBottomBtn"
-              style="color: var(--subtitle-color); margin-left: auto"
-              title="Scroll to Bottom"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <polyline points="19 12 12 19 5 12"></polyline>
-              </svg>
-              Scroll Down
-            </button>
-          </div>
+          <div class="article-meta"></div>
           <img
             id="articleFrontispiece"
             class="story-cover"
@@ -573,30 +534,29 @@
                   Reflect
                 </button>
               </div>
-              <button
-                class="text-btn icon-text-btn"
-                id="scrollToTopBtn"
-                style="color: var(--subtitle-color); margin-top: 24px"
-                title="Scroll to Top"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <line x1="12" y1="19" x2="12" y2="5"></line>
-                  <polyline points="5 12 12 5 19 12"></polyline>
-                </svg>
-                Scroll Up
-              </button>
             </div>
           </div>
         </div>
+        <button
+          id="scrollJumpBtn"
+          class="scroll-jump-btn"
+          title="Jump to the end of the story"
+          aria-label="Jump"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <polyline points="19 12 12 19 5 12"></polyline>
+          </svg>
+        </button>
       </div>
 
       <!-- DASHBOARD VIEW -->
@@ -1016,32 +976,6 @@
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" id="compactToggle" />
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info">
-                  <div class="setting-name">Editorial Theme</div>
-                  <div class="setting-desc">
-                    “The Quarterly” — a print-magazine look for the Explore &
-                    reading views
-                  </div>
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="editorialToggle" />
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info">
-                  <div class="setting-name">Midnight Luxe</div>
-                  <div class="setting-desc">
-                    Deep charcoal & gold — a private-library look for the
-                    whole app
-                  </div>
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="luxeToggle" />
                   <span class="toggle-slider"></span>
                 </label>
               </div>
@@ -1800,7 +1734,7 @@
           height="14"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="var(--accent)"
+          stroke="currentColor"
           stroke-width="2.5"
         >
           <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
@@ -1822,17 +1756,20 @@
     >
       <div
         class="drawer-drag-handle"
-        style="margin-top: 16px; margin-bottom: 8px"
+        style="
+          margin-top: calc(10px + env(safe-area-inset-top, 0px));
+          margin-bottom: 6px;
+        "
       ></div>
 
-      <div
-        class="carousel-header"
-        style="
-          border-bottom: 1px solid var(--glass-border);
-          padding: 0 20px 12px;
-        "
-      >
+      <div class="carousel-header">
         <h3 class="section-title-spaced" style="margin: 0">Workspace</h3>
+      </div>
+
+      <!-- Section tabs live at the top, like a printed index -->
+      <div class="drawer-tabs" id="mainCarouselTabs">
+        <button class="drawer-tab active" data-step="0">Reflection</button>
+        <button class="drawer-tab" data-step="1">Notes</button>
       </div>
 
       <div
@@ -1850,102 +1787,33 @@
           "
         >
           <!-- Slide 1: Reflection -->
-          <div
-            class="carousel-slide"
-            style="
-              flex: 0 0 100%;
-              width: 100%;
-              height: 100%;
-              padding: 20px;
-              overflow-y: auto;
-              overscroll-behavior: none;
-            "
-          >
-            <div class="section-header">
-              <h3>Deep Reflection</h3>
-              <button class="text-btn accent-btn" id="socraticBtn">
-                Inspire Me
-              </button>
+          <div class="carousel-slide ws-slide">
+            <div class="ws-lead">
+              <button class="ws-inspire" id="socraticBtn">✦ Inspire me</button>
             </div>
-            <div id="socraticPromptsBox" class="glass-panel socratic-box"></div>
+            <div id="socraticPromptsBox" class="socratic-box"></div>
 
-            <p
-              style="
-                color: var(--subtitle-color);
-                font-size: 0.95rem;
-                margin-bottom: 12px;
-              "
-            >
-              Synthesize this concept in your own words. Write down your raw
-              thoughts or arguments.
-            </p>
-            <textarea
-              id="reflectionInput"
-              class="reflection-input"
-              placeholder="Draft your insights here..."
-              style="min-height: 140px"
-            ></textarea>
-
-            <div
-              style="
-                display: flex;
-                gap: 8px;
-                justify-content: space-between;
-                align-items: center;
-                margin-top: 12px;
-              "
-            >
-              <div style="display: flex; gap: 8px">
-                <button
-                  class="icon-btn-small"
-                  id="undoRefBtn"
-                  title="Undo"
-                  style="
-                    background: var(--glass-solid);
-                    border: 1px solid var(--glass-border);
-                    border-radius: 8px;
-                    width: 32px;
-                    height: 32px;
-                  "
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M3 7v6h6"></path>
-                    <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-                  </svg>
-                </button>
-                <button
-                  class="icon-btn-small"
-                  id="redoRefBtn"
-                  title="Redo"
-                  style="
-                    background: var(--glass-solid);
-                    border: 1px solid var(--glass-border);
-                    border-radius: 8px;
-                    width: 32px;
-                    height: 32px;
-                  "
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path d="M21 7v6h-6"></path>
-                    <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
-                  </svg>
-                </button>
-              </div>
-              <div style="display: flex; gap: 8px">
+            <div class="ws-sheet">
+              <textarea
+                id="reflectionInput"
+                class="reflection-input ws-paper-input"
+                placeholder="Synthesize this story in your own words…"
+              ></textarea>
+              <div class="ws-toolbar">
+                <div class="ws-undo-redo">
+                  <button class="icon-btn-small ws-tool" id="undoRefBtn" title="Undo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M3 7v6h6"></path>
+                      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+                    </svg>
+                  </button>
+                  <button class="icon-btn-small ws-tool" id="redoRefBtn" title="Redo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 7v6h-6"></path>
+                      <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+                    </svg>
+                  </button>
+                </div>
                 <button class="primary btn-sm" id="saveReflectionBtn">
                   Save Reflection
                 </button>
@@ -1956,66 +1824,34 @@
           </div>
 
           <!-- Slide 2: Notes -->
-          <div
-            class="carousel-slide"
-            style="
-              flex: 0 0 100%;
-              width: 100%;
-              height: 100%;
-              padding: 20px;
-              overflow-y: auto;
-              overscroll-behavior: none;
-            "
-          >
-            <div class="section-header">
-              <h3>Knowledge Extraction</h3>
-            </div>
-            <p
-              style="
-                color: var(--subtitle-color);
-                font-size: 0.95rem;
-                margin-bottom: 12px;
-              "
-              id="selectedTextPreview"
-            >
-              Select text in the article, then type a note below.
+          <div class="carousel-slide ws-slide">
+            <p class="ws-hint" id="selectedTextPreview">
+              Select text in the story, then type a note below.
             </p>
 
-            <div
-              style="
-                flex-grow: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-              "
-            >
-                <textarea
-                  id="annotationInput"
-                  class="reflection-input"
-                  style="min-height: 100px; padding: 16px; border-radius: 16px"
-                  placeholder="Add a note..."
-                ></textarea>
-                <div style="display: flex; justify-content: flex-end">
-                  <button class="primary btn-sm" id="addAnnotationBtn">
-                    Save Note
-                  </button>
-                </div>
+            <div class="ws-sheet">
+              <textarea
+                id="annotationInput"
+                class="reflection-input ws-paper-input"
+                style="min-height: 90px"
+                placeholder="Add a note…"
+              ></textarea>
+              <div class="ws-toolbar">
+                <span></span>
+                <button class="primary btn-sm" id="addAnnotationBtn">
+                  Save Note
+                </button>
+              </div>
             </div>
 
-            <div style="margin-bottom: 12px; position: relative">
+            <div class="ws-search">
               <svg
-                width="16"
-                height="16"
+                width="15"
+                height="15"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="var(--subtitle-color)"
+                stroke="currentColor"
                 stroke-width="2"
-                style="
-                  position: absolute;
-                  left: 14px;
-                  top: 50%;
-                  transform: translateY(-50%);
-                "
               >
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -2023,33 +1859,13 @@
               <input
                 type="text"
                 id="notesSearch"
-                placeholder="Search annotations..."
-                style="
-                  width: 100%;
-                  padding: 10px 14px 10px 38px;
-                  border-radius: 12px;
-                  border: 1px solid var(--glass-border);
-                  background: var(--glass-solid);
-                  color: var(--dark-text);
-                  font-family: &quot;Outfit&quot;, sans-serif;
-                  font-size: 0.9rem;
-                  outline: none;
-                  transition:
-                    border-color 0.2s,
-                    box-shadow 0.2s;
-                "
+                placeholder="Search your notes & highlights…"
               />
             </div>
 
             <div id="annotationsList"></div>
           </div>
         </div>
-      </div>
-
-      <!-- Navigation Buttons at the bottom -->
-      <div class="drawer-tabs" id="mainCarouselTabs">
-        <button class="drawer-tab active" data-step="0">Reflection</button>
-        <button class="drawer-tab" data-step="1">Notes</button>
       </div>
     </div>
 

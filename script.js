@@ -193,9 +193,11 @@ function closeDashboardDetail() {
 }
 
 // ============================================================
-// SPACED-REPETITION DAILY REVIEW
-// Resurfaces highlights/notes on a schedule using the per-annotation `srs`
-// field so you actually remember what you read (active recall).
+// DAILY REVIEW — true active recall
+// Each due highlight is shown as a cloze: its key words are
+// blanked out and you try to retrieve them BEFORE revealing.
+// Rating buttons show exactly when the card will return, using
+// an SM-2-style scheduler stored per annotation in `srs`.
 // ============================================================
 function getDueReviewItems() {
   const now = Date.now();
@@ -215,47 +217,83 @@ function getDueReviewItems() {
       if (!ann || !ann.text) return;
       if (ann.note === "Bookmarked") return; // bookmarks aren't review cards
       const next = ann.srs && ann.srs.nextReview ? ann.srs.nextReview : 0;
-      if (next <= now) items.push({ key, idx, ann });
+      if (next <= now) items.push({ key, idx, ann, due: next });
     });
   }
+  // Longest-overdue first, so nothing rots at the back of the deck
+  items.sort((a, b) => a.due - b.due);
   return items;
 }
 
-// Lightweight SM-2-style scheduler. quality: 0 = Again, 1 = Good, 2 = Easy.
+// SM-2-style scheduler. quality: 0 = Again, 1 = Good, 2 = Easy.
+const REVIEW_DAY = 24 * 60 * 60 * 1000;
+function nextIntervalMs(ann, quality) {
+  const srs = ann.srs || { interval: 0, ease: 2.5 };
+  if (quality === 0) return 10 * 60 * 1000; // relearn in 10 minutes
+  if (!srs.interval || srs.interval < 1)
+    return (quality === 2 ? 4 : 1) * REVIEW_DAY;
+  const days = Math.max(
+    1,
+    Math.round(srs.interval * (srs.ease || 2.5) * (quality === 2 ? 1.3 : 1)),
+  );
+  return days * REVIEW_DAY;
+}
+function humanInterval(ms) {
+  if (ms < 60 * 60 * 1000) return Math.round(ms / 60000) + " min";
+  const d = Math.round(ms / REVIEW_DAY);
+  return d + (d === 1 ? " day" : " days");
+}
 function scheduleReviewItem(ann, quality) {
   const srs = ann.srs || { interval: 0, ease: 2.5, nextReview: 0 };
-  const DAY = 24 * 60 * 60 * 1000;
+  const ms = nextIntervalMs(ann, quality);
   if (quality === 0) {
     srs.interval = 0;
     srs.ease = Math.max(1.3, (srs.ease || 2.5) - 0.2);
-    srs.nextReview = Date.now() + 10 * 60 * 1000; // see again in 10 minutes
   } else {
-    if (!srs.interval || srs.interval < 1) {
-      srs.interval = quality === 2 ? 4 : 1;
-    } else {
-      srs.interval = Math.max(
-        1,
-        Math.round(srs.interval * (srs.ease || 2.5) * (quality === 2 ? 1.3 : 1)),
-      );
-    }
+    srs.interval = Math.round(ms / REVIEW_DAY);
     srs.ease = Math.max(1.3, (srs.ease || 2.5) + (quality === 2 ? 0.15 : 0));
-    srs.nextReview = Date.now() + srs.interval * DAY;
   }
+  srs.nextReview = Date.now() + ms;
   ann.srs = srs;
+}
+
+// Blank out the informative words of a passage so there is something
+// to actually retrieve. Deterministic: longest content words first.
+function buildReviewCloze(text) {
+  const words = text.split(/\s+/);
+  if (words.length < 5) return null; // too short to cloze meaningfully
+  const candidates = words
+    .map((w, i) => ({ core: w.replace(/[^A-Za-z0-9À-ɏ'’-]/g, ""), i }))
+    .filter((o) => o.core.length >= 5);
+  if (!candidates.length) return null;
+  const count = Math.max(1, Math.min(8, Math.round(words.length * 0.3)));
+  const hidden = new Set(
+    candidates
+      .sort((a, b) => b.core.length - a.core.length)
+      .slice(0, count)
+      .map((o) => o.i),
+  );
+  return words
+    .map((w, i) =>
+      hidden.has(i)
+        ? `<span class="rv-blank" style="width:${Math.min(9, Math.max(3, w.length)) * 0.55}em"></span>`
+        : w,
+    )
+    .join(" ");
 }
 
 let reviewQueue = [];
 let reviewIndex = 0;
+const REVIEW_SESSION_CAP = 12;
 
 function openReviewSession() {
-  reviewQueue = getDueReviewItems();
+  reviewQueue = getDueReviewItems().slice(0, REVIEW_SESSION_CAP);
   reviewIndex = 0;
   let overlay = document.getElementById("reviewOverlay");
   if (!overlay) {
     overlay = document.createElement("div");
     overlay.id = "reviewOverlay";
-    overlay.style.cssText =
-      "position: fixed; inset: 0; background: var(--glass-solid); z-index: 12000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;";
+    overlay.className = "rv-overlay";
     document.body.appendChild(overlay);
   }
   overlay.style.display = "flex";
@@ -274,12 +312,23 @@ function renderReviewCard() {
 
   if (reviewIndex >= reviewQueue.length) {
     const did = reviewQueue.length;
+    const stillDue = getDueReviewItems().length;
     overlay.innerHTML = `
-      <div style="text-align:center; max-width:440px;">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" style="margin-bottom:16px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-        <h2 style="margin-bottom:8px;">${did ? "Review complete" : "Nothing to review"}</h2>
-        <p style="color:var(--subtitle-color); margin-bottom:24px;">${did ? `You reviewed ${did} highlight${did === 1 ? "" : "s"}. They'll resurface when they're due again.` : "Highlight and note things as you read — they'll show up here to review over time."}</p>
-        <button onclick="closeReviewSession()" class="primary">Done</button>
+      <div class="rv-end">
+        <div class="rv-fleuron">❦</div>
+        <h2>${did ? "Review complete" : "Nothing due today"}</h2>
+        <p>${
+          did
+            ? `${did} passage${did === 1 ? "" : "s"} revisited.` +
+              (stillDue
+                ? ` ${stillDue} more ${stillDue === 1 ? "is" : "are"} waiting if you want to continue.`
+                : " Each one will return right before you'd forget it.")
+            : "Highlight and note passages as you read — they'll surface here for recall at widening intervals."
+        }</p>
+        <div class="rv-end-actions">
+          ${stillDue && did ? `<button onclick="openReviewSession()" class="secondary">Keep going</button>` : ""}
+          <button onclick="closeReviewSession()" class="primary">Done</button>
+        </div>
       </div>`;
     return;
   }
@@ -287,32 +336,50 @@ function renderReviewCard() {
   const { ann } = reviewQueue[reviewIndex];
   const hasNote =
     ann.note && ann.note !== "Highlighted" && ann.note !== "Bookmarked";
+  const cloze = buildReviewCloze(ann.text);
+  const pct = Math.round((reviewIndex / reviewQueue.length) * 100);
+
+  const front = cloze
+    ? `<div class="rv-passage">“${cloze}”</div>
+       <div class="rv-task">Fill the gaps from memory, then reveal.</div>`
+    : `<div class="rv-passage rv-teaser">“${ann.text.split(/\s+/).slice(0, 2).join(" ")} …”</div>
+       <div class="rv-task">Recall the rest of this highlight, then reveal.</div>`;
+
   overlay.innerHTML = `
-    <button onclick="closeReviewSession()" style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:1.6rem; cursor:pointer; color:var(--subtitle-color);">×</button>
-    <div style="position:absolute; top:24px; left:24px; font-size:0.8rem; color:var(--subtitle-color); font-weight:600;">${reviewIndex + 1} / ${reviewQueue.length}</div>
-    <div style="max-width:560px; width:100%; text-align:center;">
-      <div style="font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; color:var(--accent); font-weight:700; margin-bottom:18px;">${ann.article || "Highlight"}</div>
-      <div style="font-family:var(--article-font-family, Georgia, serif); font-size:1.4rem; line-height:1.6; color:var(--dark-text); margin-bottom:24px;">"${ann.text}"</div>
-      <div id="reviewNoteBlock" style="display:none; font-size:1rem; line-height:1.5; color:var(--subtitle-color); border-top:1px solid var(--glass-border); padding-top:18px; margin-bottom:24px;">${hasNote ? ann.note : ""}</div>
-      <div id="reviewRevealRow">
-        <button onclick="revealReviewCard()" class="primary" style="padding:12px 28px;">${hasNote ? "Show note" : "I recalled it"}</button>
+    <div class="rv-top">
+      <span class="rv-count">Daily Review · ${reviewIndex + 1} of ${reviewQueue.length}</span>
+      <button onclick="closeReviewSession()" class="rv-close" aria-label="Close">×</button>
+    </div>
+    <div class="rv-progress"><div style="width:${pct}%"></div></div>
+    <div class="rv-card">
+      <div class="rv-eyebrow">${ann.article || "Highlight"}</div>
+      ${front}
+      <div id="reviewRevealRow" class="rv-reveal-row">
+        <button onclick="revealReviewCard()" class="primary">Reveal</button>
       </div>
-      <div id="reviewRateRow" style="display:none; gap:10px; justify-content:center;">
-        <button onclick="rateReviewCard(0)" class="secondary btn-sm" style="padding:10px 16px;">Again</button>
-        <button onclick="rateReviewCard(1)" class="secondary btn-sm" style="padding:10px 16px;">Good</button>
-        <button onclick="rateReviewCard(2)" class="primary btn-sm" style="padding:10px 16px;">Easy</button>
+      <div id="reviewAnswer" class="rv-answer" style="display:none;">
+        <div class="rv-passage">“${ann.text}”</div>
+        ${hasNote ? `<div class="rv-note"><span>Your note</span>${ann.note}</div>` : ""}
+        <div class="rv-rate-row">
+          <button onclick="rateReviewCard(0)" class="rv-rate rv-again">Again<small>${humanInterval(nextIntervalMs(ann, 0))}</small></button>
+          <button onclick="rateReviewCard(1)" class="rv-rate rv-good">Good<small>${humanInterval(nextIntervalMs(ann, 1))}</small></button>
+          <button onclick="rateReviewCard(2)" class="rv-rate rv-easy">Easy<small>${humanInterval(nextIntervalMs(ann, 2))}</small></button>
+        </div>
       </div>
     </div>`;
 }
 
 function revealReviewCard() {
-  const noteBlock = document.getElementById("reviewNoteBlock");
-  if (noteBlock && noteBlock.textContent.trim())
-    noteBlock.style.display = "block";
+  const overlay = document.getElementById("reviewOverlay");
+  if (!overlay) return;
+  const front = overlay.querySelector(".rv-card > .rv-passage");
+  const task = overlay.querySelector(".rv-task");
+  if (front) front.style.display = "none";
+  if (task) task.style.display = "none";
   const revealRow = document.getElementById("reviewRevealRow");
-  const rateRow = document.getElementById("reviewRateRow");
   if (revealRow) revealRow.style.display = "none";
-  if (rateRow) rateRow.style.display = "flex";
+  const answer = document.getElementById("reviewAnswer");
+  if (answer) answer.style.display = "block";
 }
 
 function rateReviewCard(quality) {
@@ -1480,6 +1547,9 @@ function saveReaderPrefs() {
 // ============================================================
 function openNotesDrawer(targetStep = 0) {
   document.body.classList.add("drawer-active");
+  // Lock the document scroller so its scrollbar vanishes — otherwise it
+  // leaves a gap strip beside the full-page sheet on desktop.
+  document.documentElement.style.overflow = "hidden";
   const notesDrawer = document.getElementById("notesSection");
   const notesBackdrop = document.getElementById("notesBackdrop");
   const fMenu = document.getElementById("floatingSelectionMenu");
@@ -1492,7 +1562,7 @@ function openNotesDrawer(targetStep = 0) {
       const closeBtn = document.createElement("button");
       closeBtn.className = "close-drawer-btn icon-btn-small";
       closeBtn.style.cssText =
-        "position: absolute; top: 14px; right: 16px; z-index: 1000; padding: 4px; background: transparent; border: none; cursor: pointer; color: var(--subtitle-color);";
+        "position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 16px; z-index: 1000; padding: 8px; background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: 50%; cursor: pointer; color: var(--subtitle-color); display: flex; align-items: center; justify-content: center;";
       closeBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
       closeBtn.addEventListener("click", closeNotesDrawer);
       notesDrawer.appendChild(closeBtn);
@@ -1522,6 +1592,8 @@ function closeNotesDrawer(isFromHistory) {
   const fromHistory = isFromHistory === true;
 
   document.body.classList.remove("drawer-active");
+  // Restore the document scroller locked in openNotesDrawer()
+  document.documentElement.style.overflow = "";
   const notesDrawer = document.getElementById("notesSection");
   const notesBackdrop = document.getElementById("notesBackdrop");
 
@@ -2321,7 +2393,7 @@ function setupEvents() {
             }
 
             // Visually pull the drawer down alongside the finger (with 0.6x resistance)
-            nDrawer.style.transform = `translate(-50%, calc(-50% + ${deltaY * 0.6}px)) scale(1)`;
+            nDrawer.style.transform = `translateY(${Math.max(0, deltaY * 0.6)}px)`;
             nDrawer.style.transition = "none";
             if (nBackdrop) {
               nBackdrop.style.opacity = Math.max(0, 1 - deltaY / 250);
@@ -2376,6 +2448,50 @@ function setupEvents() {
 
       nDrawer.addEventListener("touchend", resetDrawer);
       nDrawer.addEventListener("touchcancel", resetDrawer);
+
+      // Dedicated pull-to-close on the handle and header: always works,
+      // regardless of where the inner lists are scrolled to.
+      let zoneStartY = -1;
+      let zoneCurY = 0;
+      nDrawer
+        .querySelectorAll(".drawer-drag-handle, .carousel-header")
+        .forEach((zone) => {
+          zone.addEventListener(
+            "touchstart",
+            (e) => {
+              e.stopPropagation();
+              zoneStartY = e.touches[0].clientY;
+              zoneCurY = zoneStartY;
+            },
+            { passive: true },
+          );
+          zone.addEventListener(
+            "touchmove",
+            (e) => {
+              if (zoneStartY === -1) return;
+              e.stopPropagation();
+              zoneCurY = e.touches[0].clientY;
+              const dy = zoneCurY - zoneStartY;
+              if (dy > 0) {
+                if (e.cancelable) e.preventDefault();
+                nDrawer.style.transform = `translateY(${dy * 0.85}px)`;
+                nDrawer.style.transition = "none";
+              }
+            },
+            { passive: false },
+          );
+          const zoneEnd = (e) => {
+            if (zoneStartY === -1) return;
+            e.stopPropagation();
+            const dy = zoneCurY - zoneStartY;
+            nDrawer.style.transform = "";
+            nDrawer.style.transition = "";
+            if (dy > 70) closeNotesDrawer();
+            zoneStartY = -1;
+          };
+          zone.addEventListener("touchend", zoneEnd);
+          zone.addEventListener("touchcancel", zoneEnd);
+        });
     }
 
     if (nBackdrop) {
@@ -2783,10 +2899,19 @@ function setupEvents() {
     listenBtn.addEventListener("click", toggleTTS);
   }
 
-  const scrollToBottomBtn = document.getElementById("scrollToBottomBtn");
-  if (scrollToBottomBtn) {
-    scrollToBottomBtn.addEventListener("click", () => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  // Floating jump button: points down at the start of a story, flips to
+  // point up once you're most of the way through.
+  const scrollJumpBtn = document.getElementById("scrollJumpBtn");
+  if (scrollJumpBtn) {
+    scrollJumpBtn.addEventListener("click", () => {
+      if (scrollJumpBtn.classList.contains("up")) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: "smooth",
+        });
+      }
     });
   }
 
@@ -2993,21 +3118,16 @@ function setupEvents() {
       return;
     }
     const prompts = [
-      "How would you explain the main idea of this article to a 10-year-old?",
-      "What is the single most important lesson you can take away from this?",
-      "If you had to summarize this entire concept in just one sentence, what would it be?",
-      "How does this idea connect to something you already know or experienced recently?",
-      "What surprised you the most about this topic?",
-      "How could you apply this concept to your daily life or work right now?",
-      "What is the strongest argument against the ideas presented here?",
-      "If you were teaching this topic to a friend, what example or metaphor would you use?",
-      "What questions do you still have after reading this? What wasn't fully explained?",
-      "How does this change the way you think about the world?",
-      "Imagine you read this 5 years ago. How would it have changed your decisions?",
-      "What part of this article was the hardest to understand, and how would you simplify it?",
-      "What are the key assumptions the author is making here? Do you agree with them?",
-      "Describe a real-world problem that this concept could help solve.",
-      "If this concept were a physical tool, what would it look like and what would it do?",
+      "What did this story make you feel — and where do you think that feeling actually comes from?",
+      "Which sentence or moment are you still carrying with you? Why that one?",
+      "What would you have done in the main character's or author's place — honestly?",
+      "What belief of yours did this quietly confirm or challenge? Would you have admitted that yesterday?",
+      "Who in your life needs to hear this idea, and what would you tell them in two sentences?",
+      "What does this story understand about people that most people don't?",
+      "Where have you seen this exact pattern play out in your own life?",
+      "If you stripped away the plot, what is this story really about — in one word? Now defend that word.",
+      "What would the author say about the way you live your days?",
+      "What will you do differently this week because you read this — concretely, not vaguely?",
     ];
     const selected = prompts.sort(() => 0.5 - Math.random()).slice(0, 2);
     box.innerHTML = `<ul style="margin-left:20px;line-height:1.6;"><li>${selected[0]}</li><li style="margin-top:8px;">${selected[1]}</li></ul>`;
@@ -4290,10 +4410,43 @@ function renderArticleGrid() {
       ),
     ).length;
     const noun = allArticles.length === 1 ? " story" : " stories";
-    countEl.textContent =
+    const countText =
       allArticles.length +
       noun +
       (allArticles.length ? ` · ${readCount} read` : "");
+    countEl.textContent = countText;
+    // Editorial hides the Library h2 (the masthead replaces it), so the
+    // same tally also prints on its own collation line there.
+    const edCountEl = document.getElementById("edStoryCount");
+    if (edCountEl) edCountEl.textContent = countText;
+  }
+
+  // "From the Archives" — one unread story resurfaces each day
+  // (deterministic: same pick all day, new pick tomorrow).
+  const archivesSlot = document.getElementById("archivesSlot");
+  if (archivesSlot) {
+    const unread = allArticles.filter(
+      (it) =>
+        !(userLearningJourney.topics[it.domain]?.readArticles || []).includes(
+          it.article,
+        ),
+    );
+    if (!unread.length) {
+      archivesSlot.style.display = "none";
+      archivesSlot.onclick = null;
+    } else {
+      const day = Math.floor(Date.now() / 86400000);
+      const pick = unread[day % unread.length];
+      archivesSlot.innerHTML = `
+        <div class="archives-label">From the Archives</div>
+        <div class="archives-title">${pick.article}</div>
+        <div class="archives-meta">${pick.author ? `${pick.author} · ` : ""}${pick.readTime} min read</div>`;
+      archivesSlot.style.display = "block";
+      archivesSlot.onclick = () => {
+        currentState.mode = "explore";
+        navigateToArticle(pick.domain, pick.subtopic, pick.article);
+      };
+    }
   }
 
   let displayArticles = allArticles;
@@ -4309,14 +4462,6 @@ function renderArticleGrid() {
         !(userLearningJourney.topics[item.domain]?.readArticles || []).includes(
           item.article,
         ),
-    );
-  } else if (currentExploreFilter === "favorite") {
-    displayArticles = displayArticles.filter((item) =>
-      isFavoriteArticle(item.domain, item.article),
-    );
-  } else if (currentExploreFilter === "not-favorite") {
-    displayArticles = displayArticles.filter((item) =>
-      !isFavoriteArticle(item.domain, item.article),
     );
   }
 
@@ -4428,7 +4573,7 @@ function renderArticleGrid() {
       ? `<img ${item.image.startsWith("data:") ? `src="${item.image}"` : `data-img-ref="${item.image}"`} alt="" class="story-cover" style="width:100%; aspect-ratio:4/3; object-fit:cover; object-position:${item.imagePos || "50% 50%"}; border-radius:10px; margin-bottom:14px; display:block;" />`
       : "";
     const authorHTML = item.author
-      ? `<p onclick="event.stopPropagation(); filterByAuthor('${escJsAttr(item.author)}')" title="See all by ${item.author}" style="font-size:0.8rem; color:var(--subtitle-color); margin:4px 0 0; font-style:italic; cursor:pointer;">by ${item.author}</p>`
+      ? `<div style="margin-top:8px;"><span onclick="event.stopPropagation(); filterByAuthor('${escJsAttr(item.author)}')" title="See all by ${item.author}" style="font-size:0.6rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); border:1px solid var(--glass-border); padding:2px 8px; border-radius:999px; cursor:pointer; display:inline-block;">${item.author}</span></div>`
       : "";
     const genresHTML =
       item.genres && item.genres.length
@@ -4534,7 +4679,7 @@ function loadArticleView(options = {}) {
   if (authorEl) {
     if (article.author) {
       const auth = article.author;
-      authorEl.innerHTML = `by <span style="cursor:pointer; text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:2px;" onclick="filterByAuthor('${escJsAttr(auth)}')">${auth}</span>`;
+      authorEl.innerHTML = `<span onclick="filterByAuthor('${escJsAttr(auth)}')" title="See all by ${auth}" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); border:1px solid var(--glass-border); padding:3px 10px; border-radius:999px; cursor:pointer; display:inline-block; font-style:normal;">${auth}</span>`;
       authorEl.style.display = "block";
     } else {
       authorEl.style.display = "none";
@@ -4765,13 +4910,6 @@ function renderArticleContent(options = {}) {
             <button id="markReadBtn" class="primary">${btnText}</button>
             <button id="reflectFinishedBtn" class="secondary">Reflect</button>
           </div>
-          <button class="text-btn icon-text-btn" id="scrollToTopBtn" style="color: var(--subtitle-color); margin-top: 24px;" title="Scroll to Top">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="19" x2="12" y2="5"></line>
-              <polyline points="5 12 12 5 19 12"></polyline>
-            </svg>
-            Scroll Up
-          </button>
     `;
 
     const readList =
@@ -4782,11 +4920,6 @@ function renderArticleContent(options = {}) {
     const reflectFinishedBtn = document.getElementById("reflectFinishedBtn");
     if (reflectFinishedBtn) {
       reflectFinishedBtn.onclick = () => openNotesDrawer(0);
-    }
-    const scrollToTopBtn = document.getElementById("scrollToTopBtn");
-    if (scrollToTopBtn) {
-      scrollToTopBtn.onclick = () =>
-        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     const updateBtnUI = () => {
@@ -4859,6 +4992,7 @@ function spawnCompletionExplosion() {
   showToast("Article Conquered! Knowledge Synthesized.");
 }
 
+let _lastReadScrollY = 0;
 document.addEventListener("scroll", () => {
   const articleEl = document.getElementById("articleContent");
   if (!articleEl || currentState.view !== "article") return;
@@ -4873,6 +5007,19 @@ document.addEventListener("scroll", () => {
   const pct =
     total > 0 ? Math.min(100, Math.max(0, (scrolled / total) * 100)) : 0;
   document.getElementById("articleProgressBar").style.width = pct + "%";
+
+  // Floating jump button: appears only while scrolling up (reading down
+  // keeps the page clean), and flips upward once well into the story.
+  const jumpBtn = document.getElementById("scrollJumpBtn");
+  if (jumpBtn) {
+    jumpBtn.classList.toggle("up", pct > 60);
+    const y = window.scrollY;
+    const scrollingUp = y < _lastReadScrollY - 2;
+    const scrollingDown = y > _lastReadScrollY + 2;
+    if (scrollingUp && y > 200) jumpBtn.classList.add("visible");
+    else if (scrollingDown || y <= 200) jumpBtn.classList.remove("visible");
+    _lastReadScrollY = y;
+  }
 
   // Save reading progress so story cards can show how far you've read
   localStorage.setItem(`progress_${getStorageKey()}`, Math.round(pct));
@@ -9555,7 +9702,7 @@ function updateStreaks() {
         ${curStreak} day streak
     </div>
     <div class="streak-badge cold">
-        Best: ${longestStreak} days
+        Best: ${longestStreak} day${longestStreak === 1 ? "" : "s"}
     </div>`;
 
   const profileStreak = document.getElementById("streakRow");
@@ -11339,58 +11486,10 @@ async function scheduleBackgroundReminder(timeStr) {
 // it does not touch initTheme()/toggleTheme()/applyAutoDark().
 // ============================================================
 (function () {
-  var SKINS = ["editorial", "luxe"];
-  function currentSkin() {
-    var s = localStorage.getItem("osmosis_skin") || "";
-    return SKINS.indexOf(s) >= 0 ? s : "";
-  }
-  function applySkin(skin) {
-    if (skin) {
-      document.documentElement.setAttribute("data-skin", skin);
-    } else {
-      document.documentElement.removeAttribute("data-skin");
-    }
-  }
-  // Skins are mutually exclusive — turning one on turns the other off.
-  function setSkin(skin) {
-    localStorage.setItem("osmosis_skin", skin || "");
-    applySkin(skin);
-    var ed = document.getElementById("editorialToggle");
-    if (ed) ed.checked = skin === "editorial";
-    var lx = document.getElementById("luxeToggle");
-    if (lx) lx.checked = skin === "luxe";
-  }
-  // Exposed for any future caller (e.g. a command palette).
-  window.setEditorialSkin = function (on) {
-    setSkin(on ? "editorial" : "");
-  };
-  window.setLuxeSkin = function (on) {
-    setSkin(on ? "luxe" : "");
-  };
-
-  // Safety net — the inline <head> script already applied this
-  // pre-paint, but keep the attribute in sync with storage.
-  applySkin(currentSkin());
-
-  function wireSkinToggles() {
-    var ed = document.getElementById("editorialToggle");
-    if (ed) {
-      ed.checked = currentSkin() === "editorial";
-      ed.addEventListener("change", function (e) {
-        setSkin(e.target.checked ? "editorial" : "");
-      });
-    }
-    var lx = document.getElementById("luxeToggle");
-    if (lx) {
-      lx.checked = currentSkin() === "luxe";
-      lx.addEventListener("change", function (e) {
-        setSkin(e.target.checked ? "luxe" : "");
-      });
-    }
-  }
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", wireSkinToggles);
-  } else {
-    wireSkinToggles();
-  }
+  // Editorial ("The Quarterly") is the app's one permanent design.
+  // The head script applies it pre-paint; this is the safety net.
+  document.documentElement.setAttribute("data-skin", "editorial");
+  try {
+    localStorage.setItem("osmosis_skin", "editorial");
+  } catch (e) {}
 })();

@@ -1033,6 +1033,7 @@ input[type="text"].search-input:not(:placeholder-shown) {
   z-index: 101;
   opacity: 0;
   transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 .article-progress-container.show {
   opacity: 1;
@@ -1517,34 +1518,43 @@ body.deep-work-active #articleView {
 /* ============================================================
    9. REVAMPED ANNOTATION POPUP (Centered Modal Card)
    ============================================================ */
+/* The Workstation fills the whole page, sliding up like a sheet. */
 .notes-section {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, 150%) scale(0.85);
-  width: calc(100% - 40px);
-  max-width: 600px;
-  height: 85vh;
-  height: 85dvh;
-  max-height: 800px;
+  top: 0;
+  left: 0;
+  right: 0;
+  transform: translateY(100%);
+  width: auto;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+}
+/* While it's open the page behind must not scroll — this also removes
+   the background scrollbar that left a gap beside the sheet. */
+body.drawer-active {
+  overflow: hidden;
+}
+html:has(body.drawer-active) {
+  overflow: hidden;
+}
+.notes-section {
 
-  background: var(--glass-bg);
-  backdrop-filter: blur(32px) saturate(120%);
-  -webkit-backdrop-filter: blur(32px) saturate(120%);
-  border: 1px solid var(--glass-border);
+  /* solid paper — glass-bg is transparent under Editorial */
+  background: var(--glass-solid);
+  border: none;
 
   z-index: 2001;
-  padding: calc(28px + env(safe-area-inset-top, 0px))
-    calc(20px + env(safe-area-inset-right, 0px))
-    calc(22px + env(safe-area-inset-bottom, 0px))
-    calc(20px + env(safe-area-inset-left, 0px));
-  border-radius: 24px;
+  padding: calc(12px + env(safe-area-inset-top, 0px))
+    env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+  border-radius: 0;
   box-shadow: none;
 
   transition:
-    transform 0.5s cubic-bezier(0.23, 1, 0.320, 1),
-    opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
   overflow-y: auto;
   opacity: 0;
   pointer-events: none;
@@ -1556,12 +1566,29 @@ body.deep-work-active #articleView {
 }
 
 .notes-section.open {
-  transform: translate(-50%, -50%) scale(1);
+  transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.15),
-    0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Keep reading-width content on large screens even though the sheet
+   itself spans the page */
+.notes-section .carousel-header,
+.notes-section .carousel-viewport,
+.notes-section .drawer-tabs {
+  width: 100%;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* Sheet header: centered title over the drag handle */
+.notes-section .carousel-header {
+  text-align: center;
+}
+.notes-section .drawer-drag-handle {
+  width: 44px;
+  height: 5px;
+  cursor: grab;
 }
 
 .drawer-drag-handle {
@@ -3007,30 +3034,50 @@ body.multi-select-active .timeline-actions {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
 }
+/* Streaks print as an almanac line, not pills */
 .streak-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  border-radius: var(--radius-xl);
-  background: rgba(196, 98, 45, 0.12);
-  border: 1.5px solid rgba(196, 98, 45, 0.3);
-  font-weight: 700;
-  font-size: 0.9rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  font-size: 0.8rem;
   color: var(--accent);
-  font-family: "Outfit", sans-serif;
-  transition: border-color 0.3s ease;
 }
 .streak-badge.cold {
-  background: rgba(160, 181, 172, 0.1);
-  border-color: var(--glass-border);
+  background: transparent;
+  border: none;
   color: var(--subtitle-color);
 }
 .streak-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+/* On the Library it sits centered under the collation line */
+#exploreStreakRow {
+  justify-content: center;
+  align-items: center;
+  margin: -12px 0 20px;
+}
+#exploreStreakRow::before,
+#exploreStreakRow::after {
+  content: "—";
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.8rem;
+  color: var(--ed-muted, var(--subtitle-color));
+}
+#exploreStreakRow .streak-badge + .streak-badge::before,
+#streakRow .streak-badge + .streak-badge::before {
+  content: "·";
+  margin-right: 8px;
+  color: var(--subtitle-color);
 }
 
 /* Settings Toggles */
@@ -4231,8 +4278,27 @@ body.compact-mode .annotation-item {
 /* Decorative editorial elements are inert unless the skin is on. */
 .ed-masthead,
 .ed-runhead,
-.ed-issue-eyebrow {
+.ed-issue-eyebrow,
+.ed-issue-count {
   display: none;
+}
+
+/* The story tally, printed like a collation line under the masthead */
+[data-skin="editorial"] .ed-issue-count {
+  display: block;
+  text-align: center;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 2.5px;
+  font-size: 0.78rem;
+  color: var(--ed-muted, var(--subtitle-color));
+  margin: -6px 0 22px;
+}
+[data-skin="editorial"] .ed-issue-count:not(:empty)::before,
+[data-skin="editorial"] .ed-issue-count:not(:empty)::after {
+  content: " — ";
+  color: var(--ed-muted, var(--subtitle-color));
+  letter-spacing: 0;
 }
 
 /* ---- Palette: light editorial (warm paper) — applied to every page
@@ -4332,20 +4398,44 @@ html[data-skin="editorial"] {
   margin-top: 0.6rem;
 }
 [data-skin="editorial"] #exploreView .ed-issue-eyebrow {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   text-align: center;
   letter-spacing: 0.28em;
   font-size: 0.68rem;
   color: var(--ed-accent);
-  margin: 0.25rem 0 1rem;
+  margin: 0 0 16px;
+}
+[data-skin="editorial"] #exploreView .ed-issue-eyebrow::before,
+[data-skin="editorial"] #exploreView .ed-issue-eyebrow::after {
+  content: "—";
+  letter-spacing: 0;
+  color: var(--ed-muted, var(--subtitle-color));
 }
 
+/* ---- The issue index bar: eyebrow left, controls right ---- */
+.issue-index-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.issue-controls {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 /* ---- Explore controls: hairline, not pills ---- */
 [data-skin="editorial"] #exploreView select#exploreFilterSelect,
 [data-skin="editorial"] #exploreView select#exploreSortSelect {
   background-color: transparent !important;
   border: 1px solid var(--ed-rule) !important;
-  border-radius: 0 !important;
+  border-radius: 999px !important;
   color: var(--ed-muted) !important;
   font-family: "Lora", Georgia, serif !important;
 }
@@ -4652,566 +4742,6 @@ html[data-skin="editorial"] {
 [data-skin="editorial"] #profileView .profile-card {
   box-shadow: none;
 }
-
-/* ============================================================
-   MIDNIGHT LUXE SKIN — "The Private Collection"
-   ------------------------------------------------------------
-   A selectable skin activated by data-skin="luxe" on <html>.
-   Not a color swap — a full design language:
-     · candle-lit charcoal room with a vignette, brass-gold foil
-     · Cormorant Garamond display serif, engraved small-caps labels
-     · crisp plaque geometry (2–6px corners) instead of soft pills
-     · framed "gallery print" photographs, fleuron ornaments
-   Tokens remap at <body> level so every surface inherits.
-   Mutually exclusive with the Editorial skin.
-   ============================================================ */
-[data-skin="luxe"] body {
-  /* Palette */
-  --luxe-bg: #131110;
-  --luxe-surface: #1b1815;
-  --luxe-surface-2: #221e19;
-  --luxe-ink: #ece4d4;
-  --luxe-muted: #a2957e;
-  --luxe-gold: #c8a45d;
-  --luxe-gold-bright: #ddbc78;
-  --luxe-gold-deep: #b8914a;
-  --luxe-rule: rgba(200, 164, 93, 0.26);
-  --luxe-rule-soft: rgba(200, 164, 93, 0.12);
-  --lx-display: "Cormorant Garamond", "Lora", Georgia, serif;
-  --lx-foil: linear-gradient(
-    104deg,
-    #9c7c3c 0%,
-    #e8d195 32%,
-    #c8a45d 52%,
-    #efdca0 74%,
-    #a98a49 100%
-  );
-
-  /* Remap the app's core tokens */
-  --cream: var(--luxe-bg);
-  --dark-text: var(--luxe-ink);
-  --subtitle-color: var(--luxe-muted);
-  --sage: var(--luxe-muted);
-  --earth: #2a251e;
-  --accent: var(--luxe-gold);
-  --accent-hover: var(--luxe-gold-bright);
-  --glass-bg: var(--luxe-surface);
-  --glass-solid: var(--luxe-surface);
-  --glass-border: var(--luxe-rule-soft);
-  --glass-shadow: none;
-  --glass-highlight: transparent;
-
-  /* Plaque geometry — luxury is crisp, not bubbly */
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
-  --radius-pill: 4px;
-
-  /* Reading paper sheet, tuned to the luxe desk */
-  --reader-desk: #0d0c0a;
-  --reader-paper: #1b1815;
-  --reader-paper-edge: rgba(200, 164, 93, 0.16);
-  --reader-paper-line: rgba(200, 164, 93, 0.03);
-  --reader-paper-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.5), 0 14px 44px rgba(0, 0, 0, 0.55);
-
-  /* Premium depth, deepened for the dark room */
-  --lift-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(0, 0, 0, 0.45);
-  --lift-shadow-hover:
-    0 2px 4px rgba(0, 0, 0, 0.45), 0 18px 48px rgba(0, 0, 0, 0.55);
-
-  background-color: var(--luxe-bg);
-  color: var(--luxe-ink);
-}
-
-/* The room: a candle-lit vignette behind everything */
-html[data-skin="luxe"] {
-  background-color: #131110;
-  background-image: radial-gradient(
-    130% 90% at 50% -10%,
-    #1e1a14 0%,
-    #131110 48%,
-    #0c0b0a 100%
-  );
-  background-attachment: fixed;
-}
-[data-skin="luxe"] body {
-  background: transparent;
-}
-[data-skin="luxe"] .view {
-  background: transparent;
-}
-[data-skin="luxe"] ::selection {
-  background: rgba(200, 164, 93, 0.35);
-}
-[data-skin="luxe"] ::-webkit-scrollbar {
-  width: 10px;
-}
-[data-skin="luxe"] ::-webkit-scrollbar-thumb {
-  background: #2a251e;
-  border-radius: 5px;
-}
-[data-skin="luxe"] ::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* ============================================================
-   TYPOGRAPHY — engraved headlines, gold foil, small-caps labels
-   ============================================================ */
-[data-skin="luxe"] h1,
-[data-skin="luxe"] h2,
-[data-skin="luxe"] h3,
-[data-skin="luxe"] h4,
-[data-skin="luxe"] .view-title {
-  font-family: var(--lx-display);
-  letter-spacing: 0.3px;
-  font-weight: 600;
-}
-
-/* Gold-foil page titles, with a slow living sheen */
-[data-skin="luxe"] .view-header h2,
-[data-skin="luxe"] #exploreView > h2,
-[data-skin="luxe"] .profile-page-title {
-  font-size: 2.7rem;
-  line-height: 1.1;
-  font-weight: 600;
-  background: var(--lx-foil);
-  background-size: 220% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: var(--luxe-gold);
-}
-@media (prefers-reduced-motion: no-preference) {
-  [data-skin="luxe"] .view-header h2,
-  [data-skin="luxe"] #exploreView > h2,
-  [data-skin="luxe"] .profile-page-title,
-  [data-skin="luxe"] .article-title {
-    animation: lx-foil-sheen 9s linear infinite;
-  }
-}
-@keyframes lx-foil-sheen {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 220% 50%;
-  }
-}
-
-/* Engraved eyebrow above each page title */
-[data-skin="luxe"] .view-header > div::before,
-[data-skin="luxe"] .profile-page-title::before {
-  display: block;
-  font-family: "Outfit", sans-serif;
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  color: var(--luxe-gold);
-  -webkit-text-fill-color: var(--luxe-gold);
-  margin-bottom: 10px;
-}
-[data-skin="luxe"] #dashboardView .view-header > div::before {
-  content: "The Study";
-}
-[data-skin="luxe"] #timelineView .view-header > div::before {
-  content: "The Archive";
-}
-[data-skin="luxe"] #generatorView .view-header > div::before {
-  content: "The Atelier";
-}
-[data-skin="luxe"] .profile-page-title::before {
-  content: "The Concierge";
-}
-
-/* Page headers close with a double rule, like a ledger */
-[data-skin="luxe"] #dashboardView .view-header,
-[data-skin="luxe"] #timelineView .view-header,
-[data-skin="luxe"] #generatorView .view-header {
-  border-bottom: 4px double var(--luxe-rule);
-}
-[data-skin="luxe"] .profile-page-title {
-  padding-bottom: 18px;
-  margin-bottom: 26px;
-  border-bottom: 4px double var(--luxe-rule);
-}
-[data-skin="luxe"] .view-header .subtitle {
-  font-family: var(--lx-display);
-  font-style: italic;
-  font-size: 1.05rem;
-  letter-spacing: 0.3px;
-}
-
-/* ============================================================
-   THE LIBRARY — masthead + gallery-plate story cards
-   ============================================================ */
-[data-skin="luxe"] #exploreView::before {
-  content: "Maison Osmosis ✦ Private Collection ✦ Est. MMXVI";
-  display: block;
-  text-align: center;
-  font-family: "Outfit", sans-serif;
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  color: var(--luxe-gold);
-  border-top: 1px solid var(--luxe-rule);
-  border-bottom: 1px solid var(--luxe-rule);
-  padding: 10px 0;
-  margin-bottom: 28px;
-}
-[data-skin="luxe"] #exploreView > h2 {
-  flex-wrap: wrap;
-}
-
-/* Cards become framed gallery plates */
-[data-skin="luxe"] .glass-panel,
-[data-skin="luxe"] .category-card,
-[data-skin="luxe"] .subtopic-card,
-[data-skin="luxe"] .dash-tile,
-[data-skin="luxe"] .settings-group {
-  background: linear-gradient(
-    180deg,
-    var(--luxe-surface-2),
-    var(--luxe-surface) 60%
-  );
-  border: 1px solid var(--luxe-rule-soft);
-}
-[data-skin="luxe"] .category-card,
-[data-skin="luxe"] .subtopic-card {
-  border-radius: 6px;
-  /* inner hairline frame in the padding gutter */
-  outline: 1px solid var(--luxe-rule-soft);
-  outline-offset: -7px;
-}
-@media (hover: hover) {
-  [data-skin="luxe"] .category-card:hover,
-  [data-skin="luxe"] .subtopic-card:hover,
-  [data-skin="luxe"] .dash-tile-tap:hover {
-    border-color: var(--luxe-rule);
-    outline-color: var(--luxe-rule);
-  }
-}
-/* Retire the default gradient-border mask; it fights the frame */
-[data-skin="luxe"] .subtopic-card::before {
-  content: none;
-}
-/* Auction-catalogue lot numbers: № 01, № 02… in gold, per card */
-[data-skin="luxe"] #articlesGrid {
-  counter-reset: lot;
-}
-[data-skin="luxe"] #articlesGrid .category-card {
-  counter-increment: lot;
-}
-[data-skin="luxe"] #articlesGrid .category-card::before {
-  content: "№ " counter(lot, decimal-leading-zero);
-  position: static;
-  inset: auto;
-  display: block;
-  padding: 0;
-  background: none;
-  -webkit-mask: none;
-  mask: none;
-  opacity: 0.75;
-  text-align: right;
-  font-family: "Outfit", sans-serif;
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 2.5px;
-  color: var(--luxe-gold);
-  margin-bottom: 10px;
-  pointer-events: none;
-}
-/* A small gold fleuron closes each card */
-[data-skin="luxe"] .category-card::after {
-  content: "✦";
-  display: block;
-  position: static;
-  inset: auto;
-  opacity: 0.55;
-  text-align: center;
-  color: var(--luxe-gold);
-  font-size: 0.7rem;
-  margin-top: 14px;
-  background: none;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-[data-skin="luxe"] .category-card:hover::after {
-  opacity: 1;
-}
-/* Serif card titles, larger */
-[data-skin="luxe"] .category-card h3 {
-  font-size: 1.45rem;
-  line-height: 1.2;
-}
-
-/* Photographs hang as matted, framed prints */
-[data-skin="luxe"] .story-cover {
-  border-radius: 2px !important;
-  padding: 5px;
-  background: #0d0b09;
-  border: 1px solid var(--luxe-rule-soft);
-  filter: saturate(0.94) sepia(0.05);
-  box-sizing: border-box;
-}
-
-/* Genre tags become engraved plaques */
-[data-skin="luxe"] .category-card span[onclick],
-[data-skin="luxe"] #articleGenres span {
-  border-radius: 2px !important;
-  letter-spacing: 1.4px !important;
-  border-color: var(--luxe-rule-soft) !important;
-}
-
-/* Library filter selects: crisp, dark */
-[data-skin="luxe"] #exploreView select {
-  border-radius: 3px !important;
-  background-color: #171412 !important;
-}
-
-/* ============================================================
-   CONTROLS — brass plaques, engraved buttons
-   ============================================================ */
-[data-skin="luxe"] button {
-  border-radius: 3px;
-}
-[data-skin="luxe"] button.primary {
-  background: linear-gradient(
-    180deg,
-    var(--luxe-gold-bright),
-    var(--luxe-gold-deep)
-  );
-  color: #201a10;
-  font-family: "Outfit", sans-serif;
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 1.8px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 245, 220, 0.45),
-    0 6px 18px rgba(200, 164, 93, 0.22);
-}
-[data-skin="luxe"] button.secondary {
-  background: transparent;
-  color: var(--luxe-gold);
-  border: 1px solid var(--luxe-rule);
-  font-family: "Outfit", sans-serif;
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 1.8px;
-}
-/* Active pills read as brass plaques — dark ink, not white */
-[data-skin="luxe"] .timeline-filter-btn,
-[data-skin="luxe"] .zoom-btn,
-[data-skin="luxe"] .gen-mode-btn {
-  border-radius: 3px;
-}
-[data-skin="luxe"] .timeline-filter-btn.active,
-[data-skin="luxe"] .zoom-btn.active,
-[data-skin="luxe"] #timelineView .zoom-btn.active,
-[data-skin="luxe"] #generatorView .gen-mode-btn.active {
-  background: linear-gradient(
-    180deg,
-    var(--luxe-gold-bright),
-    var(--luxe-gold-deep)
-  );
-  color: #201a10;
-  box-shadow: inset 0 1px 0 rgba(255, 245, 220, 0.45);
-}
-[data-skin="luxe"] .zoom-controls,
-[data-skin="luxe"] .gen-mode-row {
-  border-radius: 4px;
-  background: #100e0c;
-  border: 1px solid var(--luxe-rule-soft);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
-}
-
-/* Inputs: dark wells that wake with gold */
-[data-skin="luxe"] input[type="text"],
-[data-skin="luxe"] textarea,
-[data-skin="luxe"] select {
-  background-color: #171412;
-  border-radius: 4px !important;
-}
-[data-skin="luxe"] input[type="text"]:focus,
-[data-skin="luxe"] textarea:focus {
-  border-color: var(--luxe-gold) !important;
-  box-shadow: 0 0 0 3px rgba(200, 164, 93, 0.16);
-}
-
-/* ============================================================
-   CHROME — top bar, bottom nav
-   ============================================================ */
-[data-skin="luxe"] .top-app-bar {
-  border-radius: 4px;
-  background: rgba(19, 17, 16, 0.9);
-  border: 1px solid var(--luxe-rule-soft);
-}
-[data-skin="luxe"] .bottom-nav {
-  background: rgba(14, 12, 11, 0.96);
-  border-top: 1px solid var(--luxe-rule);
-  box-shadow: 0 -1px 0 rgba(200, 164, 93, 0.06);
-}
-[data-skin="luxe"] .nav-item {
-  color: #7d7263;
-}
-[data-skin="luxe"] .nav-item .nav-label {
-  text-transform: uppercase;
-  letter-spacing: 1.6px;
-  font-size: 0.56rem;
-  font-weight: 600;
-}
-[data-skin="luxe"] .nav-item.active {
-  color: var(--luxe-gold-bright);
-}
-
-/* ============================================================
-   THE READER — an illuminated manuscript
-   ============================================================ */
-/* The paper sheet gets an inner gold hairline, like a plate frame */
-[data-skin="luxe"] .article-main-col {
-  outline: 1px solid rgba(200, 164, 93, 0.1);
-  outline-offset: -12px;
-}
-[data-skin="luxe"] .article-title {
-  font-family: var(--lx-display);
-  font-size: 2.6rem;
-  background: var(--lx-foil);
-  background-size: 220% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: var(--luxe-gold);
-}
-/* Gold illuminated drop cap on the first paragraph */
-[data-skin="luxe"] .article-content > p:first-of-type::first-letter {
-  font-family: var(--lx-display);
-  font-size: 3.6em;
-  line-height: 0.8;
-  float: left;
-  padding: 0.08em 0.12em 0 0;
-  color: var(--luxe-gold);
-  font-weight: 600;
-}
-/* …and the opening line whispers in small caps, manuscript-style */
-[data-skin="luxe"] .article-content > p:first-of-type::first-line {
-  font-variant: small-caps;
-  letter-spacing: 0.5px;
-}
-/* Manuscript corner brackets on the paper sheet */
-[data-skin="luxe"] .article-main-col {
-  position: relative;
-}
-[data-skin="luxe"] .article-main-col::before,
-[data-skin="luxe"] .article-main-col::after {
-  content: "";
-  position: absolute;
-  width: 24px;
-  height: 24px;
-  opacity: 0.5;
-  pointer-events: none;
-}
-[data-skin="luxe"] .article-main-col::before {
-  top: 7px;
-  left: 7px;
-  border-top: 1px solid var(--luxe-gold);
-  border-left: 1px solid var(--luxe-gold);
-}
-[data-skin="luxe"] .article-main-col::after {
-  bottom: 7px;
-  right: 7px;
-  border-bottom: 1px solid var(--luxe-gold);
-  border-right: 1px solid var(--luxe-gold);
-}
-/* Chapter-end fleuron before the completion card */
-[data-skin="luxe"] .article-completion-section {
-  border: 1px solid var(--luxe-rule-soft);
-  background: transparent;
-}
-[data-skin="luxe"] .article-completion-section::before {
-  content: "❦";
-  display: block;
-  color: var(--luxe-gold);
-  font-size: 1.4rem;
-  opacity: 0.8;
-  margin-bottom: 4px;
-}
-/* Highlights lean gold instead of yellow */
-[data-skin="luxe"] mark.highlighted-text {
-  background-color: var(--highlight-bg, rgba(200, 164, 93, 0.26));
-  border-bottom-color: var(--highlight-border, rgba(200, 164, 93, 0.6));
-}
-
-/* ============================================================
-   DETAILS — settings, tiles, section labels
-   ============================================================ */
-[data-skin="luxe"] .settings-group {
-  border-radius: 6px;
-}
-[data-skin="luxe"] .settings-group-label {
-  background: rgba(200, 164, 93, 0.05);
-  border-bottom-color: var(--luxe-rule-soft);
-  font-family: "Outfit", sans-serif;
-  letter-spacing: 3px;
-}
-[data-skin="luxe"] .dash-tile {
-  border-radius: 6px;
-}
-[data-skin="luxe"] #timelineView .dash-column > h3,
-[data-skin="luxe"] .dash-column > h3 {
-  font-family: "Outfit", sans-serif;
-  font-size: 0.62rem;
-  letter-spacing: 3px;
-  color: var(--luxe-gold);
-}
-/* Timeline: brass calendar plates on a gold-thread rail */
-[data-skin="luxe"] .tl-group::before {
-  background: linear-gradient(
-    to bottom,
-    var(--luxe-gold),
-    var(--luxe-rule-soft) 45%,
-    transparent
-  );
-}
-[data-skin="luxe"] .tl-plate {
-  border: 1px solid var(--luxe-rule);
-  background: linear-gradient(180deg, var(--luxe-surface-2), var(--luxe-surface));
-  border-radius: 3px;
-  box-shadow: inset 0 1px 0 rgba(255, 245, 220, 0.06);
-}
-[data-skin="luxe"] .tl-plate-top {
-  font-family: var(--lx-display);
-  background: var(--lx-foil);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: var(--luxe-gold);
-}
-[data-skin="luxe"] .tl-group-title {
-  font-family: var(--lx-display);
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-}
-[data-skin="luxe"] .tl-group-count {
-  color: var(--luxe-gold);
-  letter-spacing: 2px;
-  font-size: 0.58rem;
-}
-[data-skin="luxe"] .tl-expand-chip {
-  border-radius: 3px;
-  border-color: var(--luxe-rule);
-  color: var(--luxe-gold);
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
-  font-size: 0.68rem;
-}
-/* End of luxe skin */
-
 /* ============================================================
    CONTENT STUDIO — "The Writing Desk"
    ------------------------------------------------------------
@@ -5386,36 +4916,6 @@ html[data-skin="luxe"] {
   font-size: 1rem;
 }
 
-/* ---- Luxe flourishes for the desk ---- */
-[data-skin="luxe"] .studio-manuscript {
-  outline: 1px solid rgba(200, 164, 93, 0.1);
-  outline-offset: -10px;
-}
-[data-skin="luxe"] .ms-title {
-  font-family: var(--lx-display);
-  font-size: 2.2rem;
-  background: transparent;
-}
-[data-skin="luxe"] .ms-hook,
-[data-skin="luxe"] .ms-body {
-  background: transparent;
-}
-[data-skin="luxe"] .ms-title:focus,
-[data-skin="luxe"] .ms-hook:focus {
-  box-shadow: inset 0 -1px 0 var(--luxe-gold);
-}
-[data-skin="luxe"] .side-upload {
-  border-color: var(--luxe-rule);
-  color: var(--luxe-gold);
-  border-radius: 3px;
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
-  font-size: 0.7rem;
-}
-[data-skin="luxe"] .studio-side-label {
-  letter-spacing: 3px;
-}
-
 /* ============================================================
    DASHBOARD — "The Study"
    ------------------------------------------------------------
@@ -5581,49 +5081,6 @@ html[data-skin="luxe"] {
   letter-spacing: 1px;
 }
 
-/* ---- Luxe flourishes for the Study ---- */
-[data-skin="luxe"] .study-ledger {
-  border-top: 4px double var(--luxe-rule);
-  border-bottom: 4px double var(--luxe-rule);
-}
-[data-skin="luxe"] .study-stat-num {
-  font-family: var(--lx-display);
-  background: var(--lx-foil);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: var(--luxe-gold);
-}
-[data-skin="luxe"] .study-stat-name {
-  color: var(--luxe-gold);
-  letter-spacing: 2.2px;
-}
-[data-skin="luxe"] .study-feature,
-[data-skin="luxe"] .study-mini,
-[data-skin="luxe"] .study-activity {
-  background: linear-gradient(
-    180deg,
-    var(--luxe-surface-2),
-    var(--luxe-surface) 60%
-  );
-  border-radius: 6px;
-}
-[data-skin="luxe"] .study-feature {
-  outline: 1px solid var(--luxe-rule-soft);
-  outline-offset: -6px;
-}
-[data-skin="luxe"] .study-feature-num {
-  font-family: var(--lx-display);
-  background: var(--lx-foil);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: var(--luxe-gold);
-}
-[data-skin="luxe"] .study-mini-name {
-  font-family: var(--lx-display);
-}
-
 /* ---- Reflection chart range toggle ---- */
 .rfx-range {
   display: flex;
@@ -5649,14 +5106,6 @@ html[data-skin="luxe"] {
 .rfx-btn.active {
   background: var(--accent);
   color: #fff;
-}
-[data-skin="luxe"] .rfx-btn.active {
-  background: linear-gradient(
-    180deg,
-    var(--luxe-gold-bright),
-    var(--luxe-gold-deep)
-  );
-  color: #201a10;
 }
 
 /* ============================================================
@@ -5729,7 +5178,7 @@ html[data-skin="luxe"] {
 [data-skin="editorial"] button.primary {
   background: var(--ed-ink, var(--dark-text));
   color: var(--ed-paper, var(--cream));
-  border-radius: 2px;
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 1.6px;
   font-size: 0.78rem;
@@ -5740,7 +5189,7 @@ html[data-skin="luxe"] {
   background: transparent;
   border: 1px solid var(--ed-ink, var(--dark-text));
   color: var(--ed-ink, var(--dark-text));
-  border-radius: 2px;
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 1.6px;
   font-size: 0.78rem;
@@ -5750,7 +5199,7 @@ html[data-skin="luxe"] {
 [data-skin="editorial"] .gen-mode-btn,
 [data-skin="editorial"] .rfx-btn,
 [data-skin="editorial"] .tl-expand-chip {
-  border-radius: 2px;
+  border-radius: 999px;
 }
 [data-skin="editorial"] .timeline-filter-btn.active,
 [data-skin="editorial"] .zoom-btn.active,
@@ -5777,105 +5226,207 @@ html[data-skin="luxe"] {
 }
 
 /* ============================================================
-   WORKSTATION — the reading workspace drawer, redesigned
+   WORKSTATION — frictionless & minimal
    ------------------------------------------------------------
-   Token-driven so it follows every theme and skin: refined
-   panel, segmented tabs, accent-spined annotation cards, and a
-   proper manuscript feel for the Socratic prompts.
+   No masthead, no card chrome: handle → tabs → write. Borderless
+   paper inputs, ghost tools, pill actions, hairline-separated
+   notes. All ids and behavior unchanged.
    ============================================================ */
-.notes-section {
-  border-radius: var(--radius-xl);
+/* The old masthead title is redundant with the tabs — retire it */
+.notes-section .carousel-header {
+  display: none;
 }
+
+/* Tabs: two quiet words, an ink underline marks the open page */
 .notes-section .drawer-tabs {
-  background: color-mix(in srgb, var(--dark-text) 4%, transparent);
-  border-top: 1px solid var(--glass-border);
+  background: transparent;
+  border-top: none;
+  border-bottom: none;
   box-shadow: none;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
-  gap: 6px;
+  margin-top: 2px;
+  padding: 0 20px;
+  gap: 28px;
+  justify-content: center;
 }
 .notes-section .drawer-tab {
+  flex: 0 0 auto;
   border: none;
-  border-radius: var(--radius-md);
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
+  padding: 8px 2px 10px;
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.72rem;
+  color: var(--subtitle-color);
 }
 .notes-section .drawer-tab.active {
-  background: var(--glass-solid);
-  color: var(--accent);
+  background: transparent;
+  color: var(--dark-text);
+  border-bottom-color: var(--accent);
+  box-shadow: none;
+}
+
+/* Slides */
+.ws-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  padding: 18px 20px 40px;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  box-sizing: border-box;
+}
+.ws-lead {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}
+.ws-hint {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  color: var(--subtitle-color);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 10px;
+  opacity: 0.85;
+}
+/* Inspire: a quiet text action, no box */
+.ws-inspire {
+  background: transparent;
   border: none;
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.08),
-    0 3px 8px rgba(0, 0, 0, 0.08);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 4px 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  box-shadow: none;
 }
+
+/* Writing: open paper, no card — just start typing */
+.ws-sheet {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  margin-bottom: 24px;
+}
+.ws-paper-input,
+.notes-section .reflection-input {
+  width: 100%;
+  min-height: 170px;
+  border: none !important;
+  outline: none;
+  background: transparent !important;
+  box-shadow: none !important;
+  resize: none;
+  padding: 6px 2px 10px;
+  border-radius: 0;
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--dark-text);
+  box-sizing: border-box;
+}
+/* the base class paints a glowing box on focus — not on open paper */
+.notes-section .reflection-input:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.ws-paper-input::placeholder {
+  color: var(--subtitle-color);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Actions float on a single hairline — ghost tools left, pill save right */
+.ws-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--glass-border);
+  padding: 10px 0 0;
+}
+.ws-undo-redo {
+  display: flex;
+  gap: 4px;
+}
+.ws-tool {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--subtitle-color);
+  padding: 0;
+  opacity: 0.7;
+}
+.ws-tool:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--dark-text) 5%, transparent);
+}
+
+/* Notes search: a bare hairline underline */
+.ws-search {
+  position: relative;
+  margin: 2px 0 14px;
+}
+.ws-search svg {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--subtitle-color);
+  pointer-events: none;
+  opacity: 0.7;
+}
+.ws-search input {
+  width: 100%;
+  padding: 9px 4px 9px 26px;
+  border: none;
+  border-bottom: 1px solid var(--glass-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--dark-text);
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.92rem;
+  outline: none;
+  box-sizing: border-box;
+}
+.ws-search input:focus {
+  border-bottom-color: var(--accent);
+}
+
+/* Notes: a hairline-separated list, thin ink spine per entry */
 .annotation-item {
-  border-radius: var(--radius-lg);
-  box-shadow: var(--lift-shadow);
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 18px 6px;
+  margin-bottom: 0;
 }
-/* the item's spine takes the accent — a bound-notebook edge */
+/* no spine line on entries — clean hairline separation only */
 .annotation-item::before {
-  background: var(--accent);
-  opacity: 0.75;
+  content: none;
 }
+.annotation-item:active,
+.annotation-item:focus-within {
+  border-color: var(--glass-border);
+  box-shadow: none;
+  background: color-mix(in srgb, var(--dark-text) 3%, transparent);
+}
+
 .socratic-box {
   background: color-mix(in srgb, var(--accent) 6%, transparent);
-  border-left: 3px solid var(--accent);
-  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--accent);
+  border-radius: 0;
   font-family: var(--article-font-family, Georgia, serif);
-}
-
-/* Luxe: the workstation as a private desk drawer */
-[data-skin="luxe"] .notes-section {
-  background: linear-gradient(
-    180deg,
-    var(--luxe-surface-2),
-    var(--luxe-surface) 40%
-  );
-  border: 1px solid var(--luxe-rule);
-}
-[data-skin="luxe"] .notes-section .drawer-tab {
-  border-radius: 3px;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  font-size: 0.7rem;
-}
-[data-skin="luxe"] .notes-section .drawer-tab.active {
-  background: linear-gradient(
-    180deg,
-    var(--luxe-gold-bright),
-    var(--luxe-gold-deep)
-  );
-  color: #201a10;
-}
-[data-skin="luxe"] .annotation-item {
-  background: linear-gradient(
-    180deg,
-    var(--luxe-surface-2),
-    var(--luxe-surface) 60%
-  );
-  border-radius: 4px;
-}
-[data-skin="luxe"] .notes-section .section-header h3,
-[data-skin="luxe"] .notes-section h3.section-title-spaced {
-  letter-spacing: 3px;
-}
-
-/* Editorial: the workstation as a proof-reading desk */
-[data-skin="editorial"] .notes-section {
-  border-radius: 4px;
-}
-[data-skin="editorial"] .notes-section .drawer-tab {
-  border-radius: 2px;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  font-size: 0.72rem;
-}
-[data-skin="editorial"] .notes-section .drawer-tab.active {
-  background: var(--ed-ink, var(--dark-text));
-  color: var(--ed-paper, var(--cream));
-  box-shadow: none;
-}
-[data-skin="editorial"] .annotation-item {
-  border-radius: 2px;
-  box-shadow: none;
 }
 
 /* ============================================================
@@ -5965,6 +5516,34 @@ button.secondary:active,
 /* ============================================================
    READING FINISH TOUCHES
    ============================================================ */
+/* Hide scroll chrome app-wide: scrollbars kept leaving a gutter strip
+   beside full-page surfaces (e.g. the Workstation sheet) and flickering
+   beside story text. Scrolling itself is untouched — wheel, trackpad,
+   touch and keyboard all still work; the reader has its progress bar. */
+html,
+body,
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* The progress bar lives in the header, outside .view, so the editorial
+   accent doesn't cascade to it — set it here (rust by day, ember by night). */
+.article-progress-container {
+  --accent: #9e4632;
+}
+[data-theme="dark"] .article-progress-container,
+[data-theme="midnight"] .article-progress-container {
+  --accent: #c98a5e;
+}
+
 /* Progress bar: gradient trail with a glowing tip */
 #articleProgressBar {
   background: linear-gradient(
@@ -5976,32 +5555,9 @@ button.secondary:active,
   border-radius: 0 3px 3px 0;
 }
 
-/* Selection menu dressed per skin (it lives at body level, so the
-   Luxe body remap would otherwise invert its colors) */
-[data-skin="luxe"] .floating-selection-menu {
-  background: #241f18;
-  border: 1px solid var(--luxe-rule);
-  border-radius: 3px;
-}
-[data-skin="luxe"] .floating-selection-menu::before {
-  border-bottom-color: #241f18;
-}
-[data-skin="luxe"] .fab-btn {
-  color: var(--luxe-gold-bright);
-  text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 1.2px;
-}
-[data-skin="luxe"] .fab-btn:hover {
-  background: rgba(200, 164, 93, 0.12);
-}
-[data-skin="luxe"] .fab-divider {
-  background: rgba(200, 164, 93, 0.25);
-}
-
 [data-skin="editorial"] .floating-selection-menu {
   background: #211d18;
-  border-radius: 2px;
+  border-radius: 999px;
 }
 [data-skin="editorial"] .floating-selection-menu::before {
   border-bottom-color: #211d18;
@@ -6011,11 +5567,287 @@ button.secondary:active,
   text-transform: uppercase;
   font-size: 0.72rem;
   letter-spacing: 1.2px;
+  font-family: "Lora", Georgia, serif;
+}
+[data-skin="editorial"] .fab-btn:hover {
+  background: rgba(242, 234, 216, 0.12);
+}
+[data-skin="editorial"] .fab-divider {
+  background: rgba(242, 234, 216, 0.25);
 }
 
-/* Editorial text selection tint (Luxe already has its own) */
+/* Editorial text selection tint */
 [data-skin="editorial"] .view ::selection {
   background: rgba(158, 70, 50, 0.25);
+}
+
+/* ============================================================
+   READER TOP-BAR CHIPS & FLOATING JUMP BUTTON
+   ============================================================ */
+/* A short hairline separates the author chip from the genre chips.
+   It lives on the author element as a block, so the chips below start
+   flush at the same left edge. */
+#articleAuthor::after {
+  content: "";
+  display: block;
+  width: 56px;
+  height: 1px;
+  background: var(--glass-border);
+  margin-top: 12px;
+}
+
+/* Focus and Notes match the read-time chip */
+#startDeepWorkBtn,
+#topNotesBtn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: none;
+}
+#topNotesBtn {
+  color: var(--accent);
+}
+
+/* One floating jump button replaces the old Scroll Down / Scroll Up
+   text buttons: bottom-right, arrow flips up once you're deep in. */
+.scroll-jump-btn {
+  position: fixed;
+  right: 16px;
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  color: var(--subtitle-color);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  z-index: 900;
+  /* hidden while reading down; appears only when scrolling back up */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.scroll-jump-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.scroll-jump-btn svg {
+  display: block;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.scroll-jump-btn.up svg {
+  transform: rotate(180deg);
+}
+@media (hover: hover) {
+  .scroll-jump-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+/* Focus mode stays chrome-free */
+body.deep-work-active .scroll-jump-btn {
+  display: none;
+}
+
+/* ============================================================
+   DAILY REVIEW — recall on paper
+   ============================================================ */
+.rv-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--glass-solid);
+  z-index: 12000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 20px
+    calc(24px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+.rv-top {
+  width: 100%;
+  max-width: 620px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 6px 0 10px;
+}
+.rv-count {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  font-size: 0.66rem;
+  color: var(--subtitle-color);
+}
+.rv-close {
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--subtitle-color);
+  cursor: pointer;
+  padding: 4px 8px;
+  box-shadow: none;
+}
+.rv-progress {
+  width: 100%;
+  max-width: 620px;
+  height: 2px;
+  background: var(--glass-border);
+  margin-bottom: 8vh;
+}
+.rv-progress > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.rv-card {
+  width: 100%;
+  max-width: 620px;
+  text-align: center;
+  margin: auto 0;
+  padding-bottom: 10vh;
+}
+.rv-eyebrow {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  font-size: 0.68rem;
+  color: var(--accent);
+  margin-bottom: 22px;
+}
+.rv-passage {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.35rem;
+  line-height: 1.75;
+  color: var(--dark-text);
+  margin-bottom: 18px;
+}
+.rv-blank {
+  display: inline-block;
+  border-bottom: 1.5px solid var(--accent);
+  height: 0.9em;
+  vertical-align: baseline;
+  opacity: 0.75;
+  margin: 0 1px;
+}
+.rv-task {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--subtitle-color);
+  margin-bottom: 30px;
+}
+.rv-reveal-row button {
+  padding: 12px 34px;
+}
+.rv-note {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--dark-text);
+  border-top: 1px solid var(--glass-border);
+  padding-top: 16px;
+  margin: 4px auto 8px;
+  max-width: 480px;
+}
+.rv-note span {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.6rem;
+  color: var(--accent);
+  font-style: normal;
+  margin-bottom: 6px;
+}
+.rv-rate-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 26px;
+  flex-wrap: wrap;
+}
+.rv-rate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 92px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  box-shadow: none;
+  cursor: pointer;
+}
+.rv-rate small {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  font-size: 0.68rem;
+  font-weight: 400;
+  opacity: 0.75;
+}
+.rv-again {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--subtitle-color);
+}
+.rv-good {
+  background: transparent;
+  border: 1px solid var(--dark-text);
+  color: var(--dark-text);
+}
+.rv-easy {
+  background: var(--dark-text);
+  border: 1px solid var(--dark-text);
+  color: var(--cream);
+}
+.rv-end {
+  text-align: center;
+  max-width: 440px;
+  margin: auto;
+}
+.rv-fleuron {
+  color: var(--accent);
+  font-size: 1.6rem;
+  margin-bottom: 12px;
+}
+.rv-end h2 {
+  margin-bottom: 10px;
+}
+.rv-end p {
+  font-family: "Lora", Georgia, serif;
+  color: var(--subtitle-color);
+  line-height: 1.6;
+  margin-bottom: 26px;
+}
+.rv-end-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 
 /* End of stylesheet */
