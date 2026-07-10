@@ -69,8 +69,9 @@ function renderDashboard() {
   // Populate detail sections
   populateDashboardDetails(stats, timeline, [], [], streak, allAchievements);
 }
-
-// DASHBOARD — compact, everything shown directly (no expanding cards)
+// DASHBOARD — "The Study": stats ledger, Daily Review, and three living
+// pieces that reward a visit: your own margins resurfaced, a personal
+// parlour quiz on what you've read, and an honours ladder. Plus the heatmap.
 function renderDashboardCards() {
   const grid = document.getElementById("dashboardCardsGrid");
   if (!grid) return;
@@ -85,8 +86,6 @@ function renderDashboardCards() {
   const reflections = timeline.filter((t) => t.type === "Reflection").length;
   const dueCount = getDueReviewItems().length;
 
-  // "The Study" layout — a stats ledger, one feature card, two minis,
-  // and the activity calendar. Same data and click actions as before.
   const ledgerStat = (n, l) =>
     `<div class="study-stat"><div class="study-stat-num">${n}</div><div class="study-stat-name">${l}</div></div>`;
 
@@ -106,24 +105,6 @@ function renderDashboardCards() {
       ${ledgerStat(reflections, "Reflections")}
     </div>
 
-    <div class="study-actions">
-      <div class="study-feature" onclick="openReviewSession()">
-        <div class="study-feature-label">Daily Review</div>
-        <div class="study-feature-num">${dueCount}</div>
-        <div class="study-feature-sub">${dueCount ? (dueCount === 1 ? "item due to review" : "items due to review") : "all caught up"}</div>
-        <div class="study-feature-cta">${dueCount ? "Begin session →" : "Come back tomorrow"}</div>
-      </div>
-      <div class="study-minis">
-        <div class="study-mini" onclick="expandDashboardCard('reflection')">
-          <div class="study-mini-name">Reflect</div>
-          <div class="study-mini-desc">Write &amp; review your reflections</div>
-        </div>
-        <div class="study-mini" onclick="var b=document.getElementById('serendipityBtn'); if(b) b.click();">
-          <div class="study-mini-name">Serendipity</div>
-          <div class="study-mini-desc">Resurface a random story or note</div>
-        </div>
-      </div>
-    </div>
 
     <div class="study-activity">
       <div class="study-activity-head">
@@ -132,10 +113,501 @@ function renderDashboardCards() {
       </div>
       <div id="habitHeatmap" class="heatmap-grid"></div>
     </div>
+
+    <div class="study-actions">
+      <div class="study-feature" onclick="openReviewSession()">
+        <div class="study-feature-label">Daily Review</div>
+        <div class="study-feature-num">${dueCount}</div>
+        <div class="study-feature-sub">${dueCount ? (dueCount === 1 ? "item due to review" : "items due to review") : "all caught up"}</div>
+        <div class="study-feature-cta">${dueCount ? "Begin session →" : "Come back tomorrow"}</div>
+      </div>
+      <div class="study-feature mg-card" id="marginsCard"></div>
+    </div>
+
+    <div class="study-actions">
+      <div class="study-feature pg-card" id="parlourCard"></div>
+      <div class="study-feature hn-card" id="honoursCard"></div>
+    </div>
+
   `;
 
   renderHeatmap();
+  renderMarginsCard();
+  renderParlourCard();
+  renderHonoursCard();
 }
+
+// ---- From your margins: your own words, resurfaced ----
+function _marginItems() {
+  return (userLearningJourney.timeline || []).filter(
+    (t) =>
+      (isType(t.type, "Highlight") ||
+        isType(t.type, "Note") ||
+        isType(t.type, "Reflection")) &&
+      t.text &&
+      t.text.trim().length > 15,
+  );
+}
+let _marginsIdx = null;
+// "3 weeks ago" style timestamps make an old margin feel like a memory
+function _relTime(dateStr) {
+  const days = Math.floor((Date.now() - new Date(dateStr)) / 86400000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) {
+    const w = Math.round(days / 7);
+    return `${w} week${w === 1 ? "" : "s"} ago`;
+  }
+  if (days < 365) {
+    const m = Math.round(days / 30);
+    return `${m} month${m === 1 ? "" : "s"} ago`;
+  }
+  const y = Math.round(days / 365);
+  return `${y} year${y === 1 ? "" : "s"} ago`;
+}
+const _mgTrim = (s, n) => {
+  const t = s.replace(/\s+/g, " ").trim().replace(/^"|"$/g, "");
+  return t.length > n ? t.slice(0, n) + "…" : t;
+};
+function renderMarginsCard(step) {
+  const el = document.getElementById("marginsCard");
+  if (!el) return;
+  const items = _marginItems();
+  if (!items.length) {
+    el.innerHTML = `
+      <div class="study-feature-label">From Your Margins</div>
+      <div class="mg-quote mg-empty">Highlight and note passages as you read — your own words will resurface here.</div>`;
+    return;
+  }
+  if (_marginsIdx === null)
+    _marginsIdx = Math.floor(Date.now() / 86400000) % items.length;
+  if (step) _marginsIdx = (_marginsIdx + 1) % items.length;
+  const it = items[_marginsIdx];
+  const raw = (it.text || "").replace(/^\[(Path|Capstone):[^\]]*\]\s*/, "");
+
+  // Notes are stored as `your note\n\n"quoted passage"` — show both
+  // halves distinctly: the passage as a quote, your words beneath it.
+  let bodyHtml;
+  if (raw.includes('\n\n"')) {
+    const parts = raw.split('\n\n"');
+    const note = _mgTrim(parts[0], 140);
+    const quote = _mgTrim(parts[1], 150);
+    bodyHtml = `
+      <div class="mg-quote">“${quote}”</div>
+      <div class="mg-note"><span>You wrote</span>${note}</div>`;
+  } else {
+    bodyHtml = `<div class="mg-quote">“${_mgTrim(raw, 170)}”</div>`;
+  }
+
+  const kind = isType(it.type, "Reflection")
+    ? "Reflection"
+    : isType(it.type, "Note")
+      ? "Note"
+      : "Highlight";
+  const fav = it.isFavorite === true;
+
+  el.innerHTML = `
+    <div class="mg-head">
+      <div class="study-feature-label">From Your Margins</div>
+      <span class="mg-kind">${kind} · ${_relTime(it.date)}</span>
+    </div>
+    ${bodyHtml}
+    <div class="mg-meta">${it.article ? `${it.article} · ` : ""}${_marginsIdx + 1} of ${items.length}</div>
+    <div class="mg-actions">
+      <button class="text-btn" onclick="event.stopPropagation(); showAnotherMargin()">Another ↻</button>
+      ${it.article ? `<button class="text-btn" onclick="event.stopPropagation(); openMarginItem()">Open in story →</button>` : ""}
+      <button class="text-btn mg-fav ${fav ? "on" : ""}" title="Favorite" onclick="event.stopPropagation(); toggleMarginFav()">♥︎</button>
+    </div>`;
+}
+function showAnotherMargin() {
+  renderMarginsCard(true);
+}
+function toggleMarginFav() {
+  const it = _marginItems()[_marginsIdx];
+  if (!it) return;
+  if (typeof toggleTimelineFavorite === "function")
+    toggleTimelineFavorite(it.date);
+  renderMarginsCard(false);
+}
+window.toggleMarginFav = toggleMarginFav;
+function openMarginItem() {
+  const it = _marginItems()[_marginsIdx];
+  if (!it || !it.article) return;
+  if (typeof jumpToArticleByDomainAndName === "function") {
+    jumpToArticleByDomainAndName(it.domain, it.article, it.date);
+  }
+}
+window.showAnotherMargin = showAnotherMargin;
+window.openMarginItem = openMarginItem;
+// ---- The Parlour Game: a quiz built from your own reading ----
+// Question types: "which story is this passage from?", "who wrote X?",
+// and "which story did you highlight this in?". Tracks your run and
+// best run, so there's always a score to beat.
+function _readStoriesList() {
+  const out = [];
+  Object.keys(userLearningJourney.topics || {}).forEach((d) => {
+    (userLearningJourney.topics[d].readArticles || []).forEach((name) => {
+      const dom = window.topicsData?.[d];
+      if (!dom) return;
+      Object.keys(dom.subtopics || {}).forEach((s) => {
+        const art = dom.subtopics[s].articles?.[name];
+        if (art && art.content) out.push({ domain: d, sub: s, name, art });
+      });
+    });
+  });
+  return out;
+}
+function _allStoryNames() {
+  const names = [];
+  Object.keys(window.topicsData || {}).forEach((d) => {
+    Object.keys(window.topicsData[d].subtopics || {}).forEach((s) => {
+      Object.keys(window.topicsData[d].subtopics[s].articles || {}).forEach(
+        (a) => names.push(a),
+      );
+    });
+  });
+  return names;
+}
+function _pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function _distractors(correct, pool, n) {
+  const others = [...new Set(pool.filter((x) => x && x !== correct))];
+  const out = [];
+  while (out.length < n && others.length) {
+    out.push(others.splice(Math.floor(Math.random() * others.length), 1)[0]);
+  }
+  return out;
+}
+function _cleanSentence(content) {
+  const text = content
+    .replace(/[#>*_`]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .filter((x) => x.length >= 60 && x.length <= 220);
+  return sentences.length ? _pick(sentences) : null;
+}
+
+let _pgQuestion = null;
+let _pgRun = 0;
+function _buildParlourQuestion() {
+  const read = _readStoriesList();
+  const allNames = _allStoryNames();
+  const types = [];
+
+  if (read.length && allNames.length >= 3) types.push("passage");
+  const authored = read.filter((r) => r.art.author);
+  const allAuthors = [
+    ...new Set(
+      read.map((r) => r.art.author).filter(Boolean),
+    ),
+  ];
+  if (authored.length && allAuthors.length >= 3) types.push("author");
+  const hls = (userLearningJourney.timeline || []).filter(
+    (t) =>
+      (isType(t.type, "Highlight") || isType(t.type, "Note")) &&
+      t.text &&
+      t.article &&
+      t.text.trim().length > 30,
+  );
+  if (hls.length && allNames.length >= 3) types.push("margin");
+
+  if (!types.length) return null;
+  const type = _pick(types);
+
+  if (type === "author") {
+    const r = _pick(authored);
+    return {
+      q: `Who wrote <em>${r.name}</em>?`,
+      answer: r.art.author,
+      choices: [r.art.author, ..._distractors(r.art.author, allAuthors, 2)],
+    };
+  }
+  if (type === "margin") {
+    const h = _pick(hls);
+    let txt = h.text.replace(/\s+/g, " ").trim().replace(/^"|"$/g, "");
+    if (txt.length > 140) txt = txt.slice(0, 140) + "…";
+    return {
+      q: `You marked this passage — in which story?<div class="pg-passage">“${txt}”</div>`,
+      answer: h.article,
+      choices: [h.article, ..._distractors(h.article, allNames, 2)],
+    };
+  }
+  // passage
+  for (let tries = 0; tries < 6; tries++) {
+    const r = _pick(read);
+    const sentence = _cleanSentence(r.art.content || "");
+    if (!sentence) continue;
+    return {
+      q: `Which story is this from?<div class="pg-passage">“${sentence}”</div>`,
+      answer: r.name,
+      choices: [r.name, ..._distractors(r.name, allNames, 2)],
+    };
+  }
+  return null;
+}
+
+function renderParlourCard(next) {
+  const el = document.getElementById("parlourCard");
+  if (!el) return;
+  if (next || !_pgQuestion) _pgQuestion = _buildParlourQuestion();
+  const best = parseInt(localStorage.getItem("osmosis_parlour_best")) || 0;
+
+  if (!_pgQuestion) {
+    el.innerHTML = `
+      <div class="study-feature-label">The Parlour Game</div>
+      <div class="mg-quote mg-empty">Finish a story or two and the game begins — you'll be quizzed on what you've read.</div>`;
+    return;
+  }
+  // shuffle choices
+  const choices = [..._pgQuestion.choices]
+    .map((c) => ({ c, r: Math.random() }))
+    .sort((a, b) => a.r - b.r)
+    .map((o) => o.c);
+  _pgQuestion.shuffled = choices;
+
+  el.innerHTML = `
+    <div class="study-feature-label">The Parlour Game</div>
+    <div class="pg-question">${_pgQuestion.q}</div>
+    <div class="pg-choices">
+      ${choices.map((c, i) => `<button class="pg-choice" onclick="event.stopPropagation(); answerParlour(${i})">${c}</button>`).join("")}
+    </div>
+    <div class="pg-foot"><span>Run: ${_pgRun}</span><span>Best: ${best}</span></div>`;
+}
+
+function answerParlour(i) {
+  const el = document.getElementById("parlourCard");
+  if (!el || !_pgQuestion || _pgQuestion.done) return;
+  _pgQuestion.done = true;
+  const chosen = _pgQuestion.shuffled[i];
+  const right = chosen === _pgQuestion.answer;
+  const btns = el.querySelectorAll(".pg-choice");
+  btns.forEach((b, j) => {
+    b.disabled = true;
+    if (_pgQuestion.shuffled[j] === _pgQuestion.answer) b.classList.add("pg-right");
+    else if (j === i) b.classList.add("pg-wrong");
+    else b.classList.add("pg-dim");
+  });
+  if (right) {
+    _pgRun++;
+    const best = parseInt(localStorage.getItem("osmosis_parlour_best")) || 0;
+    if (_pgRun > best)
+      localStorage.setItem("osmosis_parlour_best", String(_pgRun));
+  } else {
+    _pgRun = 0;
+  }
+  const best = parseInt(localStorage.getItem("osmosis_parlour_best")) || 0;
+  const foot = el.querySelector(".pg-foot");
+  if (foot)
+    foot.innerHTML = `<span>Run: ${_pgRun}</span><span>Best: ${best}</span>`;
+  const wrap = document.createElement("div");
+  wrap.className = "mg-actions";
+  wrap.innerHTML = `<button class="text-btn" onclick="event.stopPropagation(); renderParlourCard(true)">${right ? "Next question →" : "Try another →"}</button>`;
+  el.appendChild(wrap);
+}
+window.renderParlourCard = renderParlourCard;
+window.answerParlour = answerParlour;
+
+// ---- Honours: seals, ranks & ceremonies (a real reward system) ----
+// Every honour is a stamped seal worth points; points carry a RANK.
+// New honours are announced with an award ceremony, and the full
+// cabinet opens on tap. Earned dates persist in localStorage.
+const HONOURS = [
+  { id: "first_story", glyph: "Ⅰ", name: "First Story", desc: "Finish your first story.", pts: 10, test: (s) => s.read >= 1, prog: (s) => [s.read, 1] },
+  { id: "five_stories", glyph: "Ⅴ", name: "Five Stories", desc: "Finish five stories.", pts: 25, test: (s) => s.read >= 5, prog: (s) => [s.read, 5] },
+  { id: "fifteen_stories", glyph: "ⅩⅤ", name: "The Fifteen", desc: "Finish fifteen stories.", pts: 50, test: (s) => s.read >= 15, prog: (s) => [s.read, 15] },
+  { id: "thirty_stories", glyph: "ⅩⅩⅩ", name: "The Thirty", desc: "Finish thirty stories.", pts: 100, test: (s) => s.read >= 30, prog: (s) => [s.read, 30] },
+  { id: "ten_marks", glyph: "✎", name: "Ten Marks", desc: "Save ten highlights or notes.", pts: 20, test: (s) => s.marks >= 10, prog: (s) => [s.marks, 10] },
+  { id: "fifty_marks", glyph: "✒", name: "Fifty Marks", desc: "Save fifty highlights or notes.", pts: 50, test: (s) => s.marks >= 50, prog: (s) => [s.marks, 50] },
+  { id: "first_reflection", glyph: "❧", name: "First Reflection", desc: "Write your first reflection.", pts: 15, test: (s) => s.refl >= 1, prog: (s) => [s.refl, 1] },
+  { id: "ten_reflections", glyph: "❦", name: "Deep Thinker", desc: "Write ten reflections.", pts: 40, test: (s) => s.refl >= 10, prog: (s) => [s.refl, 10] },
+  { id: "week_streak", glyph: "Ⅶ", name: "A Week of Letters", desc: "Read seven days in a row.", pts: 40, test: (s) => s.longest >= 7, prog: (s) => [s.longest, 7] },
+  { id: "month_streak", glyph: "☾", name: "A Month of Letters", desc: "Read thirty days in a row.", pts: 100, test: (s) => s.longest >= 30, prog: (s) => [s.longest, 30] },
+  { id: "first_fav", glyph: "♥", name: "First Favourite", desc: "Mark a moment as a favourite.", pts: 10, test: (s) => s.favs >= 1, prog: (s) => [s.favs, 1] },
+  { id: "parlour_five", glyph: "♠", name: "Parlour Champion", desc: "A run of five in the Parlour Game.", pts: 30, test: (s) => s.parlour >= 5, prog: (s) => [s.parlour, 5] },
+];
+const RANKS = [
+  { min: 0, title: "Novice Reader" },
+  { min: 50, title: "Apprentice of Letters" },
+  { min: 120, title: "Scholar of the Stacks" },
+  { min: 220, title: "Curator of Margins" },
+  { min: 340, title: "Keeper of the Archives" },
+  { min: 490, title: "Master of the Quarterly" },
+];
+
+function _honourStats() {
+  const t = userLearningJourney.timeline || [];
+  const read = Object.values(userLearningJourney.topics || {}).reduce(
+    (s, x) => s + (x.readArticles ? x.readArticles.length : 0),
+    0,
+  );
+  const marks =
+    t.filter((x) => isType(x.type, "Highlight")).length +
+    t.filter((x) => isType(x.type, "Note")).length;
+  return {
+    read,
+    marks,
+    refl: t.filter((x) => isType(x.type, "Reflection")).length,
+    favs: t.filter((x) => x.isFavorite).length,
+    longest: calcStreak().longest,
+    parlour: parseInt(localStorage.getItem("osmosis_parlour_best")) || 0,
+  };
+}
+
+// Returns { earned: {id: dateISO}, fresh: [honour, ...] } and persists.
+function checkHonours() {
+  const stats = _honourStats();
+  let earned;
+  try {
+    earned = JSON.parse(localStorage.getItem("osmosis_honours") || "null");
+  } catch (e) {
+    earned = null;
+  }
+  const firstRun = !earned;
+  if (!earned) earned = {};
+  const fresh = [];
+  HONOURS.forEach((h) => {
+    if (h.test(stats) && !earned[h.id]) {
+      earned[h.id] = new Date().toISOString();
+      if (!firstRun) fresh.push(h); // no ceremony spam on first migration
+    }
+  });
+  try {
+    localStorage.setItem("osmosis_honours", JSON.stringify(earned));
+  } catch (e) {}
+  return { earned, fresh, stats };
+}
+
+function _honourPoints(earned) {
+  return HONOURS.reduce((s, h) => s + (earned[h.id] ? h.pts : 0), 0);
+}
+function _rankFor(pts) {
+  let cur = RANKS[0];
+  let next = null;
+  for (const r of RANKS) {
+    if (pts >= r.min) cur = r;
+    else {
+      next = r;
+      break;
+    }
+  }
+  return { cur, next };
+}
+
+function renderHonoursCard() {
+  const el = document.getElementById("honoursCard");
+  if (!el) return;
+  const { earned, fresh, stats } = checkHonours();
+  const pts = _honourPoints(earned);
+  const { cur, next } = _rankFor(pts);
+  const earnedCount = HONOURS.filter((h) => earned[h.id]).length;
+  const rankPct = next
+    ? Math.round(((pts - cur.min) / (next.min - cur.min)) * 100)
+    : 100;
+
+  const seals = HONOURS.map((h) => {
+    const on = !!earned[h.id];
+    return `<span class="hn-seal ${on ? "on" : ""}" title="${h.name} — ${h.desc}${on ? "" : ` (${Math.min(...h.prog(stats).slice(0, 1))} / ${h.prog(stats)[1]})`}">${on ? h.glyph : "·"}</span>`;
+  }).join("");
+
+  el.innerHTML = `
+    <div class="study-feature-label">Honours</div>
+    <div class="hn-rank">${cur.title}</div>
+    <div class="hn-pts">${pts} pts${next ? ` · ${next.min - pts} to ${next.title}` : " · highest rank held"}</div>
+    <div class="hn-bar hn-rankbar"><div style="width:${rankPct}%"></div></div>
+    <div class="hn-seals">${seals}</div>
+    <div class="hn-earned">${earnedCount} of ${HONOURS.length} seals · tap to open the cabinet</div>`;
+  el.onclick = openHonoursCabinet;
+  el.classList.add("hn-tappable");
+
+  if (fresh.length) queueHonourCeremony(fresh);
+}
+
+// ---- The cabinet: every honour, its seal, and when you earned it ----
+function openHonoursCabinet() {
+  const { earned, stats } = checkHonours();
+  let cab = document.getElementById("honoursCabinet");
+  if (!cab) {
+    cab = document.createElement("div");
+    cab.id = "honoursCabinet";
+    cab.className = "hn-cabinet";
+    document.body.appendChild(cab);
+  }
+  const rows = HONOURS.map((h) => {
+    const on = !!earned[h.id];
+    const [c, t] = h.prog(stats);
+    const when = on
+      ? new Date(earned[h.id]).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : null;
+    return `
+      <div class="hn-cab-row ${on ? "on" : ""}">
+        <span class="hn-seal ${on ? "on" : ""}">${on ? h.glyph : "·"}</span>
+        <div class="hn-cab-info">
+          <div class="hn-cab-name">${h.name} <small>+${h.pts} pts</small></div>
+          <div class="hn-cab-desc">${h.desc}</div>
+          ${on ? `<div class="hn-cab-date">Earned ${when}</div>` : `<div class="hn-bar"><div style="width:${Math.min(100, Math.round((c / t) * 100))}%"></div></div><div class="hn-cab-date">${Math.min(c, t)} / ${t}</div>`}
+        </div>
+      </div>`;
+  }).join("");
+  const pts = _honourPoints(earned);
+  const { cur } = _rankFor(pts);
+  cab.innerHTML = `
+    <div class="hn-cab-sheet">
+      <button class="rv-close" onclick="closeHonoursCabinet()" aria-label="Close">×</button>
+      <div class="hn-cab-title">Cabinet of Honours</div>
+      <div class="hn-cab-rank">${cur.title} · ${pts} pts</div>
+      ${rows}
+    </div>`;
+  cab.style.display = "flex";
+}
+function closeHonoursCabinet() {
+  const cab = document.getElementById("honoursCabinet");
+  if (cab) cab.style.display = "none";
+}
+window.openHonoursCabinet = openHonoursCabinet;
+window.closeHonoursCabinet = closeHonoursCabinet;
+
+// ---- The ceremony: a seal is stamped for each new honour ----
+let _ceremonyQueue = [];
+function queueHonourCeremony(list) {
+  _ceremonyQueue.push(...list);
+  if (_ceremonyQueue.length === list.length) showNextCeremony();
+}
+function showNextCeremony() {
+  const h = _ceremonyQueue.shift();
+  if (!h) return;
+  let cer = document.getElementById("honourCeremony");
+  if (!cer) {
+    cer = document.createElement("div");
+    cer.id = "honourCeremony";
+    cer.className = "hn-ceremony";
+    document.body.appendChild(cer);
+  }
+  cer.innerHTML = `
+    <div class="hn-cer-box">
+      <div class="hn-cer-label">Honour Earned</div>
+      <div class="hn-seal on hn-cer-seal">${h.glyph}</div>
+      <div class="hn-cer-name">${h.name}</div>
+      <div class="hn-cer-desc">${h.desc}</div>
+      <div class="hn-cer-pts">+${h.pts} pts</div>
+      <button class="primary" onclick="dismissHonourCeremony()">Take a bow</button>
+    </div>`;
+  cer.style.display = "flex";
+}
+function dismissHonourCeremony() {
+  const cer = document.getElementById("honourCeremony");
+  if (cer) cer.style.display = "none";
+  if (_ceremonyQueue.length) setTimeout(showNextCeremony, 250);
+  else if (typeof renderHonoursCard === "function") renderHonoursCard();
+}
+window.dismissHonourCeremony = dismissHonourCeremony;
 
 function expandDashboardCard(cardId) {
   if (cardId === "review") {
@@ -4903,6 +5375,32 @@ function renderArticleContent(options = {}) {
       "Mark this story as read to track your progress and add it to your timeline.";
     let btnText = "Mark as Read";
 
+    // Reading colophon: a quiet printed record of your engagement
+    const stats = getArticleStats(
+      currentState.category,
+      currentState.subtopic,
+      currentState.article,
+    );
+    const coloParts = [];
+    const totalMins =
+      parseInt(document.getElementById("readTimeLabel")?.dataset.totalMins) ||
+      0;
+    if (totalMins) coloParts.push(`${totalMins} min read`);
+    if (stats.highlights)
+      coloParts.push(
+        `${stats.highlights} highlight${stats.highlights === 1 ? "" : "s"}`,
+      );
+    if (stats.notes)
+      coloParts.push(`${stats.notes} note${stats.notes === 1 ? "" : "s"}`);
+    if (stats.bookmarks)
+      coloParts.push(
+        `${stats.bookmarks} bookmark${stats.bookmarks === 1 ? "" : "s"}`,
+      );
+    if (stats.reflections)
+      coloParts.push(
+        `${stats.reflections} reflection${stats.reflections === 1 ? "" : "s"}`,
+      );
+
     completionSection.innerHTML = `
       <h3>${titleHtml}</h3>
       <p>${descHtml}</p>
@@ -4910,6 +5408,7 @@ function renderArticleContent(options = {}) {
             <button id="markReadBtn" class="primary">${btnText}</button>
             <button id="reflectFinishedBtn" class="secondary">Reflect</button>
           </div>
+      ${coloParts.length ? `<div class="story-colophon">${coloParts.join(" · ")}</div>` : ""}
     `;
 
     const readList =

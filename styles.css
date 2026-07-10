@@ -4304,7 +4304,10 @@ body.compact-mode .annotation-item {
 /* ---- Palette: light editorial (warm paper) — applied to every page
    (and to the Workstation drawer, which lives outside .view) ---- */
 [data-skin="editorial"] .view,
-[data-skin="editorial"] .notes-section {
+[data-skin="editorial"] .notes-section,
+[data-skin="editorial"] .rv-overlay,
+[data-skin="editorial"] .hn-cabinet,
+[data-skin="editorial"] .hn-ceremony {
   /* Follow the app's own background so the skin matches the rest of
      the app in every theme (light + dark). */
   --ed-paper: var(--cream);
@@ -4334,7 +4337,13 @@ body.compact-mode .annotation-item {
 [data-theme="dark"][data-skin="editorial"] .view,
 [data-theme="midnight"][data-skin="editorial"] .view,
 [data-theme="dark"][data-skin="editorial"] .notes-section,
-[data-theme="midnight"][data-skin="editorial"] .notes-section {
+[data-theme="midnight"][data-skin="editorial"] .notes-section,
+[data-theme="dark"][data-skin="editorial"] .rv-overlay,
+[data-theme="midnight"][data-skin="editorial"] .rv-overlay,
+[data-theme="dark"][data-skin="editorial"] .hn-cabinet,
+[data-theme="midnight"][data-skin="editorial"] .hn-cabinet,
+[data-theme="dark"][data-skin="editorial"] .hn-ceremony,
+[data-theme="midnight"][data-skin="editorial"] .hn-ceremony {
   --ed-paper: var(--cream);
   --ed-ink: #e9e3d5;
   --ed-muted: #998d7b;
@@ -5848,6 +5857,519 @@ body.deep-work-active .scroll-jump-btn {
   display: flex;
   gap: 12px;
   justify-content: center;
+}
+
+/* ============================================================
+   FROM THE ARCHIVES & READING COLOPHON
+   ============================================================ */
+/* A single unread story resurfaces daily under the masthead */
+.archives-slot {
+  text-align: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 2px;
+  padding: 16px 14px 14px;
+  margin: -2px 0 24px;
+  cursor: pointer;
+  transition: border-color 0.25s ease;
+}
+@media (hover: hover) {
+  .archives-slot:hover {
+    border-color: var(--accent);
+  }
+}
+.archives-slot:active {
+  transform: scale(0.995);
+}
+.archives-label {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  font-size: 0.6rem;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.archives-title {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--dark-text);
+}
+.archives-meta {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  font-size: 0.74rem;
+  color: var(--subtitle-color);
+  margin-top: 6px;
+}
+
+/* The story's closing record: "9 min read · 4 highlights · 1 note" */
+.story-colophon {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.8px;
+  font-size: 0.76rem;
+  color: var(--subtitle-color);
+  margin-top: 20px;
+}
+
+/* ============================================================
+   THE STUDY — margins, parlour game & honours cards
+   ============================================================ */
+/* These cards aren't tap-targets as a whole */
+.mg-card,
+.pg-card,
+.hn-card {
+  cursor: default;
+}
+.mg-quote {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--dark-text);
+  margin-top: 12px;
+}
+.mg-quote.mg-empty {
+  color: var(--subtitle-color);
+  font-size: 0.92rem;
+}
+.mg-meta {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  font-size: 0.72rem;
+  color: var(--subtitle-color);
+  margin-top: 10px;
+}
+.mg-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+.mg-actions .text-btn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  box-shadow: none;
+}
+.al-fact {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.15rem;
+  line-height: 1.55;
+  color: var(--dark-text);
+  margin-top: 12px;
+}
+.hn-earned {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  font-size: 0.74rem;
+  color: var(--subtitle-color);
+  margin: 8px 0 14px;
+}
+.hn-row {
+  margin-bottom: 12px;
+}
+.hn-row-top {
+  display: flex;
+  justify-content: space-between;
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.86rem;
+  color: var(--dark-text);
+  margin-bottom: 5px;
+}
+.hn-row-top span:last-child {
+  color: var(--subtitle-color);
+  font-size: 0.76rem;
+}
+.hn-bar {
+  height: 3px;
+  background: var(--glass-border);
+  overflow: hidden;
+}
+.hn-bar > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ---- The Parlour Game ---- */
+.pg-question {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--dark-text);
+  margin-top: 12px;
+}
+.pg-question em {
+  font-style: italic;
+}
+.pg-passage {
+  font-style: italic;
+  color: var(--subtitle-color);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+.pg-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+.pg-choice {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.9rem;
+  color: var(--dark-text);
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    opacity 0.2s ease;
+}
+@media (hover: hover) {
+  .pg-choice:not(:disabled):hover {
+    border-color: var(--accent);
+  }
+}
+.pg-choice.pg-right {
+  background: var(--dark-text);
+  border-color: var(--dark-text);
+  color: var(--cream);
+}
+.pg-choice.pg-wrong {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.pg-choice.pg-dim {
+  opacity: 0.45;
+}
+.pg-foot {
+  display: flex;
+  justify-content: space-between;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  font-size: 0.72rem;
+  color: var(--subtitle-color);
+  margin-top: 14px;
+}
+
+/* ---- Margins card: depth details ---- */
+.mg-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mg-kind {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.4px;
+  font-size: 0.68rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.mg-note {
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--dark-text);
+  border-top: 1px solid var(--glass-border);
+  margin-top: 10px;
+  padding-top: 8px;
+}
+.mg-note span {
+  display: block;
+  font-variant: small-caps;
+  letter-spacing: 1.6px;
+  font-size: 0.62rem;
+  color: var(--accent);
+  margin-bottom: 3px;
+}
+.mg-actions .mg-fav {
+  margin-left: auto;
+  font-size: 1rem;
+  color: var(--subtitle-color);
+}
+.mg-actions .mg-fav.on {
+  color: var(--accent);
+}
+
+/* ---- Honours: seals, ranks, cabinet & ceremony ---- */
+.hn-tappable {
+  cursor: pointer !important;
+  outline: 1px solid var(--glass-border);
+  outline-offset: -6px;
+  box-shadow: var(--lift-shadow);
+}
+@media (hover: hover) {
+  .hn-tappable:hover {
+    outline-color: color-mix(in srgb, var(--accent) 40%, var(--glass-border));
+  }
+}
+.hn-rank {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--dark-text);
+  margin-top: 10px;
+}
+.hn-pts {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.4px;
+  font-size: 0.72rem;
+  color: var(--subtitle-color);
+  margin: 3px 0 8px;
+}
+.hn-rankbar {
+  margin-bottom: 14px;
+}
+.hn-seals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.hn-seal {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.85rem;
+  border: 1px dashed var(--glass-border);
+  color: var(--subtitle-color);
+  flex-shrink: 0;
+}
+.hn-seal.on {
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  background: radial-gradient(
+    circle at 32% 28%,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    color-mix(in srgb, var(--accent) 7%, transparent) 70%
+  );
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent),
+    inset 0 0 0 4.5px color-mix(in srgb, var(--accent) 30%, transparent),
+    0 2px 6px color-mix(in srgb, var(--accent) 25%, transparent);
+  text-shadow: 0 1px 1px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+/* The cabinet */
+.hn-cabinet {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 12500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.hn-cab-sheet {
+  position: relative;
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 82vh;
+  overflow-y: auto;
+  padding: 26px 22px;
+}
+.hn-cab-title {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.72rem;
+  color: var(--accent);
+  text-align: center;
+}
+.hn-cab-rank {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  text-align: center;
+  color: var(--subtitle-color);
+  font-size: 0.8rem;
+  margin: 6px 0 18px;
+  padding-bottom: 14px;
+  border-bottom: 4px double var(--glass-border);
+}
+.hn-cab-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--glass-border);
+  opacity: 0.65;
+}
+.hn-cab-row.on {
+  opacity: 1;
+}
+.hn-cab-row:last-child {
+  border-bottom: none;
+}
+.hn-cab-info {
+  flex: 1;
+  min-width: 0;
+}
+.hn-cab-name {
+  font-family: "Lora", Georgia, serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--dark-text);
+}
+.hn-cab-name small {
+  font-weight: 400;
+  color: var(--accent);
+  font-size: 0.72rem;
+  margin-left: 4px;
+}
+.hn-cab-desc {
+  font-size: 0.8rem;
+  color: var(--subtitle-color);
+  line-height: 1.4;
+  margin: 2px 0 6px;
+}
+.hn-cab-date {
+  font-variant: small-caps;
+  font-family: "Lora", Georgia, serif;
+  letter-spacing: 1.2px;
+  font-size: 0.68rem;
+  color: var(--subtitle-color);
+  margin-top: 4px;
+}
+
+/* The ceremony */
+.hn-ceremony {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--glass-solid) 88%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 13000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+.hn-cer-label {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 3.5px;
+  font-size: 0.66rem;
+  color: var(--accent);
+  margin-bottom: 22px;
+}
+.hn-cer-box {
+  position: relative;
+}
+.hn-cer-box::before {
+  content: "";
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+.hn-cer-seal {
+  position: relative;
+  width: 84px !important;
+  height: 84px !important;
+  font-size: 2rem !important;
+  margin: 0 auto 20px;
+  box-shadow:
+    inset 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent),
+    inset 0 0 0 6px color-mix(in srgb, var(--accent) 32%, transparent),
+    0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent) !important;
+}
+.hn-cab-sheet {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.18),
+    0 24px 60px rgba(0, 0, 0, 0.3);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hn-cer-name,
+  .hn-cer-desc,
+  .hn-cer-pts {
+    animation: riseIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  .hn-cer-name {
+    animation-delay: 0.25s;
+  }
+  .hn-cer-desc {
+    animation-delay: 0.35s;
+  }
+  .hn-cer-pts {
+    animation-delay: 0.45s;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hn-cer-seal {
+    animation: sealStamp 0.55s cubic-bezier(0.2, 1.4, 0.4, 1);
+  }
+}
+@keyframes sealStamp {
+  0% {
+    transform: scale(2.4) rotate(-14deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.94) rotate(2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+.hn-cer-name {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--dark-text);
+}
+.hn-cer-desc {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  color: var(--subtitle-color);
+  margin: 8px 0 4px;
+}
+.hn-cer-pts {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 2px;
+  color: var(--accent);
+  font-size: 0.9rem;
+  margin-bottom: 26px;
 }
 
 /* End of stylesheet */
