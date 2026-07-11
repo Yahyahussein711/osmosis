@@ -6372,4 +6372,113 @@ body.deep-work-active .scroll-jump-btn {
   margin-bottom: 26px;
 }
 
+/* ============================================================
+   PANEL WINNERS — month rules, backup ledger, compositor row
+   ============================================================ */
+/* Timeline: month rules & the tap-to-jump month strip */
+.tl-month-rule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 10px 0 4px;
+  scroll-margin-top: 90px;
+}
+.tl-month-rule span {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-size: 0.66rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.tl-month-rule::before,
+.tl-month-rule::after {
+  content: "";
+  height: 1px;
+  background: var(--glass-border);
+  flex: 1;
+  max-width: 90px;
+}
+.tl-month-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 2px 10px;
+  margin-bottom: 4px;
+}
+.tl-month-chip {
+  background: transparent;
+  border: none;
+  padding: 2px 2px;
+  font-family: "Lora", Georgia, serif;
+  letter-spacing: 2px;
+  font-size: 0.68rem;
+  color: var(--subtitle-color);
+  cursor: pointer;
+  box-shadow: none;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+.tl-month-chip:hover {
+  color: var(--accent);
+}
+.tl-month-sep {
+  color: var(--glass-border);
+  flex-shrink: 0;
+}
+
+/* Settings: the backup ledger line */
+.backup-ledger {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.6px;
+  font-size: 0.76rem;
+  color: var(--subtitle-color);
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.backup-ledger.warn {
+  color: var(--accent);
+}
+
+/* Writing Desk: the compositor's proposal row */
+.cmp-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--glass-border);
+  padding-top: 10px;
+  margin-top: 6px;
+}
+.cmp-text {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.86rem;
+  color: var(--subtitle-color);
+  line-height: 1.5;
+}
+.cmp-actions {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.cmp-actions .text-btn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 2px 0;
+  cursor: pointer;
+  box-shadow: none;
+}
+.cmp-actions .cmp-dismiss {
+  color: var(--subtitle-color);
+}
+
 /* End of stylesheet */

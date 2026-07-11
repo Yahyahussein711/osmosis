@@ -783,7 +783,7 @@ function renderReviewCard() {
   if (!overlay) return;
 
   if (reviewIndex >= reviewQueue.length) {
-    const did = reviewQueue.length;
+    const did = new Set(reviewQueue.map((e) => e.key + "#" + e.idx)).size;
     const stillDue = getDueReviewItems().length;
     overlay.innerHTML = `
       <div class="rv-end">
@@ -833,7 +833,7 @@ function renderReviewCard() {
         <div class="rv-passage">“${ann.text}”</div>
         ${hasNote ? `<div class="rv-note"><span>Your note</span>${ann.note}</div>` : ""}
         <div class="rv-rate-row">
-          <button onclick="rateReviewCard(0)" class="rv-rate rv-again">Again<small>${humanInterval(nextIntervalMs(ann, 0))}</small></button>
+          <button onclick="rateReviewCard(0)" class="rv-rate rv-again">Again<small>this sitting</small></button>
           <button onclick="rateReviewCard(1)" class="rv-rate rv-good">Good<small>${humanInterval(nextIntervalMs(ann, 1))}</small></button>
           <button onclick="rateReviewCard(2)" class="rv-rate rv-easy">Easy<small>${humanInterval(nextIntervalMs(ann, 2))}</small></button>
         </div>
@@ -865,6 +865,9 @@ function rateReviewCard(quality) {
         localStorage.setItem(entry.key, JSON.stringify(arr));
       }
     } catch (e) {}
+    // A lapse returns within the sitting: "Again" re-queues the card at
+    // the tail, so the session only closes once everything is retrieved.
+    if (quality === 0) reviewQueue.push(entry);
   }
   reviewIndex++;
   renderReviewCard();
@@ -2315,6 +2318,9 @@ function setupEvents() {
   document
     .getElementById("genContent")
     ?.addEventListener("input", updateGenContentCount);
+  document
+    .getElementById("genContent")
+    ?.addEventListener("paste", handleCompositorPaste);
   document
     .getElementById("genImage")
     ?.addEventListener("change", handleGenImageInput);
@@ -4513,6 +4519,9 @@ function switchView(viewName, skipScroll = false) {
     if (viewName === "articleView") progressContainer.classList.add("show");
     else progressContainer.classList.remove("show");
   }
+
+  if (viewName === "profileView" && typeof renderBackupLedger === "function")
+    renderBackupLedger();
 
   if (!skipScroll) {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -7601,8 +7610,37 @@ function renderTimeline(filterType) {
 
   const isFiltered = filterType !== "All";
 
+  // Month rules: printed dividers whenever the ledger crosses into a new
+  // month, plus a tap-to-jump strip of the months present.
+  const monthKey = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  const monthName = (d) =>
+    d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const monthCounts = {};
+  itemsToProcess.forEach((it) => {
+    const mk = monthKey(new Date(it.date));
+    monthCounts[mk] = (monthCounts[mk] || 0) + 1;
+  });
+  const monthsPresent = [];
+  let _prevMonth = null;
+
   let delay = 0;
   Object.keys(groups).forEach((key) => {
+    // Emit a month rule when this group opens a new month (daily/weekly)
+    if (currentZoom !== "monthly") {
+      const gd = new Date(groups[key][0].date);
+      const mk = monthKey(gd);
+      if (mk !== _prevMonth) {
+        _prevMonth = mk;
+        monthsPresent.push({ mk, d: gd });
+        const rule = document.createElement("div");
+        rule.className = "tl-month-rule";
+        rule.id = `tlm-${mk}`;
+        rule.innerHTML = `<span>${monthName(gd)} · ${monthCounts[mk]} ${monthCounts[mk] === 1 ? "entry" : "entries"}</span>`;
+        timeline.appendChild(rule);
+      }
+    }
+
     const groupWrap = document.createElement("div");
     groupWrap.className = "tl-group";
 
@@ -7706,6 +7744,27 @@ function renderTimeline(filterType) {
       );
     }
   });
+
+  // Month strip: JUL · JUN · MAY — tap to jump to that month's rule
+  if (monthsPresent.length > 1) {
+    const strip = document.createElement("div");
+    strip.className = "tl-month-strip";
+    strip.innerHTML = monthsPresent
+      .map(
+        (m) =>
+          `<button class="tl-month-chip" data-mk="${m.mk}">${m.d
+            .toLocaleDateString(undefined, { month: "short" })
+            .toUpperCase()}</button>`,
+      )
+      .join('<span class="tl-month-sep">·</span>');
+    strip.querySelectorAll(".tl-month-chip").forEach((b) => {
+      b.addEventListener("click", () => {
+        const rule = document.getElementById(`tlm-${b.dataset.mk}`);
+        if (rule) rule.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+    timeline.insertBefore(strip, timeline.firstChild);
+  }
 }
 
 function makeSummaryItem(html, delayIndex, color, borderColor) {
@@ -10980,6 +11039,35 @@ async function applyImportedLibrary(rawText) {
 
 // Full backup: every piece of the user's data (stories, timeline, highlights,
 // notes, reflections, bookmarks, favorites, progress, settings) as one JSON file.
+// ---- The Backup Ledger: a registrar's line in the Data group ----
+function stampBackupLedger() {
+  try {
+    localStorage.setItem("osmosis_last_backup", new Date().toISOString());
+  } catch (e) {}
+  renderBackupLedger();
+}
+function renderBackupLedger() {
+  const el = document.getElementById("backupLedger");
+  if (!el) return;
+  const iso = localStorage.getItem("osmosis_last_backup");
+  if (!iso) {
+    el.innerHTML =
+      "No backup on record — your marginalia exist on this device alone.";
+    el.classList.add("warn");
+    return;
+  }
+  const then = new Date(iso);
+  const days = Math.floor((Date.now() - then) / 86400000);
+  const when = then.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "long",
+  });
+  const ago =
+    days <= 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
+  el.innerHTML = `Last full backup — ${when}, ${ago}`;
+  el.classList.toggle("warn", days > 30);
+}
+
 async function exportFullBackup() {
   const data = {};
   for (let i = 0; i < localStorage.length; i++) {
@@ -11000,6 +11088,7 @@ async function exportFullBackup() {
     "osmosis-backup.json",
     "application/json",
   );
+  stampBackupLedger();
   showToast("Full backup downloaded.");
 }
 
@@ -11010,6 +11099,7 @@ async function exportBackup() {
   const jsContent = `window.topicsData = window.topicsData || {};\n\nObject.assign(window.topicsData, ${JSON.stringify(topics, null, 2)});\n`;
 
   download(jsContent, `stories.js`, "application/javascript");
+  stampBackupLedger();
   showToast("Ready! Replace stories.js with this file.");
 }
 
@@ -11541,6 +11631,134 @@ function saveGenDraft() {
     /* draft is best-effort; ignore quota errors */
   }
 }
+
+// ---- The Compositor: smart paste on the Writing Desk ----
+// When a large paste lands in an empty body, quietly propose pulling a
+// title, author, and hook out of it. One inline row: Apply / Dismiss.
+let _compositor = null;
+function handleCompositorPaste(e) {
+  const ta = e.target;
+  if (!ta || ta.value.trim()) return; // only offers on an empty sheet
+  const text =
+    (e.clipboardData || window.clipboardData)?.getData("text") || "";
+  if (text.length < 300) return;
+  setTimeout(() => proposeCompositor(text), 0);
+}
+function proposeCompositor(text) {
+  const lines = text.split(/\r?\n/);
+  let title = null;
+  let author = null;
+  const titleField = document.getElementById("genTitle");
+  const authorField = document.getElementById("genAuthor");
+  const hookField = document.getElementById("genHook");
+
+  // First short line with no closing punctuation reads as a title
+  let li = 0;
+  while (li < lines.length && !lines[li].trim()) li++;
+  const first = (lines[li] || "").trim();
+  if (
+    first &&
+    first.length >= 3 &&
+    first.length <= 90 &&
+    !/[.!?,;:]$/.test(first) &&
+    first.split(/\s+/).length <= 12
+  ) {
+    title = { text: first, line: li };
+  }
+  // A "by So-and-so" line in the opening lines reads as the author
+  for (let i = li; i < Math.min(lines.length, li + 6); i++) {
+    const m = lines[i].trim().match(/^by\s+([A-Za-zÀ-ɏ.'’\- ]{2,60})$/i);
+    if (m) {
+      author = { text: m[1].trim(), line: i };
+      break;
+    }
+  }
+  const parts = [];
+  if (title && titleField && !titleField.value.trim())
+    parts.push(
+      `title “${title.text.length > 40 ? title.text.slice(0, 40) + "…" : title.text}”`,
+    );
+  else title = null;
+  if (author && authorField && !authorField.value.trim())
+    parts.push(`author ${author.text}`);
+  else author = null;
+  // First real sentence of the prose becomes the hook suggestion
+  let hook = null;
+  if (hookField && !hookField.value.trim()) {
+    const bodyLines = lines.filter(
+      (_, i) =>
+        i !== (title ? title.line : -1) && i !== (author ? author.line : -1),
+    );
+    const m = bodyLines
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .match(/[^.!?]{25,160}[.!?]/);
+    if (m) {
+      hook = m[0].trim();
+      parts.push("a one-line hook");
+    }
+  }
+  if (!parts.length) return;
+  _compositor = { title, author, hook };
+
+  let row = document.getElementById("compositorRow");
+  if (!row) {
+    row = document.createElement("div");
+    row.id = "compositorRow";
+    row.className = "cmp-row";
+    const sheet = document.querySelector(".studio-manuscript");
+    if (sheet) sheet.appendChild(row);
+    else return;
+  }
+  row.innerHTML = `
+    <span class="cmp-text">Set ${parts.join(" · ")}?</span>
+    <span class="cmp-actions">
+      <button class="text-btn" onclick="applyCompositor()">Apply</button>
+      <button class="text-btn cmp-dismiss" onclick="dismissCompositor()">Dismiss</button>
+    </span>`;
+  row.style.display = "flex";
+}
+function applyCompositor() {
+  if (!_compositor) return dismissCompositor();
+  const ta = document.getElementById("genContent");
+  const { title, author, hook } = _compositor;
+  if (title) {
+    const f = document.getElementById("genTitle");
+    if (f && !f.value.trim()) f.value = title.text;
+  }
+  if (author) {
+    const f = document.getElementById("genAuthor");
+    if (f && !f.value.trim()) f.value = author.text;
+  }
+  if (hook) {
+    const f = document.getElementById("genHook");
+    if (f && !f.value.trim()) f.value = hook;
+  }
+  // Strip the consumed title/author lines from the body (the hook stays,
+  // since it is the story's own first sentence, not front matter)
+  if (ta && (title || author)) {
+    const lines = ta.value.split(/\r?\n/);
+    const drop = new Set(
+      [title ? title.line : -1, author ? author.line : -1].filter(
+        (x) => x >= 0,
+      ),
+    );
+    ta.value = lines
+      .filter((_, i) => !drop.has(i))
+      .join("\n")
+      .replace(/^\n+/, "");
+    updateGenContentCount();
+  }
+  dismissCompositor();
+}
+function dismissCompositor() {
+  _compositor = null;
+  const row = document.getElementById("compositorRow");
+  if (row) row.remove();
+}
+window.applyCompositor = applyCompositor;
+window.dismissCompositor = dismissCompositor;
 
 function updateGenContentCount() {
   const ta = document.getElementById("genContent");
