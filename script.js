@@ -2047,7 +2047,7 @@ function openNotesDrawer(targetStep = 0) {
       const closeBtn = document.createElement("button");
       closeBtn.className = "close-drawer-btn icon-btn-small";
       closeBtn.style.cssText =
-        "position: absolute; top: 12px; right: 60px; z-index: 1000; padding: 8px; background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: 50%; cursor: pointer; color: var(--subtitle-color); display: flex; align-items: center; justify-content: center;";
+        "position: absolute; top: 10px; right: 12px; z-index: 1000; padding: 8px; background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: 50%; cursor: pointer; color: var(--subtitle-color); display: flex; align-items: center; justify-content: center;";
       closeBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
       closeBtn.addEventListener("click", closeNotesDrawer);
       notesDrawer.appendChild(closeBtn);

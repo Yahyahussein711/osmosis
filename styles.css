@@ -1563,10 +1563,10 @@ body.deep-work-active #articleView {
 }
 @media (max-width: 500px) {
   .notes-section {
-    top: calc(20px + env(safe-area-inset-top, 0px));
-    left: calc(22px + env(safe-area-inset-left, 0px));
-    right: calc(10px + env(safe-area-inset-right, 0px));
-    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    top: calc(14px + env(safe-area-inset-top, 0px));
+    left: calc(14px + env(safe-area-inset-left, 0px));
+    right: calc(14px + env(safe-area-inset-right, 0px));
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   }
 }
 /* While it's open the page behind must not scroll — this also removes
@@ -6855,7 +6855,7 @@ body.deep-work-active .scroll-jump-btn {
 .ws-ribbon {
   position: absolute;
   top: 0;
-  right: 30px;
+  left: 26px;
   width: 12px;
   height: 46px;
   background: var(--accent);
