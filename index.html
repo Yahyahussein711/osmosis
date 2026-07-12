@@ -251,6 +251,7 @@
           <div class="ed-mh-title">The Quarterly</div>
           <div class="ed-mh-tag">A Field Guide to the Examined Life</div>
         </div>
+        <div id="edDateline" class="ed-dateline" aria-hidden="true"></div>
         <div id="edStoryCount" class="ed-issue-count"></div>
         <h2 style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
           <span style="display: flex; align-items: center; gap: 10px">
@@ -368,6 +369,7 @@
         </div>
         <div id="libraryFilterChip" style="display: none; margin-bottom: 14px"></div>
         <div id="articlesGrid" class="categories-grid"></div>
+        <div id="finisBlock" class="finis-block" style="display: none"></div>
       </div>
 
       <div id="articleView" class="view">
@@ -1762,6 +1764,7 @@
           margin-bottom: 6px;
         "
       ></div>
+      <div class="ws-ribbon" aria-hidden="true"></div>
 
       <div class="carousel-header">
         <h3 class="section-title-spaced" style="margin: 0">Workspace</h3>
@@ -1772,6 +1775,7 @@
         <button class="drawer-tab active" data-step="0">Reflection</button>
         <button class="drawer-tab" data-step="1">Notes</button>
       </div>
+      <div id="wsContext" class="ws-context" aria-hidden="true"></div>
 
       <div
         class="carousel-viewport"
@@ -1789,12 +1793,23 @@
         >
           <!-- Slide 1: Reflection -->
           <div class="carousel-slide ws-slide">
+            <div class="ws-page ws-page-left">
             <div class="ws-lead">
+              <button
+                class="ws-inspire"
+                id="wsWeaveBtn"
+                style="display: none"
+                title="Lay all your highlights onto the page"
+              >
+                ⤳ Weave
+              </button>
               <button class="ws-inspire" id="socraticBtn">✦ Inspire me</button>
             </div>
-            <div id="socraticPromptsBox" class="socratic-box"></div>
-
-            <div class="ws-sheet">
+            <div id="wsEpigraph" class="ws-epigraph" style="display: none"></div>
+            <div class="ws-sheet" style="position: relative">
+              <span id="wsDraftMark" class="ws-draft-mark" style="display: none"
+                >draft</span
+              >
               <textarea
                 id="reflectionInput"
                 class="reflection-input ws-paper-input"
@@ -1815,17 +1830,24 @@
                     </svg>
                   </button>
                 </div>
+                <span id="wsWordCount" class="ws-live-count"></span>
                 <button class="primary btn-sm" id="saveReflectionBtn">
                   Save Reflection
                 </button>
               </div>
             </div>
 
-            <div id="reflectionHistory" class="reflection-history"></div>
+            </div>
+            <div class="ws-page ws-page-right">
+              <div id="socraticPromptsBox" class="socratic-box"></div>
+              <div id="wsMargins" class="ws-margins" style="display: none"></div>
+              <div id="reflectionHistory" class="reflection-history"></div>
+            </div>
           </div>
 
           <!-- Slide 2: Notes -->
           <div class="carousel-slide ws-slide">
+            <div class="ws-page ws-page-left">
             <p class="ws-hint" id="selectedTextPreview">
               Select text in the story, then type a note below.
             </p>
@@ -1845,6 +1867,8 @@
               </div>
             </div>
 
+            </div>
+            <div class="ws-page ws-page-right">
             <div class="ws-search">
               <svg
                 width="15"
@@ -1865,6 +1889,7 @@
             </div>
 
             <div id="annotationsList"></div>
+            </div>
           </div>
         </div>
       </div>

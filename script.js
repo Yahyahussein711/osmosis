@@ -1507,6 +1507,16 @@ function updateNotesCarousel() {
 
   const tabs = document.querySelectorAll("#mainCarouselTabs .drawer-tab");
   tabs.forEach((t, i) => t.classList.toggle("active", i === currentNotesStep));
+  try {
+    const nRef = getReflections().length;
+    const nAnn = getAnnotations().filter(
+      (a) => a && a.note !== "Bookmarked",
+    ).length;
+    if (tabs[0])
+      tabs[0].innerHTML = `Reflection${nRef ? ` <span class="tab-count">${nRef}</span>` : ""}`;
+    if (tabs[1])
+      tabs[1].innerHTML = `Notes${nAnn ? ` <span class="tab-count">${nAnn}</span>` : ""}`;
+  } catch (e) {}
 }
 
 // ============================================================
@@ -2055,6 +2065,17 @@ function openNotesDrawer(targetStep = 0) {
     }
     updateNotesCarousel();
 
+    // The desk knows which story it serves
+    const ctx = document.getElementById("wsContext");
+    if (ctx) {
+      ctx.textContent = currentState.article
+        ? `Re: ${currentState.article}`
+        : "";
+      ctx.style.display = currentState.article ? "block" : "none";
+    }
+    renderWsMargins();
+    restoreWsDraft();
+
     document
       .querySelectorAll(".carousel-slide, .carousel-card")
       .forEach((slide) => (slide.scrollTop = 0));
@@ -2336,11 +2357,10 @@ function setupEvents() {
         else if (currentState.mode === "timeline") updateActiveNav("navTimeline");
 
         switchView("articleView", true);
-        const savedScroll = localStorage.getItem(`scroll_${getStorageKey()}`);
+        const savedScroll = _sessionScroll[getStorageKey()];
         if (savedScroll) {
           setTimeout(
-            () =>
-              window.scrollTo({ top: parseInt(savedScroll), behavior: "auto" }),
+            () => window.scrollTo({ top: savedScroll, behavior: "auto" }),
             10,
           );
         }
@@ -2375,6 +2395,17 @@ function setupEvents() {
             .map((g) => g.trim())
             .filter(Boolean)
         : [];
+      // A zoomed crop is baked into the image itself before saving;
+      // a SHRUNK photo (fit mode) is stored as a factor instead, so the
+      // original image is never destroyed.
+      if (genImageZoom > 1.001 && genImageData.startsWith("data:")) {
+        genImageData = await bakeGenImageCrop();
+        genImageRef = ""; // it is a new image now
+        genImagePos = "50% 50%";
+        genImageZoom = 1;
+        setGenImagePreview(genImageData, "");
+      }
+      const imageFit = genImageZoom < 0.999 ? Number(genImageZoom.toFixed(2)) : "";
       const imagePos = genImagePos || "50% 50%";
 
       // Validate inputs
@@ -2457,6 +2488,7 @@ function setupEvents() {
         genres: genres,
         image: image,
         imagePos: imagePos,
+        imageFit: imageFit,
       };
       try {
         localStorage.setItem(
@@ -2484,6 +2516,7 @@ function setupEvents() {
         genres: genres,
         image: image,
         imagePos: imagePos,
+        imageFit: imageFit,
       };
 
       try {
@@ -2613,17 +2646,17 @@ function setupEvents() {
     navHome.addEventListener("click", () => {
       updateActiveNav("navHome");
       if (
-        currentState.mode === "explore" &&
+        _readingActive &&
         currentState.article &&
-        currentState.view !== "explore" &&
-        currentState.view !== "article"
+        currentState.view !== "article" &&
+        currentState.view !== "explore"
       ) {
+        // A story is still open — return straight into it, where you were
         switchView("articleView", true);
-        const savedScroll = localStorage.getItem(`scroll_${getStorageKey()}`);
+        const savedScroll = _sessionScroll[getStorageKey()];
         if (savedScroll) {
           setTimeout(
-            () =>
-              window.scrollTo({ top: parseInt(savedScroll), behavior: "auto" }),
+            () => window.scrollTo({ top: savedScroll, behavior: "auto" }),
             10,
           );
         }
@@ -2703,6 +2736,13 @@ function setupEvents() {
 
   document.getElementById("backToPrevious").addEventListener("click", () => {
     stopTTS();
+    // Back is an explicit exit: the story is no longer "open", so tab
+    // switches won't return into it — and its place is forgotten, so
+    // reopening it starts from the beginning.
+    _readingActive = false;
+    try {
+      delete _sessionScroll[getStorageKey()];
+    } catch (e) {}
     if (currentState.mode === "timeline") {
       updateActiveNav("navTimeline");
       switchView("timelineView");
@@ -3608,20 +3648,48 @@ function setupEvents() {
       "What will you do differently this week because you read this — concretely, not vaguely?",
     ];
     const selected = prompts.sort(() => 0.5 - Math.random()).slice(0, 2);
-    box.innerHTML = `<ul style="margin-left:20px;line-height:1.6;"><li>${selected[0]}</li><li style="margin-top:8px;">${selected[1]}</li></ul>`;
+    box.innerHTML = `<ul style="margin-left:20px;line-height:1.6;">${selected
+      .map(
+        (pr, i) =>
+          `<li class="ws-prompt"${i ? ' style="margin-top:8px;"' : ""}>${pr}</li>`,
+      )
+      .join("")}</ul>
+      <div class="ws-prompt-hint">Tap a prompt to pin it above your page.</div>`;
+    box.querySelectorAll(".ws-prompt").forEach((li) =>
+      li.addEventListener("click", () => {
+        setWsEpigraph(li.textContent.trim());
+        box.style.display = "none";
+      }),
+    );
     box.style.display = "block";
   });
 
   const refInput = document.getElementById("reflectionInput");
   if (refInput) {
     refInput.addEventListener("input", (e) => {
+      updateWsWordCount();
+      if (!e.target.value) e.target.style.height = "";
+      else wsAutoGrow(e.target);
+      wsTypewriter(e.target);
+      wsTypingPulse();
+      const dm = document.getElementById("wsDraftMark");
+      if (dm) dm.style.display = "none";
       clearTimeout(reflectionTypingTimer);
       reflectionTypingTimer = setTimeout(() => {
         saveReflectionState(e.target.value);
+        saveWsDraft(e.target.value);
       }, 500);
+    });
+    refInput.addEventListener("blur", () => {
+      clearTimeout(_wsTypingTimer);
+      document.getElementById("notesSection")?.classList.remove("ws-typing");
     });
     saveReflectionState(refInput.value || "");
   }
+
+  document
+    .getElementById("wsWeaveBtn")
+    ?.addEventListener("click", weaveMargins);
 
   const undoRefBtn = document.getElementById("undoRefBtn");
   if (undoRefBtn) undoRefBtn.addEventListener("click", undoReflection);
@@ -4524,7 +4592,8 @@ function switchView(viewName, skipScroll = false) {
     renderBackupLedger();
 
   if (!skipScroll) {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Instant — an animated scroll on every page open is distracting
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   // Reflect the current story in the browser tab title
@@ -4878,6 +4947,7 @@ function renderArticleGrid() {
           genres: Array.isArray(artData.genres) ? artData.genres : [],
           image: artData.image || "",
           imagePos: artData.imagePos || "50% 50%",
+          imageFit: artData.imageFit || 0,
         });
       });
     });
@@ -5050,6 +5120,8 @@ function renderArticleGrid() {
       ? `<div style="position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--glass-border); overflow:hidden;"><div style="height:100%; width:${progress}%; background:var(--accent);"></div></div>`
       : "";
 
+    // Cards keep the uniform 4:3 crop for grid symmetry; a photo's
+    // fit-mode setting only applies on the story page itself.
     const coverHTML = item.image
       ? `<img ${item.image.startsWith("data:") ? `src="${item.image}"` : `data-img-ref="${item.image}"`} alt="" class="story-cover" style="width:100%; aspect-ratio:4/3; object-fit:cover; object-position:${item.imagePos || "50% 50%"}; border-radius:10px; margin-bottom:14px; display:block;" />`
       : "";
@@ -5101,7 +5173,66 @@ function renderArticleGrid() {
 
     grid.appendChild(card);
   });
+
+  renderEdDateline();
+
+  // Finis: the issue closes with a mark, not a dead edge
+  const finis = document.getElementById("finisBlock");
+  if (finis) {
+    if (!allArticles.length || !displayArticles.length) {
+      finis.style.display = "none";
+    } else {
+      const unreadCount = allArticles.filter(
+        (it) =>
+          !(userLearningJourney.topics[it.domain]?.readArticles || []).includes(
+            it.article,
+          ),
+      ).length;
+      finis.innerHTML = `
+        <div class="finis-fleuron">❦</div>
+        <div class="finis-line">${
+          unreadCount
+            ? `${unreadCount} page${unreadCount === 1 ? " remains" : "s remain"} uncut`
+            : "You have read the whole issue"
+        }</div>`;
+      finis.style.display = "block";
+    }
+  }
+
   switchView("exploreView");
+}
+
+// The Library's living dateline: today's date set like a newspaper,
+// with a time-aware line from the editor's desk beneath it.
+function renderEdDateline() {
+  const el = document.getElementById("edDateline");
+  if (!el) return;
+  const now = new Date();
+  const n = now.getDate();
+  const j = n % 10;
+  const k = n % 100;
+  const suffix =
+    j === 1 && k !== 11
+      ? "st"
+      : j === 2 && k !== 12
+        ? "nd"
+        : j === 3 && k !== 13
+          ? "rd"
+          : "th";
+  const weekday = now.toLocaleDateString(undefined, { weekday: "long" });
+  const month = now.toLocaleDateString(undefined, { month: "long" });
+  const hr = now.getHours();
+  const greeting =
+    hr >= 5 && hr < 11
+      ? "A fine morning for a short story."
+      : hr >= 11 && hr < 17
+        ? "The afternoon edition is at your leisure."
+        : hr >= 17 && hr < 22
+          ? "Good evening — the lamps are lit."
+          : "The night desk is open.";
+  el.innerHTML = `
+    <div class="ed-dateline-date">${weekday} · the ${n}${suffix} of ${month}</div>
+    <div class="ed-dateline-note">${greeting}</div>`;
 }
 
 function goToExploreView() {
@@ -5142,18 +5273,28 @@ function loadArticleView(options = {}) {
   if (frontEl) {
     if (article.image) {
       frontEl.style.objectPosition = article.imagePos || "50% 50%";
+      if (article.imageFit && article.imageFit < 1) {
+        frontEl.style.objectFit = "contain";
+        frontEl.style.transform = `scale(${article.imageFit})`;
+      } else {
+        frontEl.style.objectFit = "cover";
+        frontEl.style.transform = "";
+      }
       resolveImageRef(article.image).then((src) => {
         if (src) {
           frontEl.src = src;
           frontEl.style.display = "block";
+          _frontisReveal(frontEl);
         } else {
           frontEl.removeAttribute("src");
           frontEl.style.display = "none";
+          _clearPlateTint();
         }
       });
     } else {
       frontEl.removeAttribute("src");
       frontEl.style.display = "none";
+      _clearPlateTint();
     }
   }
   const authorEl = document.getElementById("articleAuthor");
@@ -5211,12 +5352,10 @@ function loadArticleView(options = {}) {
 
   renderArticleContent(options);
 
-  // Resume where the reader left off in this story (unless we're jumping to a
-  // specific spot, e.g. from the timeline/notes).
-  const savedScroll = parseInt(
-    localStorage.getItem(`scroll_${getStorageKey()}`),
-    10,
-  );
+  // Resume only within this session (story → timeline → back). A fresh
+  // open — new story, or a new app session — starts from the beginning.
+  _readingActive = true;
+  const savedScroll = _sessionScroll[getStorageKey()];
   const resume =
     !options.skipResume && Number.isFinite(savedScroll) && savedScroll > 40;
 
@@ -5501,13 +5640,16 @@ function spawnCompletionExplosion() {
 }
 
 let _lastReadScrollY = 0;
+const _sessionScroll = {}; // per-story scroll, forgotten when the app closes
+let _readingActive = false; // true while a story is "open" (not backed out of)
 document.addEventListener("scroll", () => {
   const articleEl = document.getElementById("articleContent");
   if (!articleEl || currentState.view !== "article") return;
   const rect = articleEl.getBoundingClientRect();
 
-  // Save scroll position for this specific article
-  localStorage.setItem(`scroll_${getStorageKey()}`, window.scrollY);
+  // Remember the position only for THIS session — a fresh open of a
+  // story always starts from the beginning.
+  _sessionScroll[getStorageKey()] = window.scrollY;
 
   // Adjusted math to hit 100% when the user finishes reading, not when the article scrolls entirely off screen
   const total = rect.height - window.innerHeight + 250;
@@ -6174,6 +6316,173 @@ function editAnnotation(id) {
   }
 }
 
+// ---- The Open Book engines: auto-grow, typewriter focus, weave ----
+function wsAutoGrow(ta) {
+  if (!ta) return;
+  ta.style.height = "auto";
+  ta.style.height = ta.scrollHeight + "px";
+}
+function wsTypewriter(ta) {
+  const slide = ta.closest(".carousel-slide");
+  if (!slide) return;
+  const rTa = ta.getBoundingClientRect();
+  const rSl = slide.getBoundingClientRect();
+  const ratio = ta.value.length
+    ? Math.min(1, ta.selectionEnd / ta.value.length)
+    : 1;
+  const caretY = rTa.top - rSl.top + slide.scrollTop + ratio * rTa.height;
+  const target = caretY - slide.clientHeight * 0.42;
+  slide.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+}
+let _wsTypingTimer = null;
+function wsTypingPulse() {
+  const sect = document.getElementById("notesSection");
+  if (!sect) return;
+  sect.classList.add("ws-typing");
+  clearTimeout(_wsTypingTimer);
+  _wsTypingTimer = setTimeout(
+    () => sect.classList.remove("ws-typing"),
+    2200,
+  );
+}
+
+// Weave: every highlight laid onto the page as a skeleton of quotations
+function weaveMargins() {
+  let anns = [];
+  try {
+    anns = getAnnotations().filter(
+      (a) => a && a.text && a.note !== "Bookmarked",
+    );
+  } catch (e) {}
+  if (!anns.length) return;
+  const ta = document.getElementById("reflectionInput");
+  if (!ta) return;
+  const skeleton = anns
+    .map((a) => `“${a.text.replace(/\s+/g, " ").trim()}” —\n\n`)
+    .join("");
+  ta.value = ta.value.trim()
+    ? ta.value.replace(/\n*$/, "\n\n") + skeleton
+    : skeleton;
+  wsAutoGrow(ta);
+  const firstGap = ta.value.indexOf("” —\n");
+  ta.focus();
+  const caret = firstGap > -1 ? firstGap + 4 : ta.value.length;
+  ta.selectionStart = ta.selectionEnd = caret;
+  updateWsWordCount();
+  saveWsDraft(ta.value);
+  wsTypewriter(ta);
+}
+window.weaveMargins = weaveMargins;
+
+// ---- Workstation desk furniture: epigraph, margins, measure, draft ----
+let wsEpigraphText = "";
+function setWsEpigraph(text) {
+  wsEpigraphText = (text || "").trim();
+  const el = document.getElementById("wsEpigraph");
+  if (!el) return;
+  if (!wsEpigraphText) {
+    el.style.display = "none";
+    el.innerHTML = "";
+    return;
+  }
+  el.innerHTML = `<span>${wsEpigraphText}</span><small>tap to unpin</small>`;
+  el.style.display = "block";
+  el.onclick = () => setWsEpigraph("");
+}
+window.setWsEpigraph = setWsEpigraph;
+
+// This story's highlights & notes, folded beside the writing sheet —
+// tap one to set it into the manuscript as a quotation to answer.
+function renderWsMargins() {
+  const el = document.getElementById("wsMargins");
+  if (!el) return;
+  let anns = [];
+  try {
+    anns = getAnnotations().filter(
+      (a) => a && a.text && a.note !== "Bookmarked",
+    );
+  } catch (e) {}
+  const weaveBtn = document.getElementById("wsWeaveBtn");
+  if (weaveBtn)
+    weaveBtn.style.display =
+      currentState.article && anns.length ? "inline-block" : "none";
+  if (!currentState.article || !anns.length) {
+    el.style.display = "none";
+    el.innerHTML = "";
+    return;
+  }
+  el.style.display = "block";
+  el.innerHTML = `
+    <button class="ws-margins-toggle">— Your margins · ${anns.length} —</button>
+    <div class="ws-margins-list" style="display:none"></div>`;
+  const listEl = el.querySelector(".ws-margins-list");
+  el.querySelector(".ws-margins-toggle").addEventListener("click", () => {
+    listEl.style.display = listEl.style.display === "none" ? "block" : "none";
+  });
+  anns.slice(0, 30).forEach((a) => {
+    const row = document.createElement("button");
+    row.className = "ws-margin-row";
+    let t = a.text.replace(/\s+/g, " ").trim();
+    if (t.length > 110) t = t.slice(0, 110) + "…";
+    row.textContent = `“${t}”`;
+    row.addEventListener("click", () => {
+      const ta = document.getElementById("reflectionInput");
+      if (!ta) return;
+      const q = `“${a.text.replace(/\s+/g, " ").trim()}” —\n`;
+      ta.value = (ta.value ? ta.value.replace(/\n*$/, "\n\n") : "") + q;
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = ta.value.length;
+      updateWsWordCount();
+      listEl.style.display = "none";
+    });
+    listEl.appendChild(row);
+  });
+}
+
+function updateWsWordCount() {
+  const el = document.getElementById("wsWordCount");
+  const ta = document.getElementById("reflectionInput");
+  if (!el || !ta) return;
+  const n = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0;
+  el.textContent = n ? `${n} word${n === 1 ? "" : "s"}` : "";
+}
+
+// The preserved draft: a half-written page survives iOS killing the app.
+function wsDraftKey() {
+  return `reflection_draft_${getStorageKey()}`;
+}
+function saveWsDraft(val) {
+  try {
+    if (val && val.trim()) localStorage.setItem(wsDraftKey(), val);
+    else localStorage.removeItem(wsDraftKey());
+  } catch (e) {}
+}
+function restoreWsDraft() {
+  const ta = document.getElementById("reflectionInput");
+  const mark = document.getElementById("wsDraftMark");
+  if (!ta) return;
+  if (!ta.value.trim()) {
+    const d = localStorage.getItem(wsDraftKey());
+    if (d) {
+      ta.value = d;
+      if (mark) mark.style.display = "block";
+      updateWsWordCount();
+      wsAutoGrow(ta);
+      return;
+    }
+  }
+  if (mark) mark.style.display = "none";
+  if (!ta.value.trim()) ta.style.height = "";
+  updateWsWordCount();
+}
+function clearWsDraft() {
+  try {
+    localStorage.removeItem(wsDraftKey());
+  } catch (e) {}
+  const mark = document.getElementById("wsDraftMark");
+  if (mark) mark.style.display = "none";
+}
+
 function saveReflection() {
   const text = document.getElementById("reflectionInput").value.trim();
   if (!text) return;
@@ -6194,6 +6503,7 @@ function saveReflection() {
     reflections.push({
       id: Date.now(),
       text,
+      prompt: wsEpigraphText || "",
       article: currentState.article,
       created: new Date().toISOString(),
     });
@@ -6203,18 +6513,18 @@ function saveReflection() {
   }
 
   saveReflections(reflections);
-  document.getElementById("reflectionInput").value = "";
-  document.getElementById("reflectionInput").blur();
+  const _refTa = document.getElementById("reflectionInput");
+  _refTa.value = "";
+  _refTa.style.height = ""; // the grown sheet shrinks back after saving
+  _refTa.blur();
+  clearWsDraft();
+  setWsEpigraph("");
+  updateWsWordCount();
   loadReflections();
   spawnInsightParticles();
   if (window.triggerGraphPulse) window.triggerGraphPulse(currentState.category);
-
-  if (
-    window.innerWidth <= 767 &&
-    document.body.classList.contains("drawer-active")
-  ) {
-    closeNotesDrawer();
-  }
+  // Stay at the desk after saving — the new reflection appears in the
+  // history right below, no reason to be thrown out of the room.
 }
 
 function loadReflections() {
@@ -6224,8 +6534,12 @@ function loadReflections() {
   [...getReflections()].reverse().forEach((ref) => {
     const entry = document.createElement("div");
     entry.className = "annotation-item";
+    const refWords = ref.text.trim()
+      ? ref.text.trim().split(/\s+/).length
+      : 0;
     entry.innerHTML = `
-            <div style="font-size:0.8rem;color:var(--subtitle-color);margin-bottom:4px;">${new Date(ref.created).toLocaleDateString()}</div>
+            <div class="ws-ref-dateline">${new Date(ref.created).toLocaleDateString()} · ${refWords} word${refWords === 1 ? "" : "s"}</div>
+            ${ref.prompt ? `<div class="ws-ref-prompt">${ref.prompt}</div>` : ""}
             <div class="annotation-note">${ref.text}</div>
             <div class="annotation-actions" style="display: flex; gap: 8px; align-items: center;">
                 <button class="text-btn sage-btn" data-reflection-id="${ref.id}">•••</button>
@@ -8660,7 +8974,7 @@ function renderReflectionTracker(viewRange = "all") {
   // Resolve theme colors once — canvas can't read CSS variables itself,
   // so the chart follows whatever theme/skin is active.
   const themeCss = getComputedStyle(document.body);
-  const accentColor = themeCss.getPropertyValue("--accent").trim() || "#0d9488";
+  const accentColor = themeCss.getPropertyValue("--accent").trim() || "#9e4632";
   const mutedColor =
     themeCss.getPropertyValue("--subtitle-color").trim() || "#737373";
   const surfaceColor =
@@ -11039,6 +11353,266 @@ async function applyImportedLibrary(rawText) {
 
 // Full backup: every piece of the user's data (stories, timeline, highlights,
 // notes, reflections, bookmarks, favorites, progress, settings) as one JSON file.
+// ---- Frontispiece: tissue-guard entrance & plate tint ----
+// Old books protect their plates with a leaf of tissue; the photo opens
+// under a translucent paper veil that lifts. The story's drop cap then
+// quietly takes a muted hue sampled from the plate itself.
+function _frontisReveal(img) {
+  const run = () => {
+    _tissueGuard(img);
+    _plateTint(img);
+  };
+  if (img.complete && img.naturalWidth) run();
+  else img.onload = run;
+}
+function _tissueGuard(img) {
+  let wrap = img.parentElement;
+  if (!wrap || !wrap.classList.contains("frontis-wrap")) {
+    wrap = document.createElement("div");
+    wrap.className = "frontis-wrap";
+    img.before(wrap);
+    wrap.appendChild(img);
+    const veil = document.createElement("div");
+    veil.className = "tissue-veil";
+    wrap.appendChild(veil);
+  }
+  const veil = wrap.querySelector(".tissue-veil");
+  if (!veil) return;
+  veil.classList.remove("lifted");
+  void veil.offsetWidth; // restart the transition on every story open
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => veil.classList.add("lifted")),
+  );
+}
+function _clearPlateTint() {
+  document.getElementById("articleView")?.style.removeProperty("--plate-tint");
+}
+function _plateTint(img) {
+  try {
+    const cv = document.createElement("canvas");
+    cv.width = 24;
+    cv.height = 18;
+    const ctx = cv.getContext("2d");
+    ctx.drawImage(img, 0, 0, 24, 18);
+    const px = ctx.getImageData(0, 0, 24, 18).data;
+    let r = 0,
+      g = 0,
+      b = 0,
+      n = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      r += px[i];
+      g += px[i + 1];
+      b += px[i + 2];
+      n++;
+    }
+    r /= n * 255;
+    g /= n * 255;
+    b /= n * 255;
+    // to HSL, then temper it into an ink-compatible tone
+    const mx = Math.max(r, g, b);
+    const mn = Math.min(r, g, b);
+    let h = 0;
+    const d = mx - mn;
+    if (d > 0.001) {
+      if (mx === r) h = ((g - b) / d) % 6;
+      else if (mx === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h = (h * 60 + 360) % 360;
+    }
+    const l0 = (mx + mn) / 2;
+    let sat = d < 0.001 ? 0 : d / (1 - Math.abs(2 * l0 - 1));
+    sat = Math.min(sat, 0.5); // never gaudy
+    const dark = ["dark", "midnight"].includes(
+      document.documentElement.getAttribute("data-theme"),
+    );
+    const light = dark ? 0.62 : 0.38;
+    const tint = `hsl(${Math.round(h)}, ${Math.round(sat * 100)}%, ${Math.round(light * 100)}%)`;
+    document
+      .getElementById("articleView")
+      ?.style.setProperty("--plate-tint", tint);
+  } catch (e) {
+    _clearPlateTint();
+  }
+}
+
+// ---- Photo lightbox: tap a cover to inspect it, pinch/drag to zoom ----
+let _lbScale = 1;
+let _lbX = 0;
+let _lbY = 0;
+function _lbApply() {
+  const img = document.getElementById("lightboxImg");
+  if (img)
+    img.style.transform = `translate(${_lbX}px, ${_lbY}px) scale(${_lbScale})`;
+}
+function _lbSet(scale, cx, cy) {
+  // Zoom toward the given viewport point so it stays under the finger
+  const prev = _lbScale;
+  _lbScale = Math.max(1, Math.min(5, scale));
+  if (cx !== undefined) {
+    const k = _lbScale / prev;
+    _lbX = cx - (cx - _lbX) * k;
+    _lbY = cy - (cy - _lbY) * k;
+  }
+  if (_lbScale === 1) {
+    _lbX = 0;
+    _lbY = 0;
+  }
+  _lbApply();
+}
+function openPhotoLightbox(src) {
+  if (!src) return;
+  let lb = document.getElementById("photoLightbox");
+  if (!lb) {
+    lb = document.createElement("div");
+    lb.id = "photoLightbox";
+    lb.className = "photo-lightbox";
+    lb.innerHTML = `
+      <img id="lightboxImg" alt="" draggable="false" />
+      <div class="lb-controls">
+        <button class="lb-btn" id="lbZoomOut" aria-label="Zoom out">−</button>
+        <button class="lb-btn" id="lbZoomIn" aria-label="Zoom in">+</button>
+        <button class="lb-btn" id="lbClose" aria-label="Close">×</button>
+      </div>`;
+    document.body.appendChild(lb);
+
+    const img = lb.querySelector("#lightboxImg");
+    lb.querySelector("#lbClose").addEventListener("click", closePhotoLightbox);
+    lb.querySelector("#lbZoomIn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      _lbSet(_lbScale * 1.5, window.innerWidth / 2, window.innerHeight / 2);
+    });
+    lb.querySelector("#lbZoomOut").addEventListener("click", (e) => {
+      e.stopPropagation();
+      _lbSet(_lbScale / 1.5, window.innerWidth / 2, window.innerHeight / 2);
+    });
+    // Tap the backdrop (not the photo) to close
+    lb.addEventListener("click", (e) => {
+      if (e.target === lb) closePhotoLightbox();
+    });
+
+    // Wheel zoom (desktop)
+    lb.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        _lbSet(_lbScale * (e.deltaY < 0 ? 1.15 : 0.87), e.clientX, e.clientY);
+      },
+      { passive: false },
+    );
+
+    // Touch: pinch to zoom, one-finger pan when zoomed, double-tap toggle
+    let touchState = null;
+    let lastTapAt = 0;
+    const dist = (t) =>
+      Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    lb.addEventListener(
+      "touchstart",
+      (e) => {
+        if (e.touches.length === 2) {
+          touchState = {
+            mode: "pinch",
+            d: dist(e.touches),
+            scale: _lbScale,
+            cx: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+            cy: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+          };
+        } else if (e.touches.length === 1) {
+          const now = Date.now();
+          if (now - lastTapAt < 300) {
+            // double tap: zoom in at the tap, or reset
+            if (_lbScale > 1) _lbSet(1);
+            else _lbSet(2.5, e.touches[0].clientX, e.touches[0].clientY);
+            touchState = null;
+            lastTapAt = 0;
+            return;
+          }
+          lastTapAt = now;
+          touchState = {
+            mode: "pan",
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY,
+            ox: _lbX,
+            oy: _lbY,
+          };
+        }
+      },
+      { passive: true },
+    );
+    lb.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!touchState) return;
+        e.preventDefault();
+        if (touchState.mode === "pinch" && e.touches.length === 2) {
+          _lbSet(
+            touchState.scale * (dist(e.touches) / touchState.d),
+            touchState.cx,
+            touchState.cy,
+          );
+        } else if (touchState.mode === "pan" && e.touches.length === 1) {
+          if (_lbScale <= 1) return;
+          _lbX = touchState.ox + (e.touches[0].clientX - touchState.x);
+          _lbY = touchState.oy + (e.touches[0].clientY - touchState.y);
+          _lbApply();
+        }
+      },
+      { passive: false },
+    );
+    lb.addEventListener("touchend", () => {
+      touchState = null;
+    });
+
+    // Mouse drag pan (desktop)
+    let drag = null;
+    img.addEventListener("mousedown", (e) => {
+      if (_lbScale <= 1) return;
+      e.preventDefault();
+      drag = { x: e.clientX, y: e.clientY, ox: _lbX, oy: _lbY };
+    });
+    window.addEventListener("mousemove", (e) => {
+      if (!drag) return;
+      _lbX = drag.ox + (e.clientX - drag.x);
+      _lbY = drag.oy + (e.clientY - drag.y);
+      _lbApply();
+    });
+    window.addEventListener("mouseup", () => {
+      drag = null;
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closePhotoLightbox();
+    });
+  }
+  const img = document.getElementById("lightboxImg");
+  img.src = src;
+  _lbScale = 1;
+  _lbX = 0;
+  _lbY = 0;
+  _lbApply();
+  lb.style.display = "flex";
+  document.documentElement.style.overflow = "hidden";
+}
+function closePhotoLightbox() {
+  const lb = document.getElementById("photoLightbox");
+  if (lb) lb.style.display = "none";
+  document.documentElement.style.overflow = "";
+}
+window.openPhotoLightbox = openPhotoLightbox;
+window.closePhotoLightbox = closePhotoLightbox;
+
+// Wire the reader's cover photo to the lightbox
+(function () {
+  function wire() {
+    const f = document.getElementById("articleFrontispiece");
+    if (f) {
+      f.style.cursor = "zoom-in";
+      f.addEventListener("click", () => openPhotoLightbox(f.src));
+    }
+  }
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", wire);
+  else wire();
+})();
+
 // ---- The Backup Ledger: a registrar's line in the Data group ----
 function stampBackupLedger() {
   try {
@@ -11453,10 +12027,21 @@ function renderGeneratorManageList() {
     item.style.cssText =
       "display:flex; justify-content:space-between; align-items:center; padding:16px;";
 
+    // Byline: author · genres (falls back to a quiet word count)
+    const artObj =
+      window.topicsData?.[domain]?.subtopics?.[sub]?.articles?.[art] || {};
+    const bylineParts = [];
+    if (artObj.author) bylineParts.push(artObj.author);
+    if (Array.isArray(artObj.genres) && artObj.genres.length)
+      bylineParts.push(artObj.genres.join(", "));
+    const byline = bylineParts.length
+      ? bylineParts.join(" · ")
+      : `${(artObj.content || "").split(/\s+/).filter(Boolean).length.toLocaleString()} words`;
+
     item.innerHTML = `
       <div style="min-width:0; padding-right:10px;">
         <div style="font-weight:600; color:var(--dark-text); font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${art}</div>
-        <div style="font-size:0.75rem; color:var(--subtitle-color);">${domain} / ${sub}</div>
+        <div style="font-size:0.75rem; color:var(--subtitle-color); font-variant:small-caps; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${byline}</div>
       </div>
       <div style="display:flex; gap:8px; flex-shrink:0;">
         <button class="secondary btn-sm edit-btn">Edit</button>
@@ -11502,9 +12087,13 @@ function editCustomArticle(domain, sub, art) {
   const gGenres = document.getElementById("genGenres");
   if (gGenres) gGenres.value = (artObj.genres || []).join(", ");
   genImagePos = artObj.imagePos || "50% 50%";
-  resolveImageRef(artObj.image || "").then((dataUrl) =>
-    setGenImagePreview(dataUrl, artObj.image || ""),
-  );
+  resolveImageRef(artObj.image || "").then((dataUrl) => {
+    setGenImagePreview(dataUrl, artObj.image || "");
+    if (artObj.imageFit && artObj.imageFit < 1) {
+      genImageZoom = artObj.imageFit;
+      _genApplyCrop();
+    }
+  });
   updateGenContentCount();
 
   document.getElementById("btnGenNew").click();
@@ -11950,13 +12539,75 @@ async function inlineTopicsImages(topics) {
 // ---- Frontispiece image upload (stored as a downscaled data URL) ----
 let genImageData = "";
 let genImagePos = "50% 50%";
+let genImageZoom = 1; // 1–3; baked into the image at save time
 // Reference ("idb:<id>") for an already-stored image being edited, so a
 // re-save without changing the photo reuses it instead of duplicating.
 let genImageRef = "";
 
+function _genApplyCrop() {
+  const img = document.getElementById("genCropImg");
+  if (!img) return;
+  img.style.objectPosition = genImagePos;
+  if (genImageZoom < 1) {
+    // fit mode: the whole photo, inset with margins
+    img.style.objectFit = "contain";
+    img.style.transform = `scale(${genImageZoom})`;
+    img.style.transformOrigin = "50% 50%";
+  } else {
+    img.style.objectFit = "cover";
+    img.style.transform = `scale(${genImageZoom})`;
+    img.style.transformOrigin = genImagePos;
+  }
+  const label = document.getElementById("genZoomLabel");
+  if (label) label.textContent = `${Math.round(genImageZoom * 100)}%`;
+}
+function genZoomBy(factor) {
+  genImageZoom = Math.max(0.5, Math.min(3, genImageZoom * factor));
+  if (Math.abs(genImageZoom - 1) < 0.03) genImageZoom = 1;
+  _genApplyCrop();
+}
+window.genZoomBy = genZoomBy;
+
+// Bake the chosen zoom + position into a final 4:3 cover image, so every
+// render site (cards, reader, exports) keeps working with plain photos.
+function bakeGenImageCrop() {
+  return new Promise((resolve) => {
+    if (!genImageData || genImageZoom <= 1.001 || !genImageData.startsWith("data:")) {
+      resolve(genImageData);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const W = 1000;
+        const H = 750;
+        const cover = Math.max(W / img.width, H / img.height);
+        const scale = cover * genImageZoom;
+        const sw = W / scale;
+        const sh = H / scale;
+        const parts = (genImagePos || "50% 50%").split(" ");
+        const px = (parseFloat(parts[0]) || 50) / 100;
+        const py = (parseFloat(parts[1]) || 50) / 100;
+        const sx = (img.width - sw) * px;
+        const sy = (img.height - sh) * py;
+        const cv = document.createElement("canvas");
+        cv.width = W;
+        cv.height = H;
+        cv.getContext("2d").drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+        resolve(cv.toDataURL("image/jpeg", 0.85));
+      } catch (e) {
+        resolve(genImageData);
+      }
+    };
+    img.onerror = () => resolve(genImageData);
+    img.src = genImageData;
+  });
+}
+
 function setGenImagePreview(dataUrl, ref) {
   genImageData = dataUrl || "";
   genImageRef = ref || "";
+  genImageZoom = 1;
   const prev = document.getElementById("genImagePreview");
   if (!prev) return;
   if (!dataUrl) {
@@ -11966,13 +12617,19 @@ function setGenImagePreview(dataUrl, ref) {
   }
   prev.style.display = "block";
   prev.innerHTML = `
-    <div style="font-size:0.8rem; color:var(--subtitle-color); margin-bottom:8px;">Drag the photo to position it inside the cover.</div>
-    <div id="genCropBox" style="width:100%; max-width:340px; aspect-ratio:4/3; border-radius:10px; overflow:hidden; position:relative; cursor:grab; background:var(--glass-solid); border:1px solid var(--glass-border);">
-      <img id="genCropImg" src="${dataUrl}" alt="" draggable="false" style="width:100%; height:100%; object-fit:cover; object-position:${genImagePos}; user-select:none; pointer-events:none; display:block;" />
+    <div style="font-size:0.8rem; color:var(--subtitle-color); margin-bottom:8px;">Drag to position · pinch or − / + to zoom. Below 100% shows the whole photo on the story page; cards keep the uniform crop.</div>
+    <div id="genCropBox" style="width:100%; max-width:340px; aspect-ratio:4/3; border-radius:10px; overflow:hidden; position:relative; cursor:grab; background:var(--glass-solid); border:1px solid var(--glass-border); touch-action:none;">
+      <img id="genCropImg" src="${dataUrl}" alt="" draggable="false" style="width:100%; height:100%; object-fit:cover; object-position:${genImagePos}; user-select:none; pointer-events:none; display:block; will-change:transform;" />
     </div>
-    <button type="button" onclick="clearGenImage()" style="margin-top:10px; background: var(--glass-solid); border: 1px solid var(--glass-border); padding: 6px 12px; cursor: pointer; color: var(--subtitle-color); font-size: 0.8rem; border-radius: 6px;">Remove</button>
+    <div style="display:flex; align-items:center; gap:10px; margin-top:10px; flex-wrap:wrap;">
+      <button type="button" onclick="genZoomBy(1/1.1)" class="gen-zoom-btn" aria-label="Zoom out">−</button>
+      <span id="genZoomLabel" style="font-family:'Lora',Georgia,serif; font-size:0.78rem; color:var(--subtitle-color); min-width:44px; text-align:center;">100%</span>
+      <button type="button" onclick="genZoomBy(1.1)" class="gen-zoom-btn" aria-label="Zoom in">+</button>
+      <button type="button" onclick="clearGenImage()" style="margin-left:auto; background: var(--glass-solid); border: 1px solid var(--glass-border); padding: 6px 14px; cursor: pointer; color: var(--subtitle-color); font-size: 0.8rem; border-radius: 999px;">Remove</button>
+    </div>
   `;
   attachGenCropDrag();
+  _genApplyCrop();
 }
 
 // Let the user drag the uploaded photo to choose exactly how it sits in the cover.
@@ -11994,21 +12651,39 @@ function attachGenCropDrag() {
     if (!Number.isFinite(posY)) posY = 50;
   };
 
+  let pinch = null;
+  const dist2 = (t) =>
+    Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
   const onMove = (e) => {
+    if (e.touches && e.touches.length === 2) {
+      // pinch to zoom
+      if (!pinch) pinch = { d: dist2(e.touches), z: genImageZoom };
+      genImageZoom = Math.max(
+        0.5,
+        Math.min(3, pinch.z * (dist2(e.touches) / pinch.d)),
+      );
+      if (Math.abs(genImageZoom - 1) < 0.03) genImageZoom = 1;
+      _genApplyCrop();
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
     if (!dragging) return;
     const p = e.touches ? e.touches[0] : e;
     const rect = box.getBoundingClientRect();
-    let nx = posX - ((p.clientX - startX) / rect.width) * 100;
-    let ny = posY - ((p.clientY - startY) / rect.height) * 100;
+    // zoomed in = finer movement, so the frame tracks the finger naturally
+    let nx = posX - ((p.clientX - startX) / rect.width / genImageZoom) * 100;
+    let ny = posY - ((p.clientY - startY) / rect.height / genImageZoom) * 100;
     nx = Math.max(0, Math.min(100, nx));
     ny = Math.max(0, Math.min(100, ny));
     genImagePos = `${nx.toFixed(1)}% ${ny.toFixed(1)}%`;
-    img.style.objectPosition = genImagePos;
+    _genApplyCrop();
     if (e.cancelable) e.preventDefault();
   };
 
   const onUp = () => {
     dragging = false;
+    pinch = null;
     box.style.cursor = "grab";
     window.removeEventListener("mousemove", onMove);
     window.removeEventListener("mouseup", onUp);
@@ -12032,12 +12707,21 @@ function attachGenCropDrag() {
 
   box.addEventListener("mousedown", onDown);
   box.addEventListener("touchstart", onDown, { passive: false });
+  box.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      genZoomBy(e.deltaY < 0 ? 1.1 : 1 / 1.1);
+    },
+    { passive: false },
+  );
 }
 
 function clearGenImage() {
   genImageData = "";
   genImageRef = "";
   genImagePos = "50% 50%";
+  genImageZoom = 1;
   const input = document.getElementById("genImage");
   if (input) input.value = "";
   const prev = document.getElementById("genImagePreview");

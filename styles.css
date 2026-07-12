@@ -20,8 +20,8 @@
   --dark-text: #1a1a1a;
   --sage: #737373;
   --earth: #e5e5e5;
-  --accent: #0d9488;
-  --accent-hover: #0f766e;
+  --accent: #9e4632;
+  --accent-hover: #7f3828;
   --subtitle-color: #737373;
 
   /* Spatial / Bento Minimal Tokens */
@@ -149,6 +149,8 @@
 
 /* Dark Mode Overrides */
 [data-theme="dark"] {
+  --accent: #c98a5e;
+  --accent-hover: #b87a4e;
   --cream: #111111;
   --dark-text: #f0f0f0;
   --sage: #a3a3a3;
@@ -169,6 +171,8 @@
 
 /* OLED Midnight Mode Overrides */
 [data-theme="midnight"] {
+  --accent: #c98a5e;
+  --accent-hover: #b87a4e;
   --cream: #000000;
   --dark-text: #f0f0f0;
   --sage: #a3a3a3;
@@ -1525,8 +1529,8 @@ body.deep-work-active #articleView {
   left: 0;
   right: 0;
   transform: translateY(100%);
-  width: auto;
-  max-width: none;
+  width: 100vw;
+  max-width: 100vw;
   height: 100vh;
   height: 100dvh;
   max-height: none;
@@ -3390,7 +3394,7 @@ body.compact-mode h3 {
 }
 body.compact-mode .container {
   padding: 14px;
-  padding-bottom: 35vh;
+  padding-bottom: 120px;
 }
 body.compact-mode .annotation-item {
   padding: 12px;
@@ -6479,6 +6483,400 @@ body.deep-work-active .scroll-jump-btn {
 }
 .cmp-actions .cmp-dismiss {
   color: var(--subtitle-color);
+}
+
+/* ---- Photo lightbox ---- */
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 8, 6, 0.94);
+  z-index: 14000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+}
+.photo-lightbox img {
+  max-width: 94vw;
+  max-height: 88vh;
+  border-radius: 2px;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.08s linear;
+  will-change: transform;
+  cursor: grab;
+}
+.lb-controls {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  display: flex;
+  gap: 8px;
+}
+.lb-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(242, 234, 216, 0.1);
+  border: 1px solid rgba(242, 234, 216, 0.28);
+  color: #f2ead8;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: none;
+}
+.lb-btn:active {
+  transform: scale(0.94);
+}
+
+/* Create: crop-editor zoom chips */
+.gen-zoom-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  color: var(--dark-text);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: none;
+}
+.gen-zoom-btn:active {
+  transform: scale(0.94);
+}
+
+/* ---- Frontispiece: tissue guard & plate tint ---- */
+.frontis-wrap {
+  position: relative;
+  margin-bottom: 16px;
+}
+.frontis-wrap img {
+  margin-bottom: 0 !important;
+}
+.tissue-veil {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--cream) 86%, transparent);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 1;
+  pointer-events: none;
+  transition:
+    opacity 1.1s ease 0.15s,
+    transform 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s;
+}
+.tissue-veil.lifted {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tissue-veil {
+    display: none;
+  }
+}
+
+/* The drop cap and the author separator echo the plate's own hue */
+[data-skin="editorial"]
+  #articleView
+  .article-content
+  > p:first-of-type::first-letter {
+  color: var(--plate-tint, var(--ed-ink));
+}
+#articleView #articleAuthor::after {
+  background: var(--plate-tint, var(--glass-border));
+  opacity: 0.7;
+}
+
+/* ---- Library: living dateline & Finis ---- */
+.ed-dateline {
+  text-align: center;
+  margin: -4px 0 14px;
+}
+.ed-dateline-date {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 2.5px;
+  font-size: 0.74rem;
+  color: var(--dark-text);
+}
+.ed-dateline-note {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--subtitle-color);
+  margin-top: 3px;
+}
+.finis-block {
+  text-align: center;
+  padding: 26px 0 10px;
+  border-top: 1px solid var(--glass-border);
+  margin-top: 6px;
+}
+.finis-fleuron {
+  color: var(--accent);
+  font-size: 1.15rem;
+  margin-bottom: 6px;
+  opacity: 0.85;
+}
+.finis-line {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 2px;
+  font-size: 0.76rem;
+  color: var(--subtitle-color);
+}
+
+/* ============================================================
+   WORKSTATION — desk furniture (context, epigraph, margins,
+   measure, draft mark, tab counts)
+   ============================================================ */
+.ws-context {
+  text-align: center;
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--subtitle-color);
+  padding: 8px 20px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tab-count {
+  font-size: 0.62rem;
+  color: var(--accent);
+  letter-spacing: 0;
+  vertical-align: super;
+}
+.ws-prompt {
+  cursor: pointer;
+}
+.ws-prompt:hover {
+  color: var(--accent);
+}
+.ws-prompt-hint {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--subtitle-color);
+  opacity: 0.8;
+  margin-top: 8px;
+}
+.ws-epigraph {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--dark-text);
+  border-left: 2px solid var(--accent);
+  padding: 6px 12px;
+  margin: 4px 0 14px;
+  cursor: pointer;
+}
+.ws-epigraph small {
+  display: block;
+  font-style: normal;
+  font-variant: small-caps;
+  letter-spacing: 1.4px;
+  font-size: 0.6rem;
+  color: var(--subtitle-color);
+  margin-top: 4px;
+}
+.ws-margins {
+  margin: 2px 0 14px;
+}
+.ws-margins-toggle {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: transparent;
+  border: none;
+  padding: 6px 0;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 2px;
+  font-size: 0.72rem;
+  color: var(--accent);
+  cursor: pointer;
+  box-shadow: none;
+}
+.ws-margins-list {
+  border-top: 1px solid var(--glass-border);
+}
+.ws-margin-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--glass-border);
+  padding: 10px 4px;
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--subtitle-color);
+  cursor: pointer;
+  box-shadow: none;
+  border-radius: 0;
+}
+.ws-margin-row:hover {
+  color: var(--dark-text);
+}
+.ws-live-count {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.4px;
+  font-size: 0.7rem;
+  color: var(--subtitle-color);
+  margin-left: auto;
+  margin-right: 12px;
+}
+.ws-toolbar .ws-undo-redo + .ws-live-count {
+  margin-left: auto;
+}
+.ws-draft-mark {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.6px;
+  font-size: 0.62rem;
+  color: var(--subtitle-color);
+  opacity: 0.7;
+  pointer-events: none;
+}
+.ws-ref-dateline {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.4px;
+  font-size: 0.7rem;
+  color: var(--subtitle-color);
+  margin-bottom: 6px;
+}
+.ws-ref-prompt {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--subtitle-color);
+  border-left: 2px solid var(--glass-border);
+  padding-left: 10px;
+  margin-bottom: 8px;
+}
+
+/* ============================================================
+   THE OPEN BOOK — the Workstation as a bound volume
+   ============================================================ */
+/* Stitched binding under the handle */
+.notes-section .drawer-drag-handle {
+  position: relative;
+}
+.ws-ribbon {
+  position: absolute;
+  top: 0;
+  right: 34px;
+  width: 12px;
+  height: calc(52px + env(safe-area-inset-top, 0px));
+  background: var(--accent);
+  opacity: 0.85;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 7px), 0 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Ruled manuscript paper under the reflection page */
+#reflectionInput {
+  line-height: 30px !important;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 29px,
+    color-mix(in srgb, var(--dark-text) 8%, transparent) 29px,
+    color-mix(in srgb, var(--dark-text) 8%, transparent) 30px
+  ) !important;
+  background-attachment: local !important;
+  overflow: hidden;
+}
+
+/* Typewriter focus: while writing, the room holds its breath */
+.notes-section .drawer-tabs,
+.notes-section .ws-context,
+.notes-section .ws-lead,
+.notes-section .socratic-box,
+.notes-section .ws-margins,
+.notes-section .reflection-history,
+.notes-section .ws-search,
+.notes-section #annotationsList,
+.notes-section .close-drawer-btn,
+.notes-section .ws-ribbon,
+.notes-section .ws-toolbar {
+  transition: opacity 0.55s ease;
+}
+.notes-section.ws-typing .drawer-tabs,
+.notes-section.ws-typing .ws-context,
+.notes-section.ws-typing .ws-lead,
+.notes-section.ws-typing .socratic-box,
+.notes-section.ws-typing .ws-margins,
+.notes-section.ws-typing .reflection-history,
+.notes-section.ws-typing .close-drawer-btn,
+.notes-section.ws-typing .ws-ribbon {
+  opacity: 0.12;
+}
+.notes-section.ws-typing .ws-toolbar {
+  opacity: 0.4;
+}
+
+/* The two facing pages */
+.ws-page {
+  min-width: 0;
+}
+@media (min-width: 900px) {
+  .ws-slide {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 72px;
+    align-content: start;
+    position: relative;
+    padding-left: max(40px, calc((100% - 1080px) / 2));
+    padding-right: max(40px, calc((100% - 1080px) / 2));
+  }
+  /* the gutter: where the two pages meet */
+  .ws-slide::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--glass-border) 10%,
+      var(--glass-border) 90%,
+      transparent
+    );
+    box-shadow: 0 0 26px rgba(0, 0, 0, 0.14);
+    pointer-events: none;
+  }
+  .ws-page-right {
+    padding-top: 6px;
+  }
+}
+
+/* Weave sits beside Inspire on the lead line */
+.ws-lead {
+  gap: 18px;
 }
 
 /* End of stylesheet */
