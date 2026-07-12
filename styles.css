@@ -3435,7 +3435,8 @@ body.compact-mode .annotation-item {
 }
 
 .modal-content {
-  max-width: 500px;
+  width: 100%;
+  max-width: min(500px, calc(100vw - 32px));
   padding: 2rem;
   text-align: center;
   position: relative;
@@ -4398,7 +4399,7 @@ html[data-skin="editorial"] {
 [data-skin="editorial"] #exploreView .ed-mh-title {
   font-family: "Lora", Georgia, serif;
   font-weight: 500;
-  font-size: clamp(2.4rem, 9vw, 3.4rem);
+  font-size: clamp(1.9rem, 8.5vw, 3.4rem);
   letter-spacing: 0.04em;
   line-height: 1;
   color: var(--ed-ink);
