@@ -1578,27 +1578,30 @@ html:has(body.drawer-active) {
   overflow: hidden;
 }
 .notes-section {
-
-  /* solid paper — glass-bg is transparent under Editorial */
-  background: var(--glass-solid);
+  /* Warm paper, lifted off the desk with rounded shoulders + a soft
+     upward shadow and a hairline crown of light along the top edge. */
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--dark-text) 3%, var(--glass-solid)),
+      var(--glass-solid) 140px
+    );
   border: none;
+  border-top: 1px solid color-mix(in srgb, var(--dark-text) 8%, transparent);
 
   z-index: 2001;
   padding: 0;
-  border-radius: 0;
-  box-shadow: none;
+  border-radius: 26px 26px 0 0;
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 -12px 60px rgba(0, 0, 0, 0.32);
 
   transition:
-    transform 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.55s cubic-bezier(0.23, 1, 0.32, 1),
     opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
   overflow-y: auto;
   opacity: 0;
   pointer-events: none;
-}
-
-[data-theme="dark"] .notes-section,
-[data-theme="midnight"] .notes-section {
-  box-shadow: none;
 }
 
 .notes-section.open {
@@ -6948,6 +6951,34 @@ body.deep-work-active .scroll-jump-btn {
 /* Weave sits beside Inspire on the lead line */
 .ws-lead {
   gap: 18px;
+}
+
+/* ---- Writing Drawer: premium polish ---- */
+/* A defined pill handle centered on the drawer's shoulders */
+.notes-section .drawer-drag-handle {
+  width: 42px;
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dark-text) 22%, transparent);
+  opacity: 1;
+  margin: 12px auto 4px;
+  cursor: grab;
+  transition: background 0.2s ease;
+}
+.notes-section .drawer-drag-handle:active {
+  cursor: grabbing;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* The "Re: <story>" context line reads like a filed docket */
+.ws-context {
+  padding-top: 6px;
+}
+
+/* Give the tab row a hairline shelf so the pages sit on something */
+.notes-section .drawer-tabs {
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 2px;
 }
 
 /* End of stylesheet */
