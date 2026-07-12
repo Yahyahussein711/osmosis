@@ -5688,6 +5688,31 @@ function renderArticleContent(options = {}) {
         trackEngagement("read", `Completed reading: ${currentState.article}`);
         isRead = true;
         _sittingReads++;
+        // Add to the visual thread (once per story per sitting)
+        const already = _sittingStories.some(
+          (x) => x.domain === currentState.category && x.art === currentState.article,
+        );
+        if (!already) {
+          _sittingStories.push({
+            domain: currentState.category,
+            sub: currentState.subtopic,
+            art: currentState.article,
+            obj:
+              window.topicsData?.[currentState.category]?.subtopics?.[
+                currentState.subtopic
+              ]?.articles?.[currentState.article] || {},
+          });
+          const rec = parseInt(localStorage.getItem("osmosis_longest_thread")) || 0;
+          if (_sittingStories.length > rec) {
+            try {
+              localStorage.setItem(
+                "osmosis_longest_thread",
+                String(_sittingStories.length),
+              );
+            } catch (e) {}
+            if (_sittingStories.length >= 2) _threadRecordBeaten = true;
+          }
+        }
         showToast("Story marked as read!");
         spawnCompletionExplosion();
         updateBtnUI();
@@ -5753,15 +5778,60 @@ function pickNextStory() {
   return Object.assign(all[0], { reason: "Next in this issue" });
 }
 
+// A palate cleanser: an unread story that shares neither author nor genre
+function pickDifferentStory(excludeArt) {
+  const readOf = (d) => userLearningJourney.topics[d]?.readArticles || [];
+  const cur =
+    window.topicsData?.[currentState.category]?.subtopics?.[currentState.subtopic]
+      ?.articles?.[currentState.article] || {};
+  const curAuthor = (cur.author || "").trim().toLowerCase();
+  const curGenres = (cur.genres || []).map((g) => g.trim().toLowerCase());
+  const all = _enumerateStories().filter(
+    (x) =>
+      !(x.domain === currentState.category && x.art === currentState.article) &&
+      x.art !== excludeArt &&
+      !readOf(x.domain).includes(x.art),
+  );
+  const diff = all.find((x) => {
+    const a = (x.obj.author || "").trim().toLowerCase();
+    const g = (x.obj.genres || []).map((z) => z.trim().toLowerCase());
+    const sharesAuthor = curAuthor && a === curAuthor;
+    const sharesGenre = g.some((z) => curGenres.includes(z));
+    return !sharesAuthor && !sharesGenre;
+  });
+  return diff || null;
+}
+
+function _threadChip(st, isLast) {
+  const img = st.obj && st.obj.image;
+  const inner = img
+    ? `<img ${img.startsWith("data:") ? `src="${img}"` : `data-img-ref="${img}"`} alt="" style="object-position:${st.obj.imagePos || "50% 50%"}" />`
+    : `<span>${(st.art || "?").trim().charAt(0).toUpperCase()}</span>`;
+  return `<div class="cont-chip${isLast ? " new" : ""}" title="${st.art}">${inner}</div>`;
+}
+
 function renderContinuation() {
   const el = document.getElementById("continuationPlate");
   if (!el) return;
   const next = pickNextStory();
 
-  const thread =
-    _sittingReads > 1
-      ? `<div class="cont-thread">— your reading thread · ${_sittingReads} this sitting —</div>`
-      : "";
+  // The visual thread: a growing row of the covers you've read this sitting
+  const record = parseInt(localStorage.getItem("osmosis_longest_thread")) || 0;
+  let thread = "";
+  if (_sittingStories.length >= 1) {
+    const chips = _sittingStories
+      .map((st, i) => _threadChip(st, i === _sittingStories.length - 1))
+      .join("");
+    const label = _threadRecordBeaten
+      ? `<span class="cont-record">✦ your longest thread yet — ${_sittingStories.length}</span>`
+      : `${_sittingStories.length} this sitting${record > _sittingStories.length ? ` · best ${record}` : ""}`;
+    thread = `
+      <div class="cont-thread-wrap">
+        <div class="cont-thread-title">The Reading Thread</div>
+        <div class="cont-strip">${chips}</div>
+        <div class="cont-thread-label">${label}</div>
+      </div>`;
+  }
 
   if (!next) {
     el.innerHTML = `
@@ -5771,6 +5841,7 @@ function renderContinuation() {
         <div class="cont-finis-line">You have read the whole issue</div>
         <div class="cont-finis-sub">Write in the Studio, or revisit a favourite from your shelf.</div>
       </div>`;
+    if (typeof hydrateImages === "function") hydrateImages(el);
     return;
   }
 
@@ -5778,6 +5849,11 @@ function renderContinuation() {
   const img = next.obj.image;
   const cover = img
     ? `<div class="cont-cover"><img ${img.startsWith("data:") ? `src="${img}"` : `data-img-ref="${img}"`} alt="" style="object-position:${next.obj.imagePos || "50% 50%"}" /></div>`
+    : "";
+
+  const diff = pickDifferentStory(next.art);
+  const altHtml = diff
+    ? `<button class="cont-alt" id="continueAltBtn">Or a change of air — <em>${diff.art}</em> →</button>`
     : "";
 
   el.innerHTML = `
@@ -5791,7 +5867,8 @@ function renderContinuation() {
         <div class="cont-meta">${next.obj.author ? next.obj.author + " · " : ""}${mins} min read</div>
       </div>
       <span class="cont-arrow">→</span>
-    </button>`;
+    </button>
+    ${altHtml}`;
 
   if (typeof hydrateImages === "function") hydrateImages(el);
   const btn = document.getElementById("continueNextBtn");
@@ -5799,6 +5876,12 @@ function renderContinuation() {
     btn.onclick = () => {
       currentState.mode = "explore";
       navigateToArticle(next.domain, next.sub, next.art);
+    };
+  const altBtn = document.getElementById("continueAltBtn");
+  if (altBtn && diff)
+    altBtn.onclick = () => {
+      currentState.mode = "explore";
+      navigateToArticle(diff.domain, diff.sub, diff.art);
     };
 }
 window.renderContinuation = renderContinuation;
@@ -5830,6 +5913,8 @@ let _lastReadScrollY = 0;
 const _sessionScroll = {}; // per-story scroll, forgotten when the app closes
 let _readingActive = false; // true while a story is "open" (not backed out of)
 let _sittingReads = 0; // stories finished this sitting — the reading thread
+let _sittingStories = []; // {domain, sub, art, obj} read this sitting, for the visual thread
+let _threadRecordBeaten = false;
 document.addEventListener("scroll", () => {
   const articleEl = document.getElementById("articleContent");
   if (!articleEl || currentState.view !== "article") return;

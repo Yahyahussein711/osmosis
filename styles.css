@@ -7089,14 +7089,100 @@ body.deep-work-active::after {
 .continuation-plate {
   margin-top: 26px;
 }
-.cont-thread {
+/* The visual reading thread — covers you've read this sitting */
+.cont-thread-wrap {
   text-align: center;
+  margin-bottom: 22px;
+}
+.cont-thread-title {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.6rem;
+  color: var(--subtitle-color);
+  margin-bottom: 10px;
+}
+.cont-strip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 9px;
+}
+.cont-chip {
+  width: 34px;
+  height: 34px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--accent) 12%, var(--glass-solid));
+  border: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cont-chip img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cont-chip span {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.cont-chip.new {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cont-chip.new {
+    animation: chipDrop 0.5s cubic-bezier(0.2, 1.5, 0.4, 1);
+  }
+}
+@keyframes chipDrop {
+  from {
+    transform: translateY(-8px) scale(0.7);
+    opacity: 0;
+  }
+}
+.cont-thread-label {
   font-family: "Lora", Georgia, serif;
   font-variant: small-caps;
-  letter-spacing: 2px;
+  letter-spacing: 1.6px;
   font-size: 0.72rem;
+  color: var(--subtitle-color);
+}
+.cont-record {
   color: var(--accent);
-  margin-bottom: 16px;
+  font-weight: 600;
+}
+/* "Or a change of air" — the alternate path */
+.cont-alt {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: none;
+  border: none;
+  margin-top: 14px;
+  padding: 4px;
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.82rem;
+  color: var(--subtitle-color);
+  cursor: pointer;
+  box-shadow: none;
+}
+.cont-alt em {
+  font-style: italic;
+  color: var(--accent);
+}
+@media (hover: hover) {
+  .cont-alt:hover {
+    color: var(--dark-text);
+  }
 }
 /* "Continue Reading" between hairline rules */
 .cont-rule {
@@ -7233,4 +7319,16 @@ body.deep-work-active::after {
   margin-top: 6px;
 }
 
+
+@media (prefers-reduced-motion: no-preference) {
+  .cont-card {
+    animation: contRise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+@keyframes contRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
 /* End of stylesheet */
