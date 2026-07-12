@@ -86,6 +86,11 @@ function renderDashboardCards() {
   const reflections = timeline.filter((t) => t.type === "Reflection").length;
   const dueCount = getDueReviewItems().length;
 
+  const deskSec = getDeskSeconds();
+  const deskLine = deskSec >= 60
+    ? `<div class="desk-ledger-line">— ${formatDeskTime(deskSec)} at the desk —</div>`
+    : "";
+
   const ledgerStat = (n, l) =>
     `<div class="study-stat"><div class="study-stat-num">${n}</div><div class="study-stat-name">${l}</div></div>`;
 
@@ -104,6 +109,7 @@ function renderDashboardCards() {
       <div class="study-ledger-div" aria-hidden="true"></div>
       ${ledgerStat(reflections, "Reflections")}
     </div>
+    ${deskLine}
 
 
     <div class="study-activity">
@@ -415,6 +421,26 @@ window.answerParlour = answerParlour;
 // Every honour is a stamped seal worth points; points carry a RANK.
 // New honours are announced with an award ceremony, and the full
 // cabinet opens on tap. Earned dates persist in localStorage.
+// ---- Hours at the Desk: lifetime focused-reading time ----
+function getDeskSeconds() {
+  return parseInt(localStorage.getItem("osmosis_focus_seconds")) || 0;
+}
+function logDeskTime(sec) {
+  try {
+    localStorage.setItem(
+      "osmosis_focus_seconds",
+      String(getDeskSeconds() + Math.max(0, Math.round(sec))),
+    );
+  } catch (e) {}
+}
+function formatDeskTime(sec) {
+  const m = Math.floor(sec / 60);
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  if (h > 0) return `${h} hr${h === 1 ? "" : "s"}${mm ? ` ${mm} min` : ""}`;
+  return `${m} min`;
+}
+
 const HONOURS = [
   { id: "first_story", glyph: "Ⅰ", name: "First Story", desc: "Finish your first story.", pts: 10, test: (s) => s.read >= 1, prog: (s) => [s.read, 1] },
   { id: "five_stories", glyph: "Ⅴ", name: "Five Stories", desc: "Finish five stories.", pts: 25, test: (s) => s.read >= 5, prog: (s) => [s.read, 5] },
@@ -428,6 +454,9 @@ const HONOURS = [
   { id: "month_streak", glyph: "☾", name: "A Month of Letters", desc: "Read thirty days in a row.", pts: 100, test: (s) => s.longest >= 30, prog: (s) => [s.longest, 30] },
   { id: "first_fav", glyph: "♥", name: "First Favourite", desc: "Mark a moment as a favourite.", pts: 10, test: (s) => s.favs >= 1, prog: (s) => [s.favs, 1] },
   { id: "parlour_five", glyph: "♠", name: "Parlour Champion", desc: "A run of five in the Parlour Game.", pts: 30, test: (s) => s.parlour >= 5, prog: (s) => [s.parlour, 5] },
+  { id: "first_hour", glyph: "⧖", name: "The First Hour", desc: "Spend an hour in focused reading.", pts: 30, test: (s) => s.deskMin >= 60, prog: (s) => [s.deskMin, 60] },
+  { id: "ten_hours", glyph: "⧗", name: "Ten Hours at the Desk", desc: "Ten hours of focused, uninterrupted reading.", pts: 80, test: (s) => s.deskMin >= 600, prog: (s) => [s.deskMin, 600] },
+  { id: "day_at_desk", glyph: "☉", name: "A Day at the Desk", desc: "A full day’s worth of focused reading, all told.", pts: 160, test: (s) => s.deskMin >= 1440, prog: (s) => [s.deskMin, 1440] },
 ];
 const RANKS = [
   { min: 0, title: "Novice Reader" },
@@ -454,6 +483,7 @@ function _honourStats() {
     favs: t.filter((x) => x.isFavorite).length,
     longest: calcStreak().longest,
     parlour: parseInt(localStorage.getItem("osmosis_parlour_best")) || 0,
+    deskMin: Math.floor(getDeskSeconds() / 60),
   };
 }
 
@@ -2786,8 +2816,11 @@ function setupEvents() {
     const timeSpent = DW_TOTAL_SECONDS - dwSeconds;
     const minsSpent = Math.max(1, Math.ceil(timeSpent / 60));
     if (completed || timeSpent > 60) {
+      logDeskTime(timeSpent);
       document.getElementById("dwMins").textContent = minsSpent;
       document.getElementById("dwWords").textContent = dwStartWords;
+      const life = document.getElementById("dwLifetime");
+      if (life) life.textContent = formatDeskTime(getDeskSeconds());
       document.getElementById("dwModal").classList.add("active");
     } else showToast("Deep Work cancelled.");
   }
