@@ -3636,28 +3636,34 @@ function setupEvents() {
       return;
     }
     const prompts = [
-      "What did this story make you feel — and where do you think that feeling actually comes from?",
-      "Which sentence or moment are you still carrying with you? Why that one?",
-      "What would you have done in the main character's or author's place — honestly?",
-      "What belief of yours did this quietly confirm or challenge? Would you have admitted that yesterday?",
-      "Who in your life needs to hear this idea, and what would you tell them in two sentences?",
-      "What does this story understand about people that most people don't?",
-      "Where have you seen this exact pattern play out in your own life?",
-      "If you stripped away the plot, what is this story really about — in one word? Now defend that word.",
-      "What would the author say about the way you live your days?",
-      "What will you do differently this week because you read this — concretely, not vaguely?",
+      "What is this story asking you to admit to yourself?",
+      "Which character are you — not the one you'd like to be, the one you actually are? What does that cost you?",
+      "What did you skim past because it hit too close? Go back to it. Why that passage?",
+      "If this story is right about the world, what in your life has to change? If it's wrong — prove it.",
+      "What would the you of ten years ago not understand about why this moved you?",
+      "Write the sentence you were afraid the author would write next.",
+      "What has this story made harder to ignore?",
+      "Whose voice did you hear while reading this — and what do you owe them?",
+      "Finish honestly: 'I keep pretending that…'",
+      "Where does this story's wound overlap with your own?",
+      "If you lived for one week as though this story were true, what would Monday morning look like?",
+      "What did the author leave unsaid that you have been leaving unsaid too?",
     ];
     const selected = prompts.sort(() => 0.5 - Math.random()).slice(0, 2);
-    box.innerHTML = `<ul style="margin-left:20px;line-height:1.6;">${selected
+    const numerals = ["I.", "II."];
+    box.innerHTML = `${selected
       .map(
-        (pr, i) =>
-          `<li class="ws-prompt"${i ? ' style="margin-top:8px;"' : ""}>${pr}</li>`,
+        (pr, i) => `
+      <div class="ws-prompt">
+        <span class="ws-prompt-no">${numerals[i]}</span>
+        <span class="ws-prompt-text">${pr}</span>
+      </div>`,
       )
-      .join("")}</ul>
-      <div class="ws-prompt-hint">Tap a prompt to pin it above your page.</div>`;
-    box.querySelectorAll(".ws-prompt").forEach((li) =>
-      li.addEventListener("click", () => {
-        setWsEpigraph(li.textContent.trim());
+      .join("")}
+      <div class="ws-prompt-hint">Tap a question to pin it above your page — then answer it.</div>`;
+    box.querySelectorAll(".ws-prompt").forEach((row) =>
+      row.addEventListener("click", () => {
+        setWsEpigraph(row.querySelector(".ws-prompt-text").textContent.trim());
         box.style.display = "none";
       }),
     );

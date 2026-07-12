@@ -5468,11 +5468,16 @@ html[data-skin="editorial"] {
   background: color-mix(in srgb, var(--dark-text) 3%, transparent);
 }
 
+/* The question slip: two numbered questions between hairline rules */
 .socratic-box {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
-  border-left: 2px solid var(--accent);
+  background: transparent;
+  border-left: none;
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
   border-radius: 0;
+  padding: 4px 2px;
   font-family: var(--article-font-family, Georgia, serif);
+  font-style: normal;
 }
 
 /* ============================================================
@@ -6692,17 +6697,50 @@ body.deep-work-active .scroll-jump-btn {
   vertical-align: super;
 }
 .ws-prompt {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 12px 4px;
   cursor: pointer;
+  transition: color 0.2s ease;
 }
-.ws-prompt:hover {
+.ws-prompt + .ws-prompt {
+  border-top: 1px solid var(--glass-border);
+}
+.ws-prompt-no {
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.78rem;
   color: var(--accent);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  min-width: 20px;
+}
+.ws-prompt-text {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--dark-text);
+}
+@media (hover: hover) {
+  .ws-prompt:hover .ws-prompt-text {
+    color: var(--accent);
+  }
+}
+.ws-prompt:active {
+  opacity: 0.7;
 }
 .ws-prompt-hint {
-  font-size: 0.7rem;
-  font-style: italic;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  font-style: normal;
+  letter-spacing: 1.4px;
+  font-size: 0.64rem;
   color: var(--subtitle-color);
-  opacity: 0.8;
-  margin-top: 8px;
+  opacity: 0.85;
+  text-align: center;
+  padding: 8px 0 6px;
+  border-top: 1px solid var(--glass-border);
 }
 .ws-epigraph {
   font-family: "Lora", Georgia, serif;
