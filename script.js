@@ -5634,6 +5634,7 @@ function renderArticleContent(options = {}) {
             <button id="reflectFinishedBtn" class="secondary">Reflect</button>
           </div>
       ${coloParts.length ? `<div class="story-colophon">${coloParts.join(" · ")}</div>` : ""}
+      <div id="continuationPlate" class="continuation-plate"></div>
     `;
 
     const readList =
@@ -5659,6 +5660,7 @@ function renderArticleContent(options = {}) {
     };
 
     updateBtnUI();
+    renderContinuation();
 
     markReadBtn.onclick = () => {
       const t = userLearningJourney.topics[currentState.category];
@@ -5685,13 +5687,121 @@ function renderArticleContent(options = {}) {
       } else {
         trackEngagement("read", `Completed reading: ${currentState.article}`);
         isRead = true;
+        _sittingReads++;
         showToast("Story marked as read!");
         spawnCompletionExplosion();
         updateBtnUI();
+        renderContinuation();
       }
     };
   }
 }
+
+// ---- The Continuation Loop: never let a good sitting end ----
+function _enumerateStories() {
+  const out = [];
+  const T = window.topicsData || {};
+  Object.keys(T).forEach((d) => {
+    const subs = T[d].subtopics || {};
+    Object.keys(subs).forEach((sub) => {
+      const arts = subs[sub].articles || {};
+      Object.keys(arts).forEach((a) => out.push({ domain: d, sub, art: a, obj: arts[a] }));
+    });
+  });
+  return out;
+}
+function _storyMinutes(obj) {
+  const w = (obj && obj.content ? obj.content : "").split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(w / 200));
+}
+// Pick the next story to pull the reader onward: same author first, then a
+// shared genre, then simply the next unread in the issue.
+function pickNextStory() {
+  const readOf = (d) => userLearningJourney.topics[d]?.readArticles || [];
+  const all = _enumerateStories().filter(
+    (x) =>
+      !(x.domain === currentState.category && x.art === currentState.article) &&
+      !readOf(x.domain).includes(x.art),
+  );
+  if (!all.length) return null;
+  const cur =
+    window.topicsData?.[currentState.category]?.subtopics?.[currentState.subtopic]
+      ?.articles?.[currentState.article] || {};
+  const curAuthor = (cur.author || "").trim().toLowerCase();
+  const curGenres = (cur.genres || []).map((g) => g.trim().toLowerCase());
+
+  if (curAuthor) {
+    const byAuthor = all.find(
+      (x) => (x.obj.author || "").trim().toLowerCase() === curAuthor,
+    );
+    if (byAuthor)
+      return Object.assign(byAuthor, {
+        reason: `More from ${byAuthor.obj.author}`,
+      });
+  }
+  if (curGenres.length) {
+    const byGenre = all.find((x) =>
+      (x.obj.genres || []).some((g) => curGenres.includes(g.trim().toLowerCase())),
+    );
+    if (byGenre) {
+      const shared = (byGenre.obj.genres || []).find((g) =>
+        curGenres.includes(g.trim().toLowerCase()),
+      );
+      return Object.assign(byGenre, { reason: `More ${shared}` });
+    }
+  }
+  return Object.assign(all[0], { reason: "Next in this issue" });
+}
+
+function renderContinuation() {
+  const el = document.getElementById("continuationPlate");
+  if (!el) return;
+  const next = pickNextStory();
+
+  const thread =
+    _sittingReads > 1
+      ? `<div class="cont-thread">— your reading thread · ${_sittingReads} this sitting —</div>`
+      : "";
+
+  if (!next) {
+    el.innerHTML = `
+      ${thread}
+      <div class="cont-finis">
+        <div class="cont-fleuron">❦</div>
+        <div class="cont-finis-line">You have read the whole issue</div>
+        <div class="cont-finis-sub">Write in the Studio, or revisit a favourite from your shelf.</div>
+      </div>`;
+    return;
+  }
+
+  const mins = _storyMinutes(next.obj);
+  const img = next.obj.image;
+  const cover = img
+    ? `<div class="cont-cover"><img ${img.startsWith("data:") ? `src="${img}"` : `data-img-ref="${img}"`} alt="" style="object-position:${next.obj.imagePos || "50% 50%"}" /></div>`
+    : "";
+
+  el.innerHTML = `
+    ${thread}
+    <div class="cont-rule"><span>Continue Reading</span></div>
+    <button class="cont-card" id="continueNextBtn">
+      ${cover}
+      <div class="cont-body">
+        <div class="cont-reason">${next.reason}</div>
+        <div class="cont-title">${next.art}</div>
+        <div class="cont-meta">${next.obj.author ? next.obj.author + " · " : ""}${mins} min read</div>
+      </div>
+      <span class="cont-arrow">→</span>
+    </button>`;
+
+  if (typeof hydrateImages === "function") hydrateImages(el);
+  const btn = document.getElementById("continueNextBtn");
+  if (btn)
+    btn.onclick = () => {
+      currentState.mode = "explore";
+      navigateToArticle(next.domain, next.sub, next.art);
+    };
+}
+window.renderContinuation = renderContinuation;
 
 function setupDoomscrollObserver() {
   const observer = new IntersectionObserver(
@@ -5719,6 +5829,7 @@ function spawnCompletionExplosion() {
 let _lastReadScrollY = 0;
 const _sessionScroll = {}; // per-story scroll, forgotten when the app closes
 let _readingActive = false; // true while a story is "open" (not backed out of)
+let _sittingReads = 0; // stories finished this sitting — the reading thread
 document.addEventListener("scroll", () => {
   const articleEl = document.getElementById("articleContent");
   if (!articleEl || currentState.view !== "article") return;
