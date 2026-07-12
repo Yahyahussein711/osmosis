@@ -421,6 +421,42 @@ window.answerParlour = answerParlour;
 // Every honour is a stamped seal worth points; points carry a RANK.
 // New honours are announced with an award ceremony, and the full
 // cabinet opens on tap. Earned dates persist in localStorage.
+// ---- A soft chime to close a focus session ----
+let _focusAudioCtx = null;
+function ensureFocusAudio() {
+  try {
+    if (!_focusAudioCtx)
+      _focusAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_focusAudioCtx.state === "suspended") _focusAudioCtx.resume();
+  } catch (e) {}
+}
+function playFocusChime() {
+  try {
+    if (localStorage.getItem("osmosis_focus_chime") === "0") return;
+    if (!_focusAudioCtx) return;
+    const ctx = _focusAudioCtx;
+    const now = ctx.currentTime;
+    // two gentle bell tones, a warm fifth apart
+    [
+      [523.25, 0],
+      [783.99, 0.16],
+    ].forEach(function (pair) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = pair[0];
+      const t = now + pair[1];
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.1, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(t);
+      o.stop(t + 1.9);
+    });
+  } catch (e) {}
+}
+
 // ---- Hours at the Desk: lifetime focused-reading time ----
 function getDeskSeconds() {
   return parseInt(localStorage.getItem("osmosis_focus_seconds")) || 0;
@@ -2787,6 +2823,7 @@ function setupEvents() {
 
   // Deep Work Logic
   function startDeepWork() {
+    ensureFocusAudio();
     document.body.classList.add("deep-work-active");
     showFocusExitHint();
     dwSeconds = DW_TOTAL_SECONDS;
@@ -2822,6 +2859,7 @@ function setupEvents() {
       const life = document.getElementById("dwLifetime");
       if (life) life.textContent = formatDeskTime(getDeskSeconds());
       document.getElementById("dwModal").classList.add("active");
+      playFocusChime();
     } else showToast("Deep Work cancelled.");
   }
 
