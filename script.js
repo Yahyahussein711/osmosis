@@ -2065,17 +2065,6 @@ function openNotesDrawer(targetStep = 0) {
     }
     updateNotesCarousel();
 
-    // Ink show-through: the story's title, mirrored, bleeding faintly
-    // through the back of its own page
-    let ghost = notesDrawer.querySelector(".ws-ghost");
-    if (!ghost) {
-      ghost = document.createElement("div");
-      ghost.className = "ws-ghost";
-      ghost.setAttribute("aria-hidden", "true");
-      notesDrawer.insertBefore(ghost, notesDrawer.firstChild);
-    }
-    ghost.textContent = currentState.article || "";
-
     // The desk knows which story it serves
     const ctx = document.getElementById("wsContext");
     if (ctx) {
@@ -2922,7 +2911,7 @@ function setupEvents() {
             }
 
             // Visually pull the drawer down alongside the finger (with 0.6x resistance)
-            nDrawer.style.transform = `rotateY(0deg) translateY(${Math.max(0, deltaY * 0.6)}px)`;
+            nDrawer.style.transform = `translateY(${Math.max(0, deltaY * 0.6)}px)`;
             nDrawer.style.transition = "none";
             if (nBackdrop) {
               nBackdrop.style.opacity = Math.max(0, 1 - deltaY / 250);
@@ -3003,7 +2992,7 @@ function setupEvents() {
               const dy = zoneCurY - zoneStartY;
               if (dy > 0) {
                 if (e.cancelable) e.preventDefault();
-                nDrawer.style.transform = `rotateY(0deg) translateY(${dy * 0.85}px)`;
+                nDrawer.style.transform = `translateY(${dy * 0.85}px)`;
                 nDrawer.style.transition = "none";
               }
             },

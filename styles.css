@@ -266,26 +266,13 @@ body.drawer-active {
   overscroll-behavior: none;
   touch-action: none;
 }
-/* THE BACK OF THE PAGE — opening the Workstation turns the story's
-   leaf over in 3D; your notes are written on its reverse side. */
-body {
-  perspective: 1600px;
-}
+/* The page behind recedes like a card when the drawer rises */
 .container {
-  transition: transform 0.32s cubic-bezier(0.55, 0, 0.85, 0.4) 0.3s;
-  transform-origin: center center;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  transform-origin: top center;
 }
 body.drawer-active .container {
-  transform: rotateY(-92deg);
-  transition-delay: 0s;
-  transition-timing-function: cubic-bezier(0.55, 0, 0.85, 0.4);
-}
-/* the bottom nav leaves with the front of the page */
-body.drawer-active .bottom-nav {
-  transform: translateY(150%);
-  opacity: 0;
+  transform: scale(0.95) translateY(10px);
 }
 body.drawer-active .notes-section {
   touch-action: auto; /* Keeps the popup itself scrollable */
@@ -1563,24 +1550,24 @@ body.deep-work-active #articleView {
 /* ============================================================
    9. REVAMPED ANNOTATION POPUP (Centered Modal Card)
    ============================================================ */
-/* The Workstation is the reverse side of the story's page */
+/* The Workstation is a writing drawer: a sheet that rises from the
+   bottom while the story page recedes behind it — anchored edges,
+   so nothing is left to balance or fill. */
 .notes-section {
   position: fixed;
-  top: 0;
+  top: auto;
   left: 0;
   right: 0;
   bottom: 0;
-  transform: rotateY(92deg);
+  transform: translateY(105%);
   width: auto;
   max-width: none;
-  height: 100vh;
-  height: 100dvh;
+  height: calc(100vh - 44px - env(safe-area-inset-top, 0px));
+  height: calc(100dvh - 44px - env(safe-area-inset-top, 0px));
   max-height: none;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  border-radius: 22px 22px 0 0;
+  border-top: 1px solid var(--glass-border);
+  box-shadow: 0 -10px 50px rgba(0, 0, 0, 0.4);
 }
 /* While it's open the page behind must not scroll — this also removes
    the background scrollbar that left a gap beside the sheet. */
@@ -1597,7 +1584,7 @@ html:has(body.drawer-active) {
   border: none;
 
   z-index: 2001;
-  padding: env(safe-area-inset-top, 0px) 0 0 0;
+  padding: 0;
   border-radius: 0;
   box-shadow: none;
 
@@ -1614,18 +1601,10 @@ html:has(body.drawer-active) {
   box-shadow: none;
 }
 
-.notes-section {
-  transition:
-    transform 0.34s cubic-bezier(0.15, 0.6, 0.25, 1) 0s,
-    opacity 0.01s linear 0.34s;
-}
 .notes-section.open {
-  transform: rotateY(0deg);
+  transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
-  transition:
-    transform 0.34s cubic-bezier(0.15, 0.6, 0.25, 1) 0.3s,
-    opacity 0.01s linear 0.3s;
 }
 
 /* Keep reading-width content on large screens even though the sheet
@@ -1662,7 +1641,7 @@ html:has(body.drawer-active) {
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.5);
   z-index: 2000;
   opacity: 0;
   pointer-events: none;
@@ -6969,32 +6948,6 @@ body.deep-work-active .scroll-jump-btn {
 /* Weave sits beside Inspire on the lead line */
 .ws-lead {
   gap: 18px;
-}
-
-/* Ink show-through: the front of the page ghosts through its back */
-.ws-ghost {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  font-family: "Lora", Georgia, serif;
-  font-weight: 600;
-  font-size: clamp(2.2rem, 9vw, 4.5rem);
-  line-height: 1.15;
-  text-align: center;
-  color: var(--dark-text);
-  opacity: 0.045;
-  transform: scaleX(-1) rotate(-6deg);
-  pointer-events: none;
-  user-select: none;
-  overflow: hidden;
-  z-index: 0;
-}
-.notes-section > *:not(.ws-ghost) {
-  position: relative;
-  z-index: 1;
 }
 
 /* End of stylesheet */
