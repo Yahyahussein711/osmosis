@@ -6930,7 +6930,7 @@ function _dlgSeeds() {
 }
 function startReflectionDialogue() {
   const seeds = _dlgSeeds();
-  _dlg = { stage: "choose", answers: [], seeds, seedIdx: 0 };
+  _dlg = { stage: "choose", answers: [], seeds, seedIdx: 0, history: [] };
   const left = document.getElementById("reflectLeft");
   if (left) left.classList.add("dlg-on");
   _renderDialogueChoose();
@@ -6996,6 +6996,7 @@ function _renderDialogueChoose() {
 }
 
 function _dlgBeginPath(pathKey) {
+  _dlg.history.push(_dlgSnapshot());
   _dlg.path = pathKey;
   _dlg.stage = "ladder";
   _dlg.rung = 0;
@@ -7034,7 +7035,7 @@ function _renderDialogue(fresh) {
     : `<button class="dlg-move" type="button" id="dlgPress">Press further ↧</button>${isLast ? `<button class="secondary btn-sm" type="button" id="dlgDeeper">To close →</button>` : `<button class="secondary btn-sm" type="button" id="dlgDeeper">Go deeper →</button>`}`;
   box.innerHTML = `
     <div class="dlg-head">
-      <span class="dlg-label">The Dialogue</span>
+      <div class="dlg-head-left">${_dlg.history && _dlg.history.length ? '<button class="dlg-back" type="button" id="dlgBack">← back</button>' : ""}<span class="dlg-label">The Dialogue</span></div>
       <span class="dlg-step">${stepTxt}</span>
     </div>
     ${seedHtml}
@@ -7068,11 +7069,45 @@ function _renderDialogue(fresh) {
   const deeper = document.getElementById("dlgDeeper");
   if (deeper) deeper.addEventListener("click", () => _dlgAdvance());
   document.getElementById("dlgFinish").addEventListener("click", () => _dlgFinish());
+  const back = document.getElementById("dlgBack");
+  if (back) back.addEventListener("click", () => _dlgBack());
+  if (_dlg.restoreInput != null && _dlg.restoreInput !== "") {
+    input.value = _dlg.restoreInput;
+    _dlgGrow(input);
+  }
+  _dlg.restoreInput = null;
   setTimeout(() => input && input.focus(), 60);
 }
 function _dlgGrow(ta) {
   ta.style.height = "auto";
   ta.style.height = Math.max(70, ta.scrollHeight) + "px";
+}
+function _dlgSnapshot() {
+  const inp = document.getElementById("dlgInput");
+  return {
+    stage: _dlg.stage,
+    path: _dlg.path,
+    rung: _dlg.rung,
+    pressing: !!_dlg.pressing,
+    question: _dlg.question,
+    seedIdx: _dlg.seedIdx,
+    answers: _dlg.answers.slice(),
+    inputText: inp ? inp.value : "",
+  };
+}
+function _dlgBack() {
+  if (!_dlg || !_dlg.history || !_dlg.history.length) return;
+  const snap = _dlg.history.pop();
+  _dlg.stage = snap.stage;
+  _dlg.path = snap.path;
+  _dlg.rung = snap.rung;
+  _dlg.pressing = snap.pressing;
+  _dlg.question = snap.question;
+  _dlg.seedIdx = snap.seedIdx;
+  _dlg.answers = snap.answers;
+  _dlg.restoreInput = snap.inputText;
+  if (snap.stage === "choose") _renderDialogueChoose();
+  else _renderDialogue(false);
 }
 function _dlgPushCurrent() {
   const input = document.getElementById("dlgInput");
@@ -7083,12 +7118,14 @@ function _dlgScroll() {
   if (box) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 function _dlgPress() {
+  _dlg.history.push(_dlgSnapshot());
   _dlgPushCurrent();
   _dlg.pressing = true;
   _renderDialogue(true);
   _dlgScroll();
 }
 function _dlgAdvance() {
+  _dlg.history.push(_dlgSnapshot());
   _dlgPushCurrent();
   _dlg.pressing = false;
   const rungs = _DLG_PATHS[_dlg.path].rungs;

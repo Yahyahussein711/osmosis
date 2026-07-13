@@ -8382,4 +8382,22 @@ body.deep-work-active::after {
   padding-top: 16px;
 }
 
+/* Dialogue back button */
+.dlg-head-left { display: flex; align-items: center; gap: 12px; }
+.dlg-back {
+  background: none;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 2px 0;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.68rem;
+  color: var(--subtitle-color);
+}
+@media (hover: hover) {
+  .dlg-back:hover { color: var(--accent); }
+}
+
 /* End of stylesheet */
