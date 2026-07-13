@@ -8566,49 +8566,103 @@ function renderChronStories(body, view) {
     );
     return;
   }
+
+  const ORDER = ["Highlight", "Note", "Reflection", "Bookmark", "Read"];
+  const PLURAL = {
+    Highlight: "Highlights",
+    Note: "Notes",
+    Reflection: "Reflections",
+    Bookmark: "Bookmarks",
+    Read: "Reading",
+  };
+  const fmtDay = (t) =>
+    new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
   body.innerHTML = groups
-    .map((g) => {
+    .map((g, gi) => {
       const obj = _chronStoryObj(g.domain, g.article) || {};
-      const cover =
-        obj.image
-          ? `<div class="chron-dossier-cover"><img ${obj.image.startsWith("data:") ? `src="${obj.image}"` : `data-img-ref="${obj.image}"`} alt="" style="object-position:${obj.imagePos || "50% 50%"}" /></div>`
-          : `<div class="chron-dossier-cover chron-dossier-noimg">${_chronEsc((g.article || "?").charAt(0))}</div>`;
-      const counts = {};
-      g.items.forEach((i) => (counts[i.type] = (counts[i.type] || 0) + 1));
-      const countStr = Object.keys(counts)
-        .map((t) => `${counts[t]} ${t.toLowerCase()}${counts[t] === 1 ? "" : "s"}`)
-        .join(" · ");
-      const marks = g.items
-        .slice()
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 6)
-        .map((i) => {
-          const parsed = _chronParse(i);
-          const txt = parsed.quote || parsed.note || i.text || "";
-          return `<button class="chron-mark" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-date="${i.date}"><span class="chron-mark-glyph" style="color:${_chronCol(i.type)}">${_chronGlyph(i.type)}</span><span class="chron-mark-txt">${_chronEsc(_chronTrim(txt, 96))}</span></button>`;
+      const cover = obj.image
+        ? `<div class="chron-dossier-cover"><img ${obj.image.startsWith("data:") ? `src="${obj.image}"` : `data-img-ref="${obj.image}"`} alt="" style="object-position:${obj.imagePos || "50% 50%"}" /></div>`
+        : `<div class="chron-dossier-cover chron-dossier-noimg">${_chronEsc((g.article || "?").charAt(0))}</div>`;
+
+      const byType = {};
+      g.items.forEach((i) => (byType[i.type] = byType[i.type] || []).push(i));
+
+      // stat chips (type-coloured)
+      const chips = ORDER.filter((t) => byType[t] && byType[t].length)
+        .map((t) => {
+          const n = byType[t].length;
+          const lbl = n === 1 ? t : PLURAL[t];
+          return `<span class="ds-chip" style="--tcol:${_chronCol(t)}"><span class="ds-chip-dot"></span>${n} ${lbl}</span>`;
         })
         .join("");
-      const more =
-        g.items.length > 6
-          ? `<div class="chron-mark-more">+ ${g.items.length - 6} more</div>`
-          : "";
-      return `<div class="chron-dossier">
-        <div class="chron-dossier-head" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}">
+
+      // meta line: read status + span
+      const times = g.items.map((i) => new Date(i.date).getTime());
+      const first = Math.min(...times);
+      const lastT = Math.max(...times);
+      const readList =
+        userLearningJourney.topics[g.domain] &&
+        userLearningJourney.topics[g.domain].readArticles;
+      const isRead = readList && readList.includes(g.article);
+      const spanTxt =
+        fmtDay(first) === fmtDay(lastT)
+          ? `marked ${fmtDay(first)}`
+          : `${fmtDay(first)} – ${fmtDay(lastT)}`;
+      const meta = `${isRead ? '<span class="ds-read">✓ Read</span> · ' : ""}${g.items.length} ${g.items.length === 1 ? "entry" : "entries"} · ${spanTxt}`;
+
+      // body: sections grouped by type, ALL marks, newest first
+      const sections = ORDER.filter((t) => byType[t] && byType[t].length)
+        .map((t) => {
+          const rows = byType[t]
+            .slice()
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .map((i) => {
+              const parsed = _chronParse(i);
+              const q = parsed.quote || parsed.note || i.text || "";
+              const noteExtra =
+                parsed.quote && parsed.note
+                  ? `<span class="ds-mark-note">${_chronEsc(_chronTrim(parsed.note, 80))}</span>`
+                  : "";
+              return `<button class="ds-mark" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-date="${i.date}">
+                <span class="ds-mark-glyph" style="color:${_chronCol(t)}">${_chronGlyph(t)}</span>
+                <span class="ds-mark-body"><span class="ds-mark-txt">${_chronEsc(_chronTrim(q, 150))}</span>${noteExtra}<span class="ds-mark-when">${fmtDay(i.date)}</span></span>
+              </button>`;
+            })
+            .join("");
+          return `<div class="ds-section"><div class="ds-section-head" style="--tcol:${_chronCol(t)}">${PLURAL[t]} · ${byType[t].length}</div>${rows}</div>`;
+        })
+        .join("");
+
+      return `<div class="chron-dossier${gi === 0 ? " open" : ""}">
+        <div class="chron-dossier-head">
           ${cover}
           <div class="chron-dossier-info">
             <div class="chron-dossier-title">${_chronEsc(g.article)}</div>
             ${obj.author ? `<div class="chron-dossier-author">${_chronEsc(obj.author)}</div>` : ""}
-            <div class="chron-dossier-counts">${countStr}</div>
+            <div class="chron-dossier-chips">${chips}</div>
           </div>
-          <span class="chron-dossier-arrow">→</span>
+          <span class="chron-dossier-chev">⌄</span>
         </div>
-        <div class="chron-marks">${marks}${more}</div>
+        <div class="chron-dossier-meta">${meta}</div>
+        <div class="chron-dossier-body">
+          ${sections}
+          <button class="ds-open" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}">Open the story →</button>
+        </div>
       </div>`;
     })
     .join("");
+
   if (typeof hydrateImages === "function") hydrateImages(body);
-  body.querySelectorAll(".chron-mark, .chron-dossier-head").forEach((b) => {
-    b.addEventListener("click", () => {
+
+  // expand / collapse a dossier
+  body.querySelectorAll(".chron-dossier-head").forEach((h) => {
+    h.addEventListener("click", () => h.parentElement.classList.toggle("open"));
+  });
+  // a mark or the open button jumps into the story
+  body.querySelectorAll(".ds-mark, .ds-open").forEach((b) => {
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
       jumpToArticleByDomainAndName(
         b.dataset.domain || "",
         b.dataset.article || "",
