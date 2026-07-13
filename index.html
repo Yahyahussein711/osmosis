@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260713e" />
+    <link rel="stylesheet" href="styles.css?v=20260713f" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -657,91 +657,51 @@
       </div>
 
       <div id="timelineView" class="view">
-        <div class="view-header">
-          <div>
-            <h2 style="display: flex; align-items: center; gap: 10px">
-              <svg
-                width="26"
-                height="26"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--accent)"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14">
-                  <animateTransform
-                    attributeName="transform"
-                    type="rotate"
-                    from="0 12 12"
-                    to="360 12 12"
-                    dur="8s"
-                    repeatCount="indefinite"
-                  />
-                </polyline>
-              </svg>
-              Intellectual Timeline
-            </h2>
-            <p class="subtitle">
-              Review your history of notes, synthesis, and milestones.
-            </p>
+        <div class="chron-masthead">
+          <div class="chron-eyebrow">The Chronicle</div>
+          <h2 class="chron-headline">A record of every mark you've made</h2>
+          <div id="chronSummary" class="chron-summary"></div>
+        </div>
+
+        <div id="chronRibbon" class="chron-ribbon" aria-hidden="true"></div>
+
+        <div class="chron-controls">
+          <div class="chron-lenses" id="chronLenses">
+            <button class="chron-lens active" data-lens="journal">Journal</button>
+            <button class="chron-lens" data-lens="stories">By Story</button>
+            <button class="chron-lens" data-lens="anthology">Anthology</button>
+          </div>
+          <div class="chron-search">
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="text"
+              id="timelineSearch"
+              placeholder="Search the chronicle…"
+            />
           </div>
         </div>
-        <div class="dash-column">
-          <div class="tl-toolbar">
-            <div class="tl-search">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <input
-                type="text"
-                id="timelineSearch"
-                placeholder="Search your thoughts, highlights, and history..."
-              />
-            </div>
-            <div class="zoom-controls">
-              <button class="zoom-btn active" data-zoom="daily">Daily</button>
-              <button class="zoom-btn" data-zoom="weekly">Weekly</button>
-            </div>
-          </div>
-          <div class="timeline-filters" id="timelineFilters">
-            <button class="timeline-filter-btn active" data-filter="All">
-              All
-            </button>
-            <button class="timeline-filter-btn" data-filter="Favorite">
-              Favorites
-            </button>
-            <button class="timeline-filter-btn" data-filter="Note">
-              Notes
-            </button>
-            <button class="timeline-filter-btn" data-filter="Highlight">
-              Highlights
-            </button>
-            <button class="timeline-filter-btn" data-filter="Bookmark">
-              Bookmarks
-            </button>
-            <button class="timeline-filter-btn" data-filter="Reflection">
-              Reflections
-            </button>
-            <button class="timeline-filter-btn" data-filter="Read">
-              Read Stories
-            </button>
-            <button id="toggleAllTimelineBtn" class="tl-expand-chip">
-              Expand All
-            </button>
-          </div>
-          <div id="journeyTimeline" class="timeline-container"></div>
+
+        <div class="chron-filters" id="chronFilters">
+          <button class="chron-filter active" data-filter="All">All</button>
+          <button class="chron-filter" data-filter="Highlight">Highlights</button>
+          <button class="chron-filter" data-filter="Note">Notes</button>
+          <button class="chron-filter" data-filter="Reflection">Reflections</button>
+          <button class="chron-filter" data-filter="Bookmark">Bookmarks</button>
+          <button class="chron-filter" data-filter="Read">Read</button>
+          <button class="chron-filter" data-filter="Favorite">Favourites</button>
         </div>
+
+        <div id="journeyTimeline" class="chron-body"></div>
       </div>
 
       <div id="generatorView" class="view">
@@ -2153,7 +2113,7 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260713e"></script>
-    <script src="script.js?v=20260713e"></script>
+    <script src="stories.js?v=20260713f"></script>
+    <script src="script.js?v=20260713f"></script>
   </body>
 </html>

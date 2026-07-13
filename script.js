@@ -1302,6 +1302,8 @@ let resizeObserver;
 let mousePos = { x: -1000, y: -1000 };
 let currentZoom = "daily";
 let currentTimelineSearch = "";
+let chronLens = "journal";
+let chronFilter = "All";
 let currentNotesSearch = "";
 let timelineTransitionTimeout = null;
 const TTS_PARAGRAPH_BREAK = "__PAUSE_PARAGRAPH__";
@@ -3849,28 +3851,12 @@ function setupEvents() {
   if (timelineSearchInput) {
     timelineSearchInput.addEventListener("input", (e) => {
       currentTimelineSearch = e.target.value.toLowerCase().trim();
-      const activeFilter = document.querySelector(
-        ".timeline-filter-btn.active",
-      );
       const timeline = document.getElementById("journeyTimeline");
       if (timeline) {
         clearTimeout(timelineTransitionTimeout);
         timelineTransitionTimeout = setTimeout(() => {
-          renderTimeline(activeFilter ? activeFilter.dataset.filter : "All");
-          if (currentTimelineSearch) {
-            document
-              .querySelectorAll("#journeyTimeline .timeline-group-header")
-              .forEach((h) => {
-                const content = h.nextElementSibling;
-                if (content) content.style.gridTemplateRows = "1fr";
-                const icon = h.querySelector(".toggle-icon");
-                if (icon) icon.style.transform = "rotate(0deg)";
-              });
-            document
-              .querySelectorAll("#journeyTimeline .timeline-item")
-              .forEach((item) => item.classList.add("expanded"));
-          }
-        }, 300);
+          renderTimeline();
+        }, 220);
       }
     });
     timelineSearchInput.addEventListener("focus", function () {
@@ -8076,405 +8062,500 @@ function initializePrincipleLibrary() {
 // JOURNEY / DASHBOARD
 // ============================================================
 
-function renderTimeline(filterType) {
-  // Re-attach zoom button event listeners
-  document.querySelectorAll(".zoom-btn").forEach((btn) => {
-    btn.onclick = (e) => {
-      document
-        .querySelectorAll(".zoom-btn")
-        .forEach((b) => b.classList.remove("active"));
-      e.currentTarget.classList.add("active");
-      currentZoom = e.currentTarget.dataset.zoom;
-      const activeFilter = document.querySelector(
-        ".timeline-filter-btn.active",
-      );
-
-      const timeline = document.getElementById("journeyTimeline");
-      if (timeline) {
-        clearTimeout(timelineTransitionTimeout);
-        timeline.style.opacity = "0";
-        timelineTransitionTimeout = setTimeout(() => {
-          renderTimeline(activeFilter ? activeFilter.dataset.filter : "All");
-          timeline.style.opacity = "1";
-        }, 200);
-      } else {
-        renderTimeline(activeFilter ? activeFilter.dataset.filter : "All");
-      }
-    };
-  });
-
-  // Re-attach filter button event listeners
-  document.querySelectorAll(".timeline-filter-btn").forEach((btn) => {
-    btn.onclick = (e) => {
-      const wasActive = e.currentTarget.classList.contains("active");
-      const filterValue = e.currentTarget.dataset.filter;
-
-      if (wasActive && filterValue !== "All") {
-        const headers = document.querySelectorAll(
-          "#journeyTimeline .timeline-group-header",
-        );
-        const isExpanded = Array.from(headers).some(
-          (h) =>
-            h.nextElementSibling &&
-            h.nextElementSibling.style.gridTemplateRows === "1fr",
-        );
-        headers.forEach((h) => {
-          const content = h.nextElementSibling;
-          if (content) {
-            content.style.gridTemplateRows = isExpanded ? "0fr" : "1fr";
-            const icon = h.querySelector(".toggle-icon");
-            if (icon)
-              icon.style.transform = isExpanded
-                ? "rotate(-90deg)"
-                : "rotate(0deg)";
-          }
-        });
-        return;
-      }
-
-      document
-        .querySelectorAll(".timeline-filter-btn")
-        .forEach((b) => b.classList.remove("active"));
-
-      e.currentTarget.classList.add("active");
-
-      const timeline = document.getElementById("journeyTimeline");
-      if (timeline) {
-        clearTimeout(timelineTransitionTimeout);
-        timeline.style.opacity = "0";
-        timelineTransitionTimeout = setTimeout(() => {
-          renderTimeline(filterValue);
-          timeline.style.opacity = "1";
-        }, 200);
-      } else {
-        renderTimeline(filterValue);
-      }
-    };
-  });
-
-  const timeline = document.getElementById("journeyTimeline");
-
-  const toggleAllBtn = document.getElementById("toggleAllTimelineBtn");
-  if (toggleAllBtn) {
-    toggleAllBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg> Expand All`;
-  }
-
-  // Preserve expanded date groups before clearing
-  const expandedGroups = new Set();
-  if (timeline) {
-    timeline.querySelectorAll(".timeline-group-header").forEach((h) => {
-      const content = h.nextElementSibling;
-      if (content && content.style.gridTemplateRows === "1fr") {
-        expandedGroups.add(h.textContent.replace("▼", "").trim());
-      }
-    });
-  }
-
-  timeline.innerHTML = "";
-  const filtersEl = document.getElementById("timelineFilters");
-
-  if (
-    filtersEl &&
-    !document.getElementById("tip_timeline") &&
-    !localStorage.getItem("hide_tip_timeline")
+// ============================================================
+// THE CHRONICLE — a full timeline: Journal / By Story / Anthology
+// with an activity-ribbon minimap. Reuses the existing action
+// functions (favourite, jump-to-story, context menu, multi-select).
+// ============================================================
+function _chronEsc(x) {
+  return (x == null ? "" : String(x))
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+function _chronAttr(x) {
+  return (x == null ? "" : String(x))
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+function _chronTrim(x, n) {
+  x = (x || "").replace(/\s+/g, " ").trim();
+  return x.length > n ? x.slice(0, n) + "…" : x;
+}
+function _chronNormalize(item) {
+  const txt = item.text || "";
+  if (item.type === "note") item.type = "Note";
+  if (item.type === "highlight") item.type = "Highlight";
+  if (item.type === "bookmark") item.type = "Bookmark";
+  if (item.type === "reflection") item.type = "Reflection";
+  if (!item.type) {
+    if (txt.includes('\n\n"')) item.type = "Note";
+    else if (txt.startsWith('"') && txt.endsWith('"')) item.type = "Highlight";
+    else item.type = "Reflection";
+  } else if (
+    (item.type === "Highlight" || item.type === "Annotation") &&
+    txt.includes('\n\n"')
   ) {
-    const exp = document.createElement("div");
-    exp.id = "tip_timeline";
-    exp.style.cssText =
-      "position: relative; font-size: 0.9rem; color: var(--subtitle-color); margin-bottom: 16px; line-height: 1.5; padding: 16px 20px; background: rgba(160, 181, 172, 0.08); border-radius: 16px; border: 1px solid var(--glass-border); transition: all 0.3s ease;";
-    exp.innerHTML = `
-      <button onclick="dismissTip('timeline')" style="position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: var(--subtitle-color); cursor: pointer; padding: 4px; box-shadow: none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-      <div style='font-size: 0.75rem; font-weight: 700; color: var(--sage); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'></polyline></svg> The Timeline</div>
-      <div style="padding-right: 20px;">A chronological ledger of your entire intellectual journey. Every highlight, reflection, and badge is permanently recorded here. Use the filters below to narrow your history.</div>`;
-    filtersEl.parentNode.insertBefore(exp, filtersEl);
+    item.type = "Note";
   }
-
-  let items = [...userLearningJourney.timeline].reverse();
-
-  // Retroactively patch legacy items without a type so they don't disappear when filtering
-  items.forEach((item) => {
-    const txt = item.text || "";
-    // Normalize type to be capitalized
-    if (item.type === "note") item.type = "Note";
-    if (item.type === "highlight") item.type = "Highlight";
-    if (item.type === "bookmark") item.type = "Bookmark";
-    if (item.type === "reflection") item.type = "Reflection";
-
-    if (!item.type) {
-      if (txt.includes('\n\n"')) {
-        item.type = "Note";
-      } else if (txt.startsWith('"') && txt.endsWith('"')) {
-        item.type = "Highlight";
-      } else {
-        item.type = "Reflection";
-      }
-    } else if ((item.type === "Highlight" || item.type === "Annotation") && txt.includes('\n\n"')) {
-      // Convert Highlight/Annotation to Note if it has note + quote format
-      item.type = "Note";
+}
+function _chronParse(item) {
+  let text = (item.text || "").replace(/^\[(Path|Capstone):[^\]]*\]\s*/, "");
+  const t = item.type || "";
+  if ((t === "Note" || t === "Highlight") && text.includes('\n\n"')) {
+    const parts = text.split('\n\n"');
+    let quote = parts.slice(1).join('\n\n"');
+    if (quote.endsWith('"')) quote = quote.slice(0, -1);
+    return { quote: quote.trim(), note: parts[0].trim() };
+  }
+  let str = text.trim();
+  const wrapped = str.startsWith('"') && str.endsWith('"');
+  if (wrapped) str = str.slice(1, -1).trim();
+  if (t === "Highlight" || t === "Bookmark") return { quote: str, note: "" };
+  return { quote: wrapped ? str : "", note: wrapped ? "" : str };
+}
+const _CHRON_GLYPH = {
+  Highlight: "❝",
+  Note: "✎",
+  Reflection: "❦",
+  Bookmark: "❧",
+  Read: "▪",
+  Badge: "✦",
+};
+function _chronGlyph(t) {
+  return _CHRON_GLYPH[t] || "·";
+}
+function _chronStoryObj(domain, article) {
+  const T = window.topicsData || {};
+  const tryDom = (d) => {
+    const dom = T[d];
+    if (!dom) return null;
+    for (const sub in dom.subtopics || {}) {
+      const a = dom.subtopics[sub].articles && dom.subtopics[sub].articles[article];
+      if (a) return a;
     }
-  });
-
-  // Show a count next to each filter chip so the timeline is scannable
-  const filterCounts = {
-    All: items.length,
-    Favorite: items.filter((i) => i.isFavorite === true).length,
-    Note: items.filter((i) => isType(i.type, "Note")).length,
-    Highlight: items.filter((i) => isType(i.type, "Highlight")).length,
-    Bookmark: items.filter((i) => isType(i.type, "Bookmark")).length,
-    Reflection: items.filter((i) => isType(i.type, "Reflection")).length,
-    Read: items.filter((i) => isType(i.type, "Read")).length,
+    return null;
   };
-  document.querySelectorAll(".timeline-filter-btn").forEach((btn) => {
+  const hit = tryDom(domain);
+  if (hit) return hit;
+  for (const d in T) {
+    const a = tryDom(d);
+    if (a) return a;
+  }
+  return null;
+}
+function _chronEmpty(msg) {
+  return `<div class="chron-empty"><div class="chron-empty-mark">❦</div><div>${_chronEsc(msg)}</div></div>`;
+}
+
+function renderTimeline(filterType) {
+  if (typeof filterType === "string") chronFilter = filterType;
+  _wireChronControls();
+
+  const body = document.getElementById("journeyTimeline");
+  if (!body) return;
+
+  let items = [...(userLearningJourney.timeline || [])];
+  items.forEach(_chronNormalize);
+  items.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  _renderChronSummary(items);
+  _renderChronRibbon(items);
+  _renderChronFilterCounts(items);
+
+  // search across all
+  const q = currentTimelineSearch;
+  let view = items;
+  if (q) {
+    view = view.filter((it) =>
+      (
+        (it.text || "") +
+        " " +
+        (it.domain || "") +
+        " " +
+        (it.article || "")
+      )
+        .toLowerCase()
+        .includes(q),
+    );
+  }
+
+  const filtersEl = document.getElementById("chronFilters");
+  if (filtersEl)
+    filtersEl.style.display = chronLens === "journal" ? "flex" : "none";
+
+  if (!items.length) {
+    body.innerHTML = _chronEmpty(
+      "Your chronicle is empty — read and mark a story to begin it.",
+    );
+    return;
+  }
+
+  if (chronLens === "stories") renderChronStories(body, view);
+  else if (chronLens === "anthology") renderChronAnthology(body, view);
+  else renderChronJournal(body, view);
+}
+
+function _wireChronControls() {
+  const lenses = document.getElementById("chronLenses");
+  if (lenses && !lenses.dataset.wired) {
+    lenses.dataset.wired = "1";
+    lenses.querySelectorAll(".chron-lens").forEach((b) => {
+      b.addEventListener("click", () => {
+        chronLens = b.dataset.lens;
+        lenses
+          .querySelectorAll(".chron-lens")
+          .forEach((x) => x.classList.toggle("active", x === b));
+        const body = document.getElementById("journeyTimeline");
+        if (body) {
+          body.style.opacity = "0";
+          clearTimeout(timelineTransitionTimeout);
+          timelineTransitionTimeout = setTimeout(() => {
+            renderTimeline();
+            body.style.opacity = "1";
+          }, 170);
+        } else renderTimeline();
+      });
+    });
+  }
+  const filters = document.getElementById("chronFilters");
+  if (filters && !filters.dataset.wired) {
+    filters.dataset.wired = "1";
+    filters.querySelectorAll(".chron-filter").forEach((b) => {
+      b.addEventListener("click", () => {
+        chronFilter = b.dataset.filter;
+        filters
+          .querySelectorAll(".chron-filter")
+          .forEach((x) => x.classList.toggle("active", x === b));
+        renderTimeline();
+      });
+    });
+  }
+}
+
+function _renderChronSummary(items) {
+  const el = document.getElementById("chronSummary");
+  if (!el) return;
+  const total = items.length;
+  const stories = new Set(
+    items.filter((i) => i.article).map((i) => i.article),
+  ).size;
+  let since = "";
+  if (total) {
+    const earliest = new Date(
+      Math.min(...items.map((i) => new Date(i.date).getTime())),
+    );
+    since = earliest.toLocaleDateString(undefined, {
+      month: "long",
+      year: "numeric",
+    });
+  }
+  el.textContent = total
+    ? `${total} ${total === 1 ? "entry" : "entries"} · ${stories} ${stories === 1 ? "story" : "stories"} · since ${since}`
+    : "Nothing recorded yet";
+}
+
+function _renderChronFilterCounts(items) {
+  const counts = {
+    All: items.length,
+    Highlight: items.filter((i) => isType(i.type, "Highlight")).length,
+    Note: items.filter((i) => isType(i.type, "Note")).length,
+    Reflection: items.filter((i) => isType(i.type, "Reflection")).length,
+    Bookmark: items.filter((i) => isType(i.type, "Bookmark")).length,
+    Read: items.filter((i) => isType(i.type, "Read")).length,
+    Favorite: items.filter((i) => i.isFavorite === true).length,
+  };
+  document.querySelectorAll(".chron-filter").forEach((btn) => {
     const f = btn.dataset.filter;
-    if (!(f in filterCounts)) return;
-    if (!btn.dataset.baseLabel) btn.dataset.baseLabel = btn.textContent.trim();
-    const base = btn.dataset.baseLabel;
-    const count = filterCounts[f];
-    btn.innerHTML =
-      count > 0
-        ? `${base} <span style="opacity:0.55; font-weight:600;">${count}</span>`
-        : base;
+    if (!(f in counts)) return;
+    if (!btn.dataset.base) btn.dataset.base = btn.textContent.trim();
+    const c = counts[f];
+    btn.innerHTML = c
+      ? `${btn.dataset.base} <span class="chron-filter-n">${c}</span>`
+      : btn.dataset.base;
   });
+}
 
-  if (currentTimelineSearch) {
-    items = items.filter((item) => {
-      const txt = (item.text || "").toLowerCase();
-      const dom = (item.domain || "").toLowerCase();
-      const art = (item.article || "").toLowerCase();
-      return (
-        txt.includes(currentTimelineSearch) ||
-        dom.includes(currentTimelineSearch) ||
-        art.includes(currentTimelineSearch)
-      );
-    });
-  }
-
-  // Apply filters regardless of zoom level
-  if (filterType !== "All") {
-    if (filterType === "Favorite") {
-      items = items.filter((item) => item.isFavorite === true);
-    } else {
-      items = items.filter((item) => isType(item.type, filterType));
-    }
-  }
-
-  if (isType(currentZoom, "daily")) {
-    if (filtersEl) filtersEl.style.display = "flex";
-  } else {
-    if (filtersEl) filtersEl.style.display = "none";
-  }
-
-  if (items.length === 0) {
-    timeline.innerHTML = `<p style="font-size:0.9rem;color:var(--subtitle-color);">Your timeline is empty — read or highlight a story to start building it.</p>`;
+function _renderChronRibbon(items) {
+  const el = document.getElementById("chronRibbon");
+  if (!el) return;
+  if (items.length < 3) {
+    el.style.display = "none";
     return;
   }
-
-  const groups = {};
-  const maxItems = 150;
-  const itemsToProcess = items.slice(0, maxItems);
-
-  if (currentZoom === "daily") {
-    itemsToProcess.forEach((item) => {
-      const key = new Date(item.date).toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-      (groups[key] = groups[key] || []).push(item);
-    });
-  } else if (currentZoom === "weekly") {
-    itemsToProcess.forEach((item) => {
-      const d = new Date(item.date);
-      const day = d.getDay();
-      const start = new Date(d);
-      start.setDate(start.getDate() - day + (day === 0 ? -6 : 1));
-      const key =
-        "Week of " +
-        start.toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        });
-      (groups[key] = groups[key] || []).push(item);
-    });
-  } else {
-    itemsToProcess.forEach((item) => {
-      if (!isType(item.type, "Badge")) return;
-      const key = new Date(item.date).toLocaleDateString(undefined, {
-        month: "long",
-        year: "numeric",
-      });
-      (groups[key] = groups[key] || []).push(item);
-    });
-  }
-
-  if (Object.keys(groups).length === 0) {
-    if (currentZoom === "monthly") {
-      timeline.innerHTML = `<p style="font-size:0.9rem;color:var(--subtitle-color);">No milestones yet. Earn badges and forge syntheses to populate this view.</p>`;
-    } else {
-      timeline.innerHTML = `<p style="font-size:0.9rem;color:var(--subtitle-color);">Nothing here yet for this filter.</p>`;
-    }
-    return;
-  }
-
-  const isFiltered = filterType !== "All";
-
-  // Month rules: printed dividers whenever the ledger crosses into a new
-  // month, plus a tap-to-jump strip of the months present.
-  const monthKey = (d) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  const monthName = (d) =>
-    d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  const monthCounts = {};
-  itemsToProcess.forEach((it) => {
-    const mk = monthKey(new Date(it.date));
-    monthCounts[mk] = (monthCounts[mk] || 0) + 1;
+  el.style.display = "flex";
+  const times = items.map((i) => new Date(i.date).getTime());
+  const min = Math.min(...times);
+  const max = Math.max(...times);
+  const span = max - min || 1;
+  const BARS = 48;
+  const buckets = new Array(BARS).fill(0);
+  times.forEach((t) => {
+    const idx = Math.min(BARS - 1, Math.floor(((t - min) / span) * (BARS - 1)));
+    buckets[idx]++;
   });
-  const monthsPresent = [];
-  let _prevMonth = null;
-
-  let delay = 0;
-  Object.keys(groups).forEach((key) => {
-    // Emit a month rule when this group opens a new month (daily/weekly)
-    if (currentZoom !== "monthly") {
-      const gd = new Date(groups[key][0].date);
-      const mk = monthKey(gd);
-      if (mk !== _prevMonth) {
-        _prevMonth = mk;
-        monthsPresent.push({ mk, d: gd });
-        const rule = document.createElement("div");
-        rule.className = "tl-month-rule";
-        rule.id = `tlm-${mk}`;
-        rule.innerHTML = `<span>${monthName(gd)} · ${monthCounts[mk]} ${monthCounts[mk] === 1 ? "entry" : "entries"}</span>`;
-        timeline.appendChild(rule);
+  const peak = Math.max(...buckets, 1);
+  el.innerHTML = buckets
+    .map((c, idx) => {
+      const h = c ? 16 + Math.round((c / peak) * 84) : 5;
+      const ts = min + Math.round((idx / (BARS - 1)) * span);
+      return `<span class="chron-bar${c ? "" : " empty"}" data-ts="${ts}" style="height:${h}%" title="${c} ${c === 1 ? "entry" : "entries"}"></span>`;
+    })
+    .join("");
+  el.querySelectorAll(".chron-bar").forEach((b) => {
+    b.addEventListener("click", () => {
+      if (chronLens !== "journal") {
+        chronLens = "journal";
+        document
+          .querySelectorAll(".chron-lens")
+          .forEach((x) => x.classList.toggle("active", x.dataset.lens === "journal"));
+        renderTimeline();
       }
-    }
-
-    const groupWrap = document.createElement("div");
-    groupWrap.className = "tl-group";
-
-    // Date plate: a big calendar tile that anchors each group visually.
-    const groupItems = groups[key];
-    const d0 = new Date(groupItems[0].date);
-    let plateTop, plateBottom;
-    if (currentZoom === "weekly") {
-      plateTop = String(d0.getDate());
-      plateBottom =
-        d0.toLocaleDateString(undefined, { month: "short" }) + " · Wk";
-    } else if (currentZoom === "daily") {
-      plateTop = String(d0.getDate());
-      plateBottom = d0.toLocaleDateString(undefined, { month: "short" });
-    } else {
-      plateTop = d0.toLocaleDateString(undefined, { month: "short" });
-      plateBottom = String(d0.getFullYear());
-    }
-    const n = groupItems.length;
-
-    const header = document.createElement("div");
-    header.className = "timeline-group-header";
-    header.innerHTML = `
-      <div class="tl-plate" aria-hidden="true">
-        <div class="tl-plate-top">${plateTop}</div>
-        <div class="tl-plate-bottom">${plateBottom}</div>
-      </div>
-      <div class="tl-group-label">
-        <div class="tl-group-title">${key}</div>
-        <div class="tl-group-count">${n} ${n === 1 ? "entry" : "entries"}</div>
-      </div>
-      <span class="toggle-icon" style="display:inline-block; transition:transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); font-size:0.7rem; transform: rotate(${isFiltered ? "0deg" : "-90deg"});">▼</span>`;
-
-    const content = document.createElement("div");
-    content.style.display = "grid";
-    content.style.gridTemplateRows = isFiltered ? "1fr" : "0fr";
-    content.style.transition =
-      "grid-template-rows 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)";
-
-    const innerContent = document.createElement("div");
-    innerContent.style.overflow = "hidden";
-    innerContent.style.minHeight = "0";
-    innerContent.style.display = "flex";
-    innerContent.style.flexDirection = "column";
-    content.appendChild(innerContent);
-
-    header.addEventListener("click", () => {
-      const isHidden = content.style.gridTemplateRows === "0fr";
-      content.style.gridTemplateRows = isHidden ? "1fr" : "0fr";
-      header.querySelector(".toggle-icon").style.transform = isHidden
-        ? "rotate(0deg)"
-        : "rotate(-90deg)";
-    });
-
-    groupWrap.appendChild(header);
-    groupWrap.appendChild(content);
-    timeline.appendChild(groupWrap);
-
-    if (currentZoom === "weekly") {
-      let highlights = 0,
-        others = [];
-      groups[key].forEach((item) => {
-        if (item.type === "Highlight") highlights++;
-        else others.push(item);
-      });
-      if (highlights > 0)
-        innerContent.appendChild(
-          makeSummaryItem(
-            `<strong>${highlights}</strong> Highlights Captured`,
-            delay++,
-            "var(--subtitle-color)",
-            "var(--glass-border)",
-          ),
-        );
-      others.forEach((item) =>
-        innerContent.appendChild(createTimelineElement(item, delay++, false)),
-      );
-    } else if (currentZoom === "daily") {
-      const articleGroups = {};
-      groups[key].forEach((item) => {
-        const artKey = item.article || "System_Events";
-        if (!articleGroups[artKey]) articleGroups[artKey] = [];
-        articleGroups[artKey].push(item);
-      });
-      Object.keys(articleGroups).forEach((artKey) => {
-        if (artKey === "System_Events") {
-          articleGroups[artKey].forEach((item) =>
-            innerContent.appendChild(
-              createTimelineElement(item, delay++, false),
-            ),
-          );
-        } else {
-          innerContent.appendChild(
-            createArticleTimelineElement(articleGroups[artKey], delay++),
-          );
+      const target = parseInt(b.dataset.ts);
+      let best = null,
+        bestDiff = Infinity;
+      document.querySelectorAll(".chron-day").forEach((d) => {
+        const diff = Math.abs(parseInt(d.dataset.ts) - target);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          best = d;
         }
       });
-    } else {
-      groups[key].forEach((item) =>
-        innerContent.appendChild(createTimelineElement(item, delay++, false)),
-      );
-    }
-  });
-
-  // Month strip: JUL · JUN · MAY — tap to jump to that month's rule
-  if (monthsPresent.length > 1) {
-    const strip = document.createElement("div");
-    strip.className = "tl-month-strip";
-    strip.innerHTML = monthsPresent
-      .map(
-        (m) =>
-          `<button class="tl-month-chip" data-mk="${m.mk}">${m.d
-            .toLocaleDateString(undefined, { month: "short" })
-            .toUpperCase()}</button>`,
-      )
-      .join('<span class="tl-month-sep">·</span>');
-    strip.querySelectorAll(".tl-month-chip").forEach((b) => {
-      b.addEventListener("click", () => {
-        const rule = document.getElementById(`tlm-${b.dataset.mk}`);
-        if (rule) rule.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      if (best) best.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-    timeline.insertBefore(strip, timeline.firstChild);
+  });
+}
+
+// ---- Journal lens ----
+function renderChronJournal(body, view) {
+  let list = view;
+  if (chronFilter !== "All") {
+    list =
+      chronFilter === "Favorite"
+        ? list.filter((i) => i.isFavorite)
+        : list.filter((i) => isType(i.type, chronFilter));
   }
+  if (!list.length) {
+    body.innerHTML = _chronEmpty(
+      currentTimelineSearch
+        ? "Nothing in the chronicle matches your search."
+        : "No entries under this heading yet.",
+    );
+    return;
+  }
+  body.innerHTML = "";
+  const groups = {};
+  list.forEach((it) => {
+    const d = new Date(it.date);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    (groups[key] = groups[key] || []).push(it);
+  });
+  const now = new Date();
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const yest = new Date(now.getTime() - 86400000);
+  const yestKey = `${yest.getFullYear()}-${String(yest.getMonth() + 1).padStart(2, "0")}-${String(yest.getDate()).padStart(2, "0")}`;
+
+  Object.keys(groups)
+    .sort()
+    .reverse()
+    .forEach((key) => {
+      const d = new Date(key + "T12:00:00");
+      const n = groups[key].length;
+      const wd =
+        key === todayKey
+          ? "Today"
+          : key === yestKey
+            ? "Yesterday"
+            : d.toLocaleDateString(undefined, { weekday: "long" });
+      const dayEl = document.createElement("div");
+      dayEl.className = "chron-day";
+      dayEl.dataset.ts = d.getTime();
+      dayEl.innerHTML = `
+        <div class="chron-dateline">
+          <div class="chron-day-num">${d.getDate()}</div>
+          <div class="chron-day-rest">
+            <div class="chron-wd">${wd}</div>
+            <div class="chron-mo">${d.toLocaleDateString(undefined, { month: "long" })} ${d.getFullYear()}</div>
+          </div>
+          <div class="chron-day-count">${n} ${n === 1 ? "entry" : "entries"}</div>
+        </div>
+        <div class="chron-entries"></div>`;
+      const entriesEl = dayEl.querySelector(".chron-entries");
+      groups[key].forEach((it) => entriesEl.appendChild(chronEntryEl(it)));
+      body.appendChild(dayEl);
+    });
+}
+
+function chronEntryEl(item) {
+  const el = document.createElement("div");
+  el.className = "chron-entry";
+  const parsed = _chronParse(item);
+  const time = new Date(item.date).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  let bodyHtml;
+  if (parsed.quote) {
+    bodyHtml = `<div class="chron-quote">“${_chronEsc(parsed.quote)}”</div>${parsed.note ? `<div class="chron-note">${_chronEsc(parsed.note)}</div>` : ""}`;
+  } else {
+    bodyHtml = `<div class="chron-note">${_chronEsc(parsed.note || item.text || "")}</div>`;
+  }
+  const source =
+    item.article && item.domain && item.domain !== "Uncategorized"
+      ? `${item.domain} · ${item.article}`
+      : item.article || "";
+  el.innerHTML = `
+    <div class="chron-entry-rail"><span class="chron-glyph">${_chronGlyph(item.type)}</span></div>
+    <div class="chron-entry-main">
+      <div class="chron-entry-top">
+        <span class="chron-type">${item.type || "Note"}</span>
+        <span class="chron-time">${time}</span>
+      </div>
+      ${bodyHtml}
+      ${source ? `<div class="chron-source">${_chronEsc(source)}</div>` : ""}
+      <div class="chron-actions">
+        <button class="chron-act" data-act="jump">${item.type === "Reflection" ? "View notes" : "Open in story"} →</button>
+        <button class="chron-act chron-fav ${item.isFavorite ? "on" : ""}" data-fav-date="${item.date}" data-act="fav">♥︎</button>
+        <button class="chron-act chron-more" data-act="menu">•••</button>
+      </div>
+    </div>`;
+  el.querySelector('[data-act="jump"]').addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (item.type === "Reflection") jumpToTimelineDate(item.date);
+    else
+      jumpToArticleByDomainAndName(
+        item.domain || "",
+        item.article || "",
+        item.date,
+      );
+  });
+  el.querySelector('[data-act="fav"]').addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleTimelineFavorite(item.date);
+    e.currentTarget.classList.toggle("on");
+  });
+  el.querySelector('[data-act="menu"]').addEventListener("click", (e) => {
+    e.stopPropagation();
+    showTimelineContextMenu(e, item.date);
+  });
+  setupMultiSelect(el, item.date, "timeline");
+  el.addEventListener("click", () => {
+    if (typeof multiSelectMode !== "undefined" && multiSelectMode) return;
+    el.classList.toggle("expanded");
+  });
+  return el;
+}
+
+// ---- By Story lens ----
+function renderChronStories(body, view) {
+  const map = {};
+  view.forEach((it) => {
+    if (!it.article) return;
+    const k = (it.domain || "") + "|" + it.article;
+    if (!map[k])
+      map[k] = { domain: it.domain, article: it.article, items: [], last: 0 };
+    map[k].items.push(it);
+    map[k].last = Math.max(map[k].last, new Date(it.date).getTime());
+  });
+  const groups = Object.values(map).sort((a, b) => b.last - a.last);
+  if (!groups.length) {
+    body.innerHTML = _chronEmpty(
+      "No stories marked yet — highlight or note a story and it gathers here.",
+    );
+    return;
+  }
+  body.innerHTML = groups
+    .map((g) => {
+      const obj = _chronStoryObj(g.domain, g.article) || {};
+      const cover =
+        obj.image
+          ? `<div class="chron-dossier-cover"><img ${obj.image.startsWith("data:") ? `src="${obj.image}"` : `data-img-ref="${obj.image}"`} alt="" style="object-position:${obj.imagePos || "50% 50%"}" /></div>`
+          : `<div class="chron-dossier-cover chron-dossier-noimg">${_chronEsc((g.article || "?").charAt(0))}</div>`;
+      const counts = {};
+      g.items.forEach((i) => (counts[i.type] = (counts[i.type] || 0) + 1));
+      const countStr = Object.keys(counts)
+        .map((t) => `${counts[t]} ${t.toLowerCase()}${counts[t] === 1 ? "" : "s"}`)
+        .join(" · ");
+      const marks = g.items
+        .slice()
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 6)
+        .map((i) => {
+          const parsed = _chronParse(i);
+          const txt = parsed.quote || parsed.note || i.text || "";
+          return `<button class="chron-mark" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-date="${i.date}"><span class="chron-mark-glyph">${_chronGlyph(i.type)}</span><span class="chron-mark-txt">${_chronEsc(_chronTrim(txt, 96))}</span></button>`;
+        })
+        .join("");
+      const more =
+        g.items.length > 6
+          ? `<div class="chron-mark-more">+ ${g.items.length - 6} more</div>`
+          : "";
+      return `<div class="chron-dossier">
+        <div class="chron-dossier-head" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}">
+          ${cover}
+          <div class="chron-dossier-info">
+            <div class="chron-dossier-title">${_chronEsc(g.article)}</div>
+            ${obj.author ? `<div class="chron-dossier-author">${_chronEsc(obj.author)}</div>` : ""}
+            <div class="chron-dossier-counts">${countStr}</div>
+          </div>
+          <span class="chron-dossier-arrow">→</span>
+        </div>
+        <div class="chron-marks">${marks}${more}</div>
+      </div>`;
+    })
+    .join("");
+  if (typeof hydrateImages === "function") hydrateImages(body);
+  body.querySelectorAll(".chron-mark, .chron-dossier-head").forEach((b) => {
+    b.addEventListener("click", () => {
+      jumpToArticleByDomainAndName(
+        b.dataset.domain || "",
+        b.dataset.article || "",
+        b.dataset.date || null,
+      );
+    });
+  });
+}
+
+// ---- Anthology lens (your book of quotations) ----
+function renderChronAnthology(body, view) {
+  const quotes = view.filter(
+    (i) =>
+      isType(i.type, "Highlight") ||
+      isType(i.type, "Note") ||
+      isType(i.type, "Bookmark"),
+  );
+  const plates = quotes
+    .map((i) => {
+      const parsed = _chronParse(i);
+      const q = parsed.quote || parsed.note;
+      if (!q) return "";
+      const obj = _chronStoryObj(i.domain, i.article) || {};
+      const cap = `${i.article || ""}${obj.author ? ` · ${obj.author}` : ""}`;
+      return `<figure class="chron-plate" data-domain="${_chronAttr(i.domain)}" data-article="${_chronAttr(i.article)}" data-date="${i.date}">
+        <div class="chron-plate-mark">❝</div>
+        <blockquote class="chron-plate-quote">${_chronEsc(q)}</blockquote>
+        ${parsed.quote && parsed.note ? `<div class="chron-plate-note">${_chronEsc(parsed.note)}</div>` : ""}
+        ${cap ? `<figcaption class="chron-plate-cap">${_chronEsc(cap)}</figcaption>` : ""}
+      </figure>`;
+    })
+    .join("");
+  if (!plates) {
+    body.innerHTML = _chronEmpty(
+      "No passages yet — highlight lines as you read and they gather here as an anthology.",
+    );
+    return;
+  }
+  body.innerHTML = `<div class="chron-anthology">${plates}</div>`;
+  body.querySelectorAll(".chron-plate").forEach((b) => {
+    b.addEventListener("click", () =>
+      jumpToArticleByDomainAndName(
+        b.dataset.domain || "",
+        b.dataset.article || "",
+        b.dataset.date || null,
+      ),
+    );
+  });
 }
 
 function makeSummaryItem(html, delayIndex, color, borderColor) {
