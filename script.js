@@ -204,7 +204,14 @@ let _threadIdx = null;
 function _buildThreads() {
   const quotes = [];
   (userLearningJourney.timeline || []).forEach((t) => {
-    if (!(isType(t.type, "Highlight") || isType(t.type, "Note"))) return;
+    if (
+      !(
+        isType(t.type, "Highlight") ||
+        isType(t.type, "Note") ||
+        isType(t.type, "Reflection")
+      )
+    )
+      return;
     if (!t.text || !t.article) return;
     let raw = t.text.replace(/^\[(Path|Capstone):[^\]]*\]\s*/, "");
     let quote = raw;

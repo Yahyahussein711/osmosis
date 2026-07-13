@@ -3665,7 +3665,7 @@ body.compact-mode .annotation-item {
 
   .notes-section {
     padding: 24px 20px;
-    width: calc(100% - 24px);
+    width: auto; /* full-width bottom sheet: left:0/right:0 span the viewport */
   }
 
   .stat-num,
