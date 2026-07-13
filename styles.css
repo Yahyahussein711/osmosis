@@ -3233,6 +3233,44 @@ body.multi-select-active .timeline-actions {
   line-height: 1.3;
 }
 
+/* ---- Settings: editorial masthead, to match The Study & The Chronicle ---- */
+.settings-masthead {
+  text-align: center;
+  margin-bottom: 26px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.settings-eyebrow {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  font-size: 0.62rem;
+  color: var(--accent);
+}
+.settings-headline {
+  font-family: "Lora", Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(1.9rem, 7vw, 2.6rem);
+  line-height: 1.1;
+  color: var(--dark-text);
+  margin: 6px 0 6px;
+}
+.settings-sub {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--subtitle-color);
+}
+/* Group headers read like filed section dividers, not shouted labels */
+.settings-group-label {
+  font-family: "Lora", Georgia, serif !important;
+  font-weight: 600 !important;
+  font-variant: small-caps;
+  text-transform: none !important;
+  letter-spacing: 2px !important;
+  font-size: 0.82rem !important;
+}
+
 .toggle-switch {
   position: relative;
   width: 50px;
@@ -3348,46 +3386,15 @@ input.custom-slider::-webkit-slider-runnable-track {
   background-color: #e67e22;
 }
 
-[data-hl-color="yellow"] {
-  --highlight-bg: rgba(241, 196, 15, 0.4);
-  --highlight-border: rgba(241, 196, 15, 0.7);
+/* Highlights speak in one voice — the editorial accent, not a rainbow. */
+:root {
+  --highlight-bg: color-mix(in srgb, var(--accent) 20%, transparent);
+  --highlight-border: color-mix(in srgb, var(--accent) 48%, transparent);
 }
-[data-hl-color="green"] {
-  --highlight-bg: rgba(46, 204, 113, 0.35);
-  --highlight-border: rgba(46, 204, 113, 0.6);
-}
-[data-hl-color="blue"] {
-  --highlight-bg: rgba(52, 152, 219, 0.35);
-  --highlight-border: rgba(52, 152, 219, 0.6);
-}
-[data-hl-color="pink"] {
-  --highlight-bg: rgba(232, 67, 147, 0.35);
-  --highlight-border: rgba(232, 67, 147, 0.6);
-}
-[data-hl-color="orange"] {
-  --highlight-bg: rgba(230, 126, 34, 0.35);
-  --highlight-border: rgba(230, 126, 34, 0.6);
-}
-
-[data-theme="dark"][data-hl-color="yellow"],
-[data-theme="midnight"][data-hl-color="yellow"] {
-  --highlight-bg: rgba(241, 196, 15, 0.45);
-}
-[data-theme="dark"][data-hl-color="green"],
-[data-theme="midnight"][data-hl-color="green"] {
-  --highlight-bg: rgba(46, 204, 113, 0.45);
-}
-[data-theme="dark"][data-hl-color="blue"],
-[data-theme="midnight"][data-hl-color="blue"] {
-  --highlight-bg: rgba(52, 152, 219, 0.45);
-}
-[data-theme="dark"][data-hl-color="pink"],
-[data-theme="midnight"][data-hl-color="pink"] {
-  --highlight-bg: rgba(232, 67, 147, 0.45);
-}
-[data-theme="dark"][data-hl-color="orange"],
-[data-theme="midnight"][data-hl-color="orange"] {
-  --highlight-bg: rgba(230, 126, 34, 0.45);
+[data-theme="dark"],
+[data-theme="midnight"] {
+  --highlight-bg: color-mix(in srgb, var(--accent) 30%, transparent);
+  --highlight-border: color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 .font-btn {

@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260713r" />
+    <link rel="stylesheet" href="styles.css?v=20260713s" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -823,64 +823,18 @@
       </div>
 
       <div id="profileView" class="view">
-        <h2
-          class="profile-page-title"
-          style="display: flex; align-items: center; gap: 10px"
-        >
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="var(--accent)"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="12" cy="12" r="3"></circle>
-            <path
-              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
-            >
-              <animateTransform
-                attributeName="transform"
-                type="rotate"
-                from="0 12 12"
-                to="360 12 12"
-                dur="15s"
-                repeatCount="indefinite"
-              />
-            </path>
-          </svg>
-          Settings
-        </h2>
+        <div class="settings-masthead">
+          <div class="settings-eyebrow">Preferences</div>
+          <h2 class="settings-headline">Settings</h2>
+          <div class="settings-sub">
+            Everything stays on your device &nbsp;❦
+          </div>
+        </div>
 
         <div class="dash-column">
           <div class="settings-masonry">
             <div class="settings-group">
               <div class="settings-group-label">Appearance</div>
-              <div class="setting-row">
-                <div class="setting-info">
-                  <div class="setting-name">Highlight Color</div>
-                  <div class="setting-desc">
-                    Marker color for selected text and saved notes
-                  </div>
-                </div>
-                <div
-                  class="swatches-row"
-                  style="
-                    margin-left: 16px;
-                    flex-wrap: wrap;
-                    justify-content: flex-end;
-                    max-width: 50%;
-                  "
-                >
-                  <button class="hl-swatch hl-yellow" data-hl="yellow"></button>
-                  <button class="hl-swatch hl-green" data-hl="green"></button>
-                  <button class="hl-swatch hl-blue" data-hl="blue"></button>
-                  <button class="hl-swatch hl-pink" data-hl="pink"></button>
-                  <button class="hl-swatch hl-orange" data-hl="orange"></button>
-                </div>
-              </div>
               <div class="setting-row">
                 <div class="setting-info">
                   <div class="setting-name">Dark Mode</div>
@@ -1473,22 +1427,22 @@
         </svg>
         <span class="nav-label">Library</span>
       </button>
-      <button id="navTimeline" class="nav-item" title="Timeline">
+      <button id="navTimeline" class="nav-item" title="Chronicle">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 3v5h5"></path>
           <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
           <polyline points="12 7 12 12 15 15"></polyline>
         </svg>
-        <span class="nav-label">Timeline</span>
+        <span class="nav-label">Chronicle</span>
       </button>
-      <button id="navDashboard" class="nav-item" title="Dashboard">
+      <button id="navDashboard" class="nav-item" title="Study">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7"></rect>
           <rect x="14" y="3" width="7" height="7"></rect>
           <rect x="14" y="14" width="7" height="7"></rect>
           <rect x="3" y="14" width="7" height="7"></rect>
         </svg>
-        <span class="nav-label">Dashboard</span>
+        <span class="nav-label">Study</span>
       </button>
       <button id="navGenerator" class="nav-item" title="Create">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1997,7 +1951,7 @@
             <div style="color: var(--sage); margin-bottom: 20px; display: flex; justify-content: center;">
               <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Timeline</h2>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Chronicle</h2>
             <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
               A chronological record of your whole intellectual journey — every highlight, note, bookmark, reflection, and story you've read. <strong>Filter by type</strong> (each chip shows its count), tap the <strong>♥</strong> to favorite the ones that matter, switch between <strong>Daily and Weekly</strong> views, and edit or delete any entry. "View in Story" jumps you straight back to the source.
             </p>
@@ -2007,7 +1961,7 @@
             <div style="color: var(--earth); margin-bottom: 20px; display: flex; justify-content: center;">
               <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Dashboard</h2>
+            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Study</h2>
             <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
               Your progress at a glance, as expandable cards: <strong>Overview Stats</strong>, a 28-day <strong>Activity Heatmap</strong>, the <strong>Reflection Tracker</strong>, and the <strong>Serendipity Engine</strong> — which resurfaces a random story or note to spark unexpected connections across your library.
             </p>
@@ -2019,7 +1973,7 @@
             </div>
             <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Daily Review</h2>
             <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              This is where reading becomes <strong>remembering</strong>. Osmosis schedules your highlights and notes for review using <strong>spaced repetition</strong>. From the Dashboard, open <strong>Daily Review</strong>: you'll see a highlight, try to recall it, then rate yourself <strong>Again, Good, or Easy</strong>. Things you know well space out over weeks; ones you struggle with return soon — so knowledge actually sticks.
+              This is where reading becomes <strong>remembering</strong>. Osmosis schedules your highlights and notes for review using <strong>spaced repetition</strong>. From the Study, open <strong>Daily Review</strong>: you'll see a highlight, try to recall it, then rate yourself <strong>Again, Good, or Easy</strong>. Things you know well space out over weeks; ones you struggle with return soon — so knowledge actually sticks.
             </p>
           </div>
           <!-- Slide 8 -->
@@ -2102,7 +2056,7 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260713r"></script>
-    <script src="script.js?v=20260713r"></script>
+    <script src="stories.js?v=20260713s"></script>
+    <script src="script.js?v=20260713s"></script>
   </body>
 </html>

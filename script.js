@@ -3145,7 +3145,10 @@ function setupEvents() {
   const isTouchUI =
     window.matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
 
-  document.addEventListener("DOMContentLoaded", () => {
+  // Runs immediately: setupEvents() is already invoked during DOMContentLoaded,
+  // so a nested DOMContentLoaded listener here would never fire (its handlers —
+  // swipe-to-close, drag zones, backdrop tap — silently never attached).
+  {
     const nDrawer = document.getElementById("notesSection");
     const nBackdrop = document.getElementById("notesBackdrop");
 
@@ -3357,7 +3360,7 @@ function setupEvents() {
         passive: false,
       });
     }
-  });
+  }
 
   window.addEventListener("popstate", (e) => {
     if (document.body.classList.contains("drawer-active")) {
