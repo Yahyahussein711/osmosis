@@ -2377,16 +2377,10 @@ function openNotesDrawer(targetStep = 0) {
   renderReflectionPreamble();
 
   if (notesDrawer) {
-    // Safely inject and position the close button at the very top of the DOM stack
-    if (!notesDrawer.querySelector(".close-drawer-btn")) {
-      const closeBtn = document.createElement("button");
-      closeBtn.className = "close-drawer-btn icon-btn-small";
-      closeBtn.style.cssText =
-        "position: absolute; top: 10px; right: 12px; z-index: 1000; padding: 8px; background: var(--glass-solid); border: 1px solid var(--glass-border); border-radius: 50%; cursor: pointer; color: var(--subtitle-color); display: flex; align-items: center; justify-content: center;";
-      closeBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-      closeBtn.addEventListener("click", closeNotesDrawer);
-      notesDrawer.appendChild(closeBtn);
-    }
+    // No close button — the drawer is dismissed by swiping it down (or tapping
+    // the handle/backdrop). Remove any close button left over from older builds.
+    const staleClose = notesDrawer.querySelector(".close-drawer-btn");
+    if (staleClose) staleClose.remove();
 
     notesDrawer.style.transform = "";
     notesDrawer.style.transition = "";
@@ -6153,6 +6147,45 @@ function showDefinition(word) {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeDefinition();
     });
+    // Pull-down to dismiss (matches the writing drawer). Only engages when
+    // the card is scrolled to the top, so it never fights normal scrolling.
+    const dcard = ov.querySelector(".def-card");
+    let defStartY = -1;
+    let defCurY = 0;
+    dcard.addEventListener(
+      "touchstart",
+      (e) => {
+        defStartY = dcard.scrollTop <= 5 ? e.touches[0].clientY : -1;
+        defCurY = e.touches[0].clientY;
+      },
+      { passive: true },
+    );
+    dcard.addEventListener(
+      "touchmove",
+      (e) => {
+        if (defStartY === -1) return;
+        defCurY = e.touches[0].clientY;
+        const dy = defCurY - defStartY;
+        if (dy > 0) {
+          if (e.cancelable) e.preventDefault();
+          dcard.style.transform = `translateY(${dy * 0.85}px)`;
+          dcard.style.transition = "none";
+          ov.style.background = `rgba(0,0,0,${Math.max(0, 0.42 - dy / 500)})`;
+        }
+      },
+      { passive: false },
+    );
+    const defEnd = () => {
+      if (defStartY === -1) return;
+      const dy = defCurY - defStartY;
+      dcard.style.transform = "";
+      dcard.style.transition = "";
+      ov.style.background = "";
+      if (dy > 60) closeDefinition();
+      defStartY = -1;
+    };
+    dcard.addEventListener("touchend", defEnd);
+    dcard.addEventListener("touchcancel", defEnd);
   }
   const card = ov.querySelector(".def-card");
   card.innerHTML = `<div class="def-word">${word}</div><div class="def-loading">Consulting the dictionary…</div>`;
@@ -6201,7 +6234,6 @@ function renderDefinition(word, data) {
     })
     .join("");
   card.innerHTML = `
-    <button class="def-close" onclick="closeDefinition()" aria-label="Close">×</button>
     <div class="def-word">${entry.word || word}</div>
     ${phon ? `<div class="def-phon">${phon}</div>` : ""}
     <div class="def-rule"></div>
@@ -6214,7 +6246,6 @@ function renderDefError(word, err) {
   const card = ov.querySelector(".def-card");
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
   card.innerHTML = `
-    <button class="def-close" onclick="closeDefinition()" aria-label="Close">×</button>
     <div class="def-word">${word}</div>
     <div class="def-rule"></div>
     <div class="def-loading">${
