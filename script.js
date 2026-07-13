@@ -85,56 +85,75 @@ function renderDashboardCards() {
   const notes = timeline.filter((t) => t.type === "Note").length;
   const reflections = timeline.filter((t) => t.type === "Reflection").length;
   const dueCount = getDueReviewItems().length;
+  const streak =
+    typeof calcStreak === "function" ? calcStreak() : { current: 0, longest: 0 };
+  const deskSec = typeof getDeskSeconds === "function" ? getDeskSeconds() : 0;
 
-  const deskSec = getDeskSeconds();
-  const deskLine = deskSec >= 60
-    ? `<div class="desk-ledger-line">— ${formatDeskTime(deskSec)} at the desk —</div>`
-    : "";
+  // Time-aware greeting up top
+  const greet = document.getElementById("studyGreeting");
+  if (greet) {
+    const hr = new Date().getHours();
+    const tod =
+      hr < 11 ? "Good morning" : hr < 17 ? "Good afternoon" : hr < 22 ? "Good evening" : "A late hour";
+    let line;
+    if (dueCount)
+      line = `${tod}. ${dueCount} passage${dueCount === 1 ? "" : "s"} await${dueCount === 1 ? "s" : ""} your review.`;
+    else if (!stories) line = `${tod}. Your study is bare — read a story to begin.`;
+    else line = `${tod}. Nothing due today — read on, or revisit your margins.`;
+    greet.textContent = line;
+  }
 
   const ledgerStat = (n, l) =>
     `<div class="study-stat"><div class="study-stat-num">${n}</div><div class="study-stat-name">${l}</div></div>`;
 
-  grid.style.display = "flex";
-  grid.style.flexDirection = "column";
-  grid.style.gridTemplateColumns = "";
-  grid.style.gap = "18px";
+  const metaParts = [];
+  if (deskSec >= 60) metaParts.push(`${formatDeskTime(deskSec)} at the desk`);
+  if (streak.current > 0)
+    metaParts.push(
+      `${streak.current}-day streak${streak.longest > streak.current ? ` · best ${streak.longest}` : ""}`,
+    );
+  const meta = metaParts.length
+    ? `<div class="study-ledger-meta">— ${metaParts.join(" · ")} —</div>`
+    : "";
 
   grid.innerHTML = `
-    <div class="study-ledger">
-      ${ledgerStat(stories, "Stories")}
-      <div class="study-ledger-div" aria-hidden="true"></div>
-      ${ledgerStat(highlights, "Highlights")}
-      <div class="study-ledger-div" aria-hidden="true"></div>
-      ${ledgerStat(notes, "Notes")}
-      <div class="study-ledger-div" aria-hidden="true"></div>
-      ${ledgerStat(reflections, "Reflections")}
-    </div>
-    ${deskLine}
-
-
-    <div class="study-activity">
-      <div class="study-activity-head">
-        <span>Activity</span>
-        <span class="study-activity-range">Last 28 days</span>
+    <section class="study-block">
+      <div class="study-sec-label">The Ledger</div>
+      <div class="study-ledger">
+        ${ledgerStat(stories, "Stories")}
+        <div class="study-ledger-div" aria-hidden="true"></div>
+        ${ledgerStat(highlights, "Highlights")}
+        <div class="study-ledger-div" aria-hidden="true"></div>
+        ${ledgerStat(notes, "Notes")}
+        <div class="study-ledger-div" aria-hidden="true"></div>
+        ${ledgerStat(reflections, "Reflections")}
       </div>
-      <div id="habitHeatmap" class="heatmap-grid"></div>
-    </div>
+      ${meta}
+    </section>
 
-    <div class="study-actions">
-      <div class="study-feature" onclick="openReviewSession()">
+    <div class="study-feature study-review" onclick="openReviewSession()">
+      <div class="study-review-left">
         <div class="study-feature-label">Daily Review</div>
         <div class="study-feature-num">${dueCount}</div>
-        <div class="study-feature-sub">${dueCount ? (dueCount === 1 ? "item due to review" : "items due to review") : "all caught up"}</div>
-        <div class="study-feature-cta">${dueCount ? "Begin session →" : "Come back tomorrow"}</div>
+        <div class="study-feature-sub">${dueCount ? (dueCount === 1 ? "passage due" : "passages due") : "all caught up"}</div>
       </div>
-      <div class="study-feature mg-card" id="marginsCard"></div>
+      <div class="study-review-right">
+        <div class="study-review-blurb">${dueCount ? "Recall what you've read before you'd forget it." : "Your deck is clear. New marks will return in time."}</div>
+        <div class="study-feature-cta">${dueCount ? "Begin the session →" : "Come back tomorrow"}</div>
+      </div>
     </div>
+
+    <section class="study-block">
+      <div class="study-sec-label">Activity <span class="study-sec-sub">last 28 days</span></div>
+      <div class="study-activity"><div id="habitHeatmap" class="heatmap-grid"></div></div>
+    </section>
+
+    <div class="study-feature mg-card" id="marginsCard"></div>
 
     <div class="study-actions">
       <div class="study-feature pg-card" id="parlourCard"></div>
       <div class="study-feature hn-card" id="honoursCard"></div>
     </div>
-
   `;
 
   renderHeatmap();
@@ -142,7 +161,6 @@ function renderDashboardCards() {
   renderParlourCard();
   renderHonoursCard();
 }
-
 // ---- From your margins: your own words, resurfaced ----
 function _marginItems() {
   return (userLearningJourney.timeline || []).filter(

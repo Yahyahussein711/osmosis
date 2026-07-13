@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260713j" />
+    <link rel="stylesheet" href="styles.css?v=20260713k" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -563,25 +563,13 @@
 
       <!-- DASHBOARD VIEW -->
       <div id="dashboardView" class="view">
-        <div class="view-header">
-          <div>
-            <h2 style="display: flex; align-items: center; gap: 10px">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7"></rect>
-                <rect x="14" y="3" width="7" height="7"></rect>
-                <rect x="14" y="14" width="7" height="7"></rect>
-                <rect x="3" y="14" width="7" height="7"></rect>
-              </svg>
-              Dashboard
-            </h2>
-            <p class="subtitle">Your learning journey at a glance</p>
-          </div>
+        <div class="study-masthead">
+          <div class="study-eyebrow">The Study</div>
+          <h2 class="study-headline">Your reading life, at a glance</h2>
+          <div id="studyGreeting" class="study-greeting"></div>
         </div>
 
-        <!-- COLLAPSIBLE CARDS SECTION -->
-        <div id="dashboardCardsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 32px;">
-          <!-- Cards: Stats, Heatmap, Streak, Domains, Activity, Achievements -->
-        </div>
+        <div id="dashboardCardsGrid" class="study-page"></div>
 
         <!-- EXPANDED DETAIL VIEW -->
         <div id="dashboardDetailView" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--glass-solid); border: none; border-radius: 0; padding: 24px; z-index: 1000; overflow-y: scroll; overflow-x: hidden; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
@@ -2113,7 +2101,7 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260713j"></script>
-    <script src="script.js?v=20260713j"></script>
+    <script src="stories.js?v=20260713k"></script>
+    <script src="script.js?v=20260713k"></script>
   </body>
 </html>
