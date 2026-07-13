@@ -7890,19 +7890,156 @@ body.deep-work-active::after {
   .ds-open:hover { border-color: var(--accent); }
 }
 
-.chron-anthology { display: flex; flex-direction: column; gap: 16px; }
-@media (min-width: 720px) {
-  .chron-anthology { display: block; columns: 2; column-gap: 16px; }
-  .chron-plate { break-inside: avoid; margin-bottom: 16px; }
+.chron-patterns { display: flex; flex-direction: column; gap: 26px; }
+.pat-block {}
+.pat-label {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.62rem;
+  color: var(--accent);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--glass-border);
 }
-.chron-plate { border: 1px solid var(--glass-border); border-radius: 4px; padding: 22px 20px 18px; cursor: pointer; transition: border-color 0.2s ease, transform 0.2s ease; }
-@media (hover: hover) {
-  .chron-plate:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--glass-border)); transform: translateY(-2px); }
+/* Author ranked bars */
+.pat-bars { display: flex; flex-direction: column; gap: 11px; }
+.pat-bar-row { display: flex; align-items: center; gap: 12px; }
+.pat-bar-name {
+  flex: 0 0 34%;
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.92rem;
+  color: var(--dark-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.chron-plate-mark { font-family: "Lora", Georgia, serif; font-size: 1.8rem; line-height: 0.4; color: var(--accent); opacity: 0.5; }
-.chron-plate-quote { font-family: "Lora", Georgia, serif; font-style: italic; font-size: 1.15rem; line-height: 1.55; color: var(--dark-text); margin: 10px 0 0; }
-.chron-plate-note { font-family: "Lora", Georgia, serif; font-size: 0.88rem; line-height: 1.5; color: var(--subtitle-color); border-left: 2px solid var(--glass-border); padding-left: 10px; margin-top: 12px; }
-.chron-plate-cap { font-family: "Lora", Georgia, serif; font-variant: small-caps; letter-spacing: 1.5px; font-size: 0.68rem; color: var(--accent); margin-top: 14px; }
+.pat-bar-track { flex: 1; height: 7px; background: var(--glass-border); border-radius: 4px; overflow: hidden; }
+.pat-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.pat-bar-n {
+  flex: 0 0 auto;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.78rem;
+  color: var(--subtitle-color);
+  min-width: 18px;
+  text-align: right;
+}
+/* Genre tags */
+.pat-genres { display: flex; flex-wrap: wrap; gap: 8px; }
+.pat-genre {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: 2px;
+  padding: 5px 11px;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.78rem;
+  color: var(--dark-text);
+}
+.pat-genre-n { font-size: 0.66rem; color: var(--accent); }
+/* Stat tiles */
+.pat-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (min-width: 560px) {
+  .pat-tiles { grid-template-columns: repeat(4, 1fr); }
+}
+.pat-tile {
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  padding: 16px 12px;
+  text-align: center;
+  box-shadow: var(--lift-shadow);
+}
+.pat-tile-num {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--dark-text);
+  line-height: 1.1;
+}
+.pat-tile-cap {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.62rem;
+  color: var(--subtitle-color);
+  margin-top: 6px;
+}
+/* Type mix bar */
+.pat-mixbar {
+  display: flex;
+  height: 12px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--glass-border);
+}
+.pat-seg { display: block; height: 100%; }
+.pat-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; }
+.pat-leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 0.8px;
+  font-size: 0.72rem;
+  color: var(--subtitle-color);
+}
+.pat-leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+/* Most marked stories */
+.pat-stories { display: flex; flex-direction: column; }
+.pat-story {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--glass-border);
+  padding: 11px 2px;
+  cursor: pointer;
+  box-shadow: none;
+}
+.pat-stories .pat-story:last-child { border-bottom: none; }
+.pat-story-name {
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.95rem;
+  color: var(--dark-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pat-story-n {
+  flex-shrink: 0;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+.pat-none {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.86rem;
+  color: var(--subtitle-color);
+}
+
 .chron-empty { text-align: center; padding: 54px 20px; font-family: "Lora", Georgia, serif; font-style: italic; color: var(--subtitle-color); line-height: 1.6; }
 .chron-empty-mark { color: var(--accent); font-size: 1.6rem; margin-bottom: 10px; font-style: normal; }
 #journeyTimeline.chron-body { transition: opacity 0.2s ease; border: none; padding: 0; }

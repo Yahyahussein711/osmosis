@@ -8204,7 +8204,7 @@ function renderTimeline(filterType) {
   }
 
   if (chronLens === "stories") renderChronStories(body, view);
-  else if (chronLens === "anthology") renderChronAnthology(body, view);
+  else if (chronLens === "patterns") renderChronPatterns(body);
   else renderChronJournal(body, view);
 }
 
@@ -8673,46 +8673,152 @@ function renderChronStories(body, view) {
 }
 
 // ---- Anthology lens (your book of quotations) ----
-function renderChronAnthology(body, view) {
-  const quotes = view.filter(
-    (i) =>
-      isType(i.type, "Highlight") ||
-      isType(i.type, "Note") ||
-      isType(i.type, "Bookmark"),
-  );
-  const plates = quotes
-    .map((i) => {
-      const parsed = _chronParse(i);
-      const q = parsed.quote || parsed.note;
-      if (!q) return "";
-      const obj = _chronStoryObj(i.domain, i.article) || {};
-      const cap = `${i.article || ""}${obj.author ? ` · ${obj.author}` : ""}`;
-      return `<figure class="chron-plate" data-domain="${_chronAttr(i.domain)}" data-article="${_chronAttr(i.article)}" data-date="${i.date}">
-        <div class="chron-plate-mark" style="color:${_chronCol(i.type)}">${_chronGlyph(i.type)}</div>
-        <blockquote class="chron-plate-quote">${_chronEsc(q)}</blockquote>
-        ${parsed.quote && parsed.note ? `<div class="chron-plate-note">${_chronEsc(parsed.note)}</div>` : ""}
-        ${cap ? `<figcaption class="chron-plate-cap">${_chronEsc(cap)}</figcaption>` : ""}
-      </figure>`;
-    })
-    .join("");
-  if (!plates) {
+// ---- Patterns lens (the shape of your reading life) ----
+function renderChronPatterns(body) {
+  let items = [...(userLearningJourney.timeline || [])];
+  items.forEach(_chronNormalize);
+  if (!items.length) {
     body.innerHTML = _chronEmpty(
-      "No passages yet — highlight lines as you read and they gather here as an anthology.",
+      "Patterns appear once you've read and marked a few stories.",
     );
     return;
   }
-  body.innerHTML = `<div class="chron-anthology">${plates}</div>`;
-  body.querySelectorAll(".chron-plate").forEach((b) => {
+
+  // Resolve author/genres per story once
+  const objCache = {};
+  const objFor = (dom, art) => {
+    const k = (dom || "") + "|" + art;
+    if (!(k in objCache)) objCache[k] = _chronStoryObj(dom, art) || {};
+    return objCache[k];
+  };
+
+  const authors = {};
+  const genres = {};
+  const stories = {};
+  const weekdays = new Array(7).fill(0);
+  const months = {};
+  const types = {};
+  items.forEach((i) => {
+    types[i.type] = (types[i.type] || 0) + 1;
+    const d = new Date(i.date);
+    weekdays[d.getDay()]++;
+    const mk = d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    months[mk] = (months[mk] || 0) + 1;
+    if (i.article) {
+      stories[i.article] = stories[i.article] || {
+        n: 0,
+        domain: i.domain,
+        article: i.article,
+      };
+      stories[i.article].n++;
+      const o = objFor(i.domain, i.article);
+      if (o.author) authors[o.author] = (authors[o.author] || 0) + 1;
+      (o.genres || []).forEach((g) => (genres[g] = (genres[g] || 0) + 1));
+    }
+  });
+
+  const rank = (obj) =>
+    Object.entries(obj).sort((a, b) => b[1] - a[1]);
+
+  // Most kept company (authors) — ranked bars
+  const authorRank = rank(authors).slice(0, 5);
+  const authorMax = authorRank.length ? authorRank[0][1] : 1;
+  const authorsHtml = authorRank.length
+    ? authorRank
+        .map(
+          ([name, n]) =>
+            `<div class="pat-bar-row"><span class="pat-bar-name">${_chronEsc(name)}</span><span class="pat-bar-track"><span class="pat-bar-fill" style="width:${Math.round((n / authorMax) * 100)}%"></span></span><span class="pat-bar-n">${n}</span></div>`,
+        )
+        .join("")
+    : `<div class="pat-none">No authors recorded yet.</div>`;
+
+  // Shelf leans (genres) — tags
+  const genreRank = rank(genres).slice(0, 8);
+  const genresHtml = genreRank.length
+    ? genreRank
+        .map(
+          ([g, n]) =>
+            `<span class="pat-genre">${_chronEsc(g)}<span class="pat-genre-n">${n}</span></span>`,
+        )
+        .join("")
+    : `<div class="pat-none">Genres appear as you tag your stories.</div>`;
+
+  // Tiles
+  const WD = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const busiestWd = weekdays.indexOf(Math.max(...weekdays));
+  const busiestMonth = rank(months)[0];
+  const streak = typeof calcStreak === "function" ? calcStreak() : { longest: 0 };
+  const storyCount = Object.keys(stories).length;
+  const tiles = [
+    [WD[busiestWd], "day of letters"],
+    [busiestMonth ? busiestMonth[0].split(" ")[0] : "—", "busiest month"],
+    [String(streak.longest || 0), "longest streak"],
+    [String(storyCount), storyCount === 1 ? "story marked" : "stories marked"],
+  ]
+    .map(
+      ([v, c]) =>
+        `<div class="pat-tile"><div class="pat-tile-num">${_chronEsc(v)}</div><div class="pat-tile-cap">${c}</div></div>`,
+    )
+    .join("");
+
+  // Type breakdown — a proportion bar + legend
+  const ORDER = ["Highlight", "Note", "Reflection", "Bookmark", "Read"];
+  const typeTotal = ORDER.reduce((s2, t) => s2 + (types[t] || 0), 0) || 1;
+  const seg = ORDER.filter((t) => types[t])
+    .map(
+      (t) =>
+        `<span class="pat-seg" style="width:${(types[t] / typeTotal) * 100}%;background:${_chronCol(t)}" title="${t}"></span>`,
+    )
+    .join("");
+  const legend = ORDER.filter((t) => types[t])
+    .map(
+      (t) =>
+        `<span class="pat-leg"><span class="pat-leg-dot" style="background:${_chronCol(t)}"></span>${t} ${types[t]}</span>`,
+    )
+    .join("");
+
+  // Most marked stories
+  const topStories = Object.values(stories)
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 5)
+    .map(
+      (st) =>
+        `<button class="pat-story" data-domain="${_chronAttr(st.domain)}" data-article="${_chronAttr(st.article)}"><span class="pat-story-name">${_chronEsc(st.article)}</span><span class="pat-story-n">${st.n}</span></button>`,
+    )
+    .join("");
+
+  body.innerHTML = `
+    <div class="chron-patterns">
+      <div class="pat-block">
+        <div class="pat-label">Most Kept Company</div>
+        <div class="pat-bars">${authorsHtml}</div>
+      </div>
+      <div class="pat-block">
+        <div class="pat-label">Your Shelf Leans</div>
+        <div class="pat-genres">${genresHtml}</div>
+      </div>
+      <div class="pat-tiles">${tiles}</div>
+      <div class="pat-block">
+        <div class="pat-label">The Mix</div>
+        <div class="pat-mixbar">${seg}</div>
+        <div class="pat-legend">${legend}</div>
+      </div>
+      <div class="pat-block">
+        <div class="pat-label">Most Marked</div>
+        <div class="pat-stories">${topStories}</div>
+      </div>
+    </div>`;
+
+  body.querySelectorAll(".pat-story").forEach((b) => {
     b.addEventListener("click", () =>
       jumpToArticleByDomainAndName(
         b.dataset.domain || "",
         b.dataset.article || "",
-        b.dataset.date || null,
+        null,
       ),
     );
   });
 }
-
 function makeSummaryItem(html, delayIndex, color, borderColor) {
   const div = document.createElement("div");
   div.className = "timeline-summary-item";
