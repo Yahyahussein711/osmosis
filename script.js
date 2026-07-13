@@ -97,7 +97,7 @@ function renderDashboardCards() {
       hr < 11 ? "Good morning" : hr < 17 ? "Good afternoon" : hr < 22 ? "Good evening" : "A late hour";
     let line;
     if (dueCount)
-      line = `${tod}. ${dueCount} passage${dueCount === 1 ? "" : "s"} await${dueCount === 1 ? "s" : ""} your review.`;
+      line = `${tod}. ${dueCount} reflection${dueCount === 1 ? "" : "s"} to revisit.`;
     else if (!stories) line = `${tod}. Your study is bare — read a story to begin.`;
     else line = `${tod}. Nothing due today — read on, or revisit your margins.`;
     greet.textContent = line;
@@ -135,10 +135,10 @@ function renderDashboardCards() {
       <div class="study-review-left">
         <div class="study-feature-label">Daily Review</div>
         <div class="study-feature-num">${dueCount}</div>
-        <div class="study-feature-sub">${dueCount ? (dueCount === 1 ? "passage due" : "passages due") : "all caught up"}</div>
+        <div class="study-feature-sub">${dueCount ? (dueCount === 1 ? "reflection to revisit" : "reflections to revisit") : "all caught up"}</div>
       </div>
       <div class="study-review-right">
-        <div class="study-review-blurb">${dueCount ? "Recall what you've read before you'd forget it." : "Your deck is clear. New marks will return in time."}</div>
+        <div class="study-review-blurb">${dueCount ? "Sit again with what you wrote — remember it, and deepen it." : "Nothing to revisit. Your reflections will return in time."}</div>
         <div class="study-feature-cta">${dueCount ? "Begin the session →" : "Come back tomorrow"}</div>
       </div>
     </div>
@@ -755,12 +755,16 @@ function closeDashboardDetail() {
 // Rating buttons show exactly when the card will return, using
 // an SM-2-style scheduler stored per annotation in `srs`.
 // ============================================================
+const REVIEW_DAY = 24 * 60 * 60 * 1000;
+
+// The Review deck is your own REFLECTIONS — resurfaced so you remember
+// what you concluded, and can build on it over time.
 function getDueReviewItems() {
   const now = Date.now();
   const items = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (!key || !key.startsWith("article_") || !key.endsWith("_annotations"))
+    if (!key || !key.startsWith("article_") || !key.endsWith("_reflections"))
       continue;
     let arr;
     try {
@@ -769,73 +773,49 @@ function getDueReviewItems() {
       continue;
     }
     if (!Array.isArray(arr)) continue;
-    arr.forEach((ann, idx) => {
-      if (!ann || !ann.text) return;
-      if (ann.note === "Bookmarked") return; // bookmarks aren't review cards
-      const next = ann.srs && ann.srs.nextReview ? ann.srs.nextReview : 0;
-      if (next <= now) items.push({ key, idx, ann, due: next });
+    arr.forEach((ref, idx) => {
+      if (!ref || !ref.text || !ref.text.trim()) return;
+      // Fresh reflections rest a couple of days before first resurfacing.
+      const born = ref.created ? new Date(ref.created).getTime() : 0;
+      const next =
+        ref.srs && ref.srs.nextReview ? ref.srs.nextReview : born + 2 * REVIEW_DAY;
+      if (next <= now) items.push({ key, idx, ref, due: next });
     });
   }
-  // Longest-overdue first, so nothing rots at the back of the deck
-  items.sort((a, b) => a.due - b.due);
+  items.sort((a, b) => a.due - b.due); // longest-waiting first
   return items;
 }
 
-// SM-2-style scheduler. quality: 0 = Again, 1 = Good, 2 = Easy.
-const REVIEW_DAY = 24 * 60 * 60 * 1000;
-function nextIntervalMs(ann, quality) {
-  const srs = ann.srs || { interval: 0, ease: 2.5 };
-  if (quality === 0) return 10 * 60 * 1000; // relearn in 10 minutes
+// quality: 0 = Faded, 1 = Holds, 2 = Deeper. Widening intervals in days.
+function nextIntervalMs(item, quality) {
+  const srs = item.srs || { interval: 0, ease: 2.5 };
   if (!srs.interval || srs.interval < 1)
-    return (quality === 2 ? 4 : 1) * REVIEW_DAY;
+    return (quality === 0 ? 2 : quality === 1 ? 4 : 8) * REVIEW_DAY;
+  if (quality === 0) return 2 * REVIEW_DAY;
   const days = Math.max(
-    1,
+    2,
     Math.round(srs.interval * (srs.ease || 2.5) * (quality === 2 ? 1.3 : 1)),
   );
   return days * REVIEW_DAY;
 }
 function humanInterval(ms) {
-  if (ms < 60 * 60 * 1000) return Math.round(ms / 60000) + " min";
   const d = Math.round(ms / REVIEW_DAY);
+  if (d >= 30) {
+    const m = Math.round(d / 30);
+    return m + (m === 1 ? " month" : " months");
+  }
   return d + (d === 1 ? " day" : " days");
 }
-function scheduleReviewItem(ann, quality) {
-  const srs = ann.srs || { interval: 0, ease: 2.5, nextReview: 0 };
-  const ms = nextIntervalMs(ann, quality);
-  if (quality === 0) {
-    srs.interval = 0;
-    srs.ease = Math.max(1.3, (srs.ease || 2.5) - 0.2);
-  } else {
-    srs.interval = Math.round(ms / REVIEW_DAY);
-    srs.ease = Math.max(1.3, (srs.ease || 2.5) + (quality === 2 ? 0.15 : 0));
-  }
-  srs.nextReview = Date.now() + ms;
-  ann.srs = srs;
-}
-
-// Blank out the informative words of a passage so there is something
-// to actually retrieve. Deterministic: longest content words first.
-function buildReviewCloze(text) {
-  const words = text.split(/\s+/);
-  if (words.length < 5) return null; // too short to cloze meaningfully
-  const candidates = words
-    .map((w, i) => ({ core: w.replace(/[^A-Za-z0-9À-ɏ'’-]/g, ""), i }))
-    .filter((o) => o.core.length >= 5);
-  if (!candidates.length) return null;
-  const count = Math.max(1, Math.min(8, Math.round(words.length * 0.3)));
-  const hidden = new Set(
-    candidates
-      .sort((a, b) => b.core.length - a.core.length)
-      .slice(0, count)
-      .map((o) => o.i),
+function scheduleReviewItem(item, quality) {
+  const srs = item.srs || { interval: 0, ease: 2.5, nextReview: 0 };
+  const ms = nextIntervalMs(item, quality);
+  srs.interval = Math.round(ms / REVIEW_DAY);
+  srs.ease = Math.max(
+    1.3,
+    (srs.ease || 2.5) + (quality === 0 ? -0.2 : quality === 2 ? 0.15 : 0),
   );
-  return words
-    .map((w, i) =>
-      hidden.has(i)
-        ? `<span class="rv-blank" style="width:${Math.min(9, Math.max(3, w.length)) * 0.55}em"></span>`
-        : w,
-    )
-    .join(" ");
+  srs.nextReview = Date.now() + ms;
+  item.srs = srs;
 }
 
 let reviewQueue = [];
@@ -855,7 +835,6 @@ function openReviewSession() {
   overlay.style.display = "flex";
   renderReviewCard();
 }
-
 function closeReviewSession() {
   const overlay = document.getElementById("reviewOverlay");
   if (overlay) overlay.style.display = "none";
@@ -867,19 +846,19 @@ function renderReviewCard() {
   if (!overlay) return;
 
   if (reviewIndex >= reviewQueue.length) {
-    const did = new Set(reviewQueue.map((e) => e.key + "#" + e.idx)).size;
+    const did = reviewQueue.length;
     const stillDue = getDueReviewItems().length;
     overlay.innerHTML = `
       <div class="rv-end">
         <div class="rv-fleuron">❦</div>
-        <h2>${did ? "Review complete" : "Nothing due today"}</h2>
+        <h2>${did ? "Revisited" : "Nothing to revisit"}</h2>
         <p>${
           did
-            ? `${did} passage${did === 1 ? "" : "s"} revisited.` +
+            ? `You sat again with ${did} reflection${did === 1 ? "" : "s"}.` +
               (stillDue
-                ? ` ${stillDue} more ${stillDue === 1 ? "is" : "are"} waiting if you want to continue.`
-                : " Each one will return right before you'd forget it.")
-            : "Highlight and note passages as you read — they'll surface here for recall at widening intervals."
+                ? ` ${stillDue} more ${stillDue === 1 ? "is" : "are"} waiting.`
+                : " They'll return, at widening intervals, so your thinking never quite fades.")
+            : "Write reflections as you read — they return here so you remember what you concluded, and can deepen it over time."
         }</p>
         <div class="rv-end-actions">
           ${stillDue && did ? `<button onclick="openReviewSession()" class="secondary">Keep going</button>` : ""}
@@ -889,37 +868,40 @@ function renderReviewCard() {
     return;
   }
 
-  const { ann } = reviewQueue[reviewIndex];
-  const hasNote =
-    ann.note && ann.note !== "Highlighted" && ann.note !== "Bookmarked";
-  const cloze = buildReviewCloze(ann.text);
+  const { ref } = reviewQueue[reviewIndex];
   const pct = Math.round((reviewIndex / reviewQueue.length) * 100);
-
-  const front = cloze
-    ? `<div class="rv-passage">“${cloze}”</div>
-       <div class="rv-task">Fill the gaps from memory, then reveal.</div>`
-    : `<div class="rv-passage rv-teaser">“${ann.text.split(/\s+/).slice(0, 2).join(" ")} …”</div>
-       <div class="rv-task">Recall the rest of this highlight, then reveal.</div>`;
+  const when = typeof _relTime === "function" ? _relTime(ref.created) : "once";
+  const cue = ref.prompt ? ref.prompt.replace(/^[“"']|[”"']$/g, "").trim() : "";
+  const teaser = ref.text.replace(/\s+/g, " ").trim().split(" ").slice(0, 4).join(" ");
+  const esc = (x) => (typeof _chronEsc === "function" ? _chronEsc(x) : x);
 
   overlay.innerHTML = `
     <div class="rv-top">
-      <span class="rv-count">Daily Review · ${reviewIndex + 1} of ${reviewQueue.length}</span>
+      <span class="rv-count">The Review · ${reviewIndex + 1} of ${reviewQueue.length}</span>
       <button onclick="closeReviewSession()" class="rv-close" aria-label="Close">×</button>
     </div>
     <div class="rv-progress"><div style="width:${pct}%"></div></div>
     <div class="rv-card">
-      <div class="rv-eyebrow">${ann.article || "Highlight"}</div>
-      ${front}
+      <div class="rv-eyebrow">${esc(when)}${ref.article ? " · " + esc(ref.article) : ""}</div>
+      ${cue ? `<div class="rv-cue">“${esc(cue)}”</div>` : ""}
+      <div class="rv-task" id="rvFrontTask">You wrote about this. Try to recall what you concluded — then reveal your words.</div>
       <div id="reviewRevealRow" class="rv-reveal-row">
-        <button onclick="revealReviewCard()" class="primary">Reveal</button>
+        <button onclick="revealReviewCard()" class="primary">Reveal what I wrote</button>
       </div>
       <div id="reviewAnswer" class="rv-answer" style="display:none;">
-        <div class="rv-passage">“${ann.text}”</div>
-        ${hasNote ? `<div class="rv-note"><span>Your note</span>${ann.note}</div>` : ""}
+        <div class="rv-passage rv-reflection">${esc(ref.text).replace(/\n/g, "<br>")}</div>
+        <div class="rv-rate-lead">How does it land now?</div>
         <div class="rv-rate-row">
-          <button onclick="rateReviewCard(0)" class="rv-rate rv-again">Again<small>this sitting</small></button>
-          <button onclick="rateReviewCard(1)" class="rv-rate rv-good">Good<small>${humanInterval(nextIntervalMs(ann, 1))}</small></button>
-          <button onclick="rateReviewCard(2)" class="rv-rate rv-easy">Easy<small>${humanInterval(nextIntervalMs(ann, 2))}</small></button>
+          <button onclick="rateReviewCard(0)" class="rv-rate rv-again">Faded<small>${humanInterval(nextIntervalMs(ref, 0))}</small></button>
+          <button onclick="rateReviewCard(1)" class="rv-rate rv-good">Holds<small>${humanInterval(nextIntervalMs(ref, 1))}</small></button>
+          <button onclick="rateReviewCard(2)" class="rv-rate rv-easy">Deeper<small>${humanInterval(nextIntervalMs(ref, 2))}</small></button>
+        </div>
+        <div class="rv-add-wrap">
+          <button class="rv-add-btn" id="rvAddBtn" onclick="reviewAddThought()">＋ Add a thought to this</button>
+          <div id="rvAddBox" class="rv-add-box" style="display:none;">
+            <textarea id="rvAddInput" class="rv-add-input" placeholder="What would you add, now?"></textarea>
+            <button class="secondary btn-sm" onclick="saveReviewThought()">Add</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -928,9 +910,8 @@ function renderReviewCard() {
 function revealReviewCard() {
   const overlay = document.getElementById("reviewOverlay");
   if (!overlay) return;
-  const front = overlay.querySelector(".rv-card > .rv-passage");
-  const task = overlay.querySelector(".rv-task");
-  if (front) front.style.display = "none";
+  const cue = overlay.querySelector(".rv-cue");
+  const task = document.getElementById("rvFrontTask");
   if (task) task.style.display = "none";
   const revealRow = document.getElementById("reviewRevealRow");
   if (revealRow) revealRow.style.display = "none";
@@ -938,20 +919,50 @@ function revealReviewCard() {
   if (answer) answer.style.display = "block";
 }
 
+function reviewAddThought() {
+  const box = document.getElementById("rvAddBox");
+  const btn = document.getElementById("rvAddBtn");
+  if (box) box.style.display = "block";
+  if (btn) btn.style.display = "none";
+  const ta = document.getElementById("rvAddInput");
+  if (ta) ta.focus();
+}
+function saveReviewThought() {
+  const ta = document.getElementById("rvAddInput");
+  const entry = reviewQueue[reviewIndex];
+  if (!ta || !ta.value.trim() || !entry) return;
+  const stamp = new Date().toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const add = "\n\n— " + stamp + " — " + ta.value.trim();
+  try {
+    const arr = JSON.parse(localStorage.getItem(entry.key) || "[]");
+    if (arr[entry.idx]) {
+      arr[entry.idx].text = (arr[entry.idx].text || "") + add;
+      localStorage.setItem(entry.key, JSON.stringify(arr));
+      entry.ref.text = arr[entry.idx].text;
+    }
+  } catch (e) {}
+  const passage = document.querySelector("#reviewAnswer .rv-reflection");
+  if (passage)
+    passage.innerHTML = (typeof _chronEsc === "function" ? _chronEsc(entry.ref.text) : entry.ref.text).replace(/\n/g, "<br>");
+  const box = document.getElementById("rvAddBox");
+  if (box) box.style.display = "none";
+}
+
 function rateReviewCard(quality) {
   const entry = reviewQueue[reviewIndex];
   if (entry) {
-    scheduleReviewItem(entry.ann, quality);
+    scheduleReviewItem(entry.ref, quality);
     try {
       const arr = JSON.parse(localStorage.getItem(entry.key) || "[]");
       if (arr[entry.idx]) {
-        arr[entry.idx].srs = entry.ann.srs;
+        arr[entry.idx].srs = entry.ref.srs;
         localStorage.setItem(entry.key, JSON.stringify(arr));
       }
     } catch (e) {}
-    // A lapse returns within the sitting: "Again" re-queues the card at
-    // the tail, so the session only closes once everything is retrieved.
-    if (quality === 0) reviewQueue.push(entry);
   }
   reviewIndex++;
   renderReviewCard();
@@ -960,6 +971,8 @@ window.openReviewSession = openReviewSession;
 window.closeReviewSession = closeReviewSession;
 window.revealReviewCard = revealReviewCard;
 window.rateReviewCard = rateReviewCard;
+window.reviewAddThought = reviewAddThought;
+window.saveReviewThought = saveReviewThought;
 
 function populateDashboardDetails(stats, timeline, topDomains, recentItems, streak, allAchievements) {
   // Populate stats breakdown

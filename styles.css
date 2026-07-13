@@ -8400,4 +8400,67 @@ body.deep-work-active::after {
   .dlg-back:hover { color: var(--accent); }
 }
 
+/* The Review — reflection cards */
+.rv-cue {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 1.35rem;
+  line-height: 1.5;
+  color: var(--dark-text);
+  margin: 4px 0 18px;
+}
+.rv-reflection {
+  text-align: left;
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.02rem;
+  line-height: 1.7;
+  color: var(--dark-text);
+  max-height: 42vh;
+  overflow-y: auto;
+  padding: 2px;
+}
+.rv-rate-lead {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  font-size: 0.72rem;
+  color: var(--subtitle-color);
+  margin: 22px 0 12px;
+}
+.rv-add-wrap { margin-top: 18px; }
+.rv-add-btn {
+  background: none;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 4px 0;
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.86rem;
+  color: var(--accent);
+}
+.rv-add-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  text-align: left;
+}
+.rv-add-input {
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid var(--glass-border);
+  border-radius: 3px;
+  background: transparent;
+  padding: 10px 12px;
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--dark-text);
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.rv-add-input:focus { border-color: var(--accent); }
+
 /* End of stylesheet */
