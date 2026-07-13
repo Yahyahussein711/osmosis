@@ -14,6 +14,25 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Defensive guards — prevent the whole class of horizontal-overflow bugs:
+   media can never exceed its container, and long unbroken strings wrap
+   instead of forcing a wider page. Safe, broadly beneficial, low-risk. */
+img,
+video,
+canvas {
+  max-width: 100%;
+}
+p,
+h1,
+h2,
+h3,
+h4,
+li,
+figcaption,
+blockquote {
+  overflow-wrap: break-word;
+}
+
 :root {
   /* Color Palette */
   --cream: #fafafa;
