@@ -194,7 +194,104 @@ const _mgTrim = (s, n) => {
   const t = s.replace(/\s+/g, " ").trim().replace(/^"|"$/g, "");
   return t.length > n ? t.slice(0, n) + "…" : t;
 };
+const _THR_STOP = new Set(
+  "about above after again against almost alone along already although always among another around because become before began being below beside better between beyond called cannot could during either enough every everything first found great himself herself myself never nothing often other others perhaps rather really seemed shall should since something still such their there these thing things think third those though three through toward under until upon using where which while whole whose without would years young".split(" "),
+);
+let _threadIdx = null;
+
+// Find pairs of passages you marked in DIFFERENT stories that share a
+// meaningful word — the invisible threads running through your reading.
+function _buildThreads() {
+  const quotes = [];
+  (userLearningJourney.timeline || []).forEach((t) => {
+    if (!(isType(t.type, "Highlight") || isType(t.type, "Note"))) return;
+    if (!t.text || !t.article) return;
+    let raw = t.text.replace(/^\[(Path|Capstone):[^\]]*\]\s*/, "");
+    let quote = raw;
+    if (raw.includes('\n\n"')) quote = raw.split('\n\n"').slice(1).join('\n\n"');
+    quote = quote.replace(/^"|"$/g, "").replace(/\s+/g, " ").trim();
+    if (quote.length < 20) return;
+    quotes.push({ article: t.article, domain: t.domain, date: t.date, quote });
+  });
+  const idx = {};
+  quotes.forEach((q, i) => {
+    const words = new Set(q.quote.toLowerCase().match(/[a-zà-ÿ']{5,}/g) || []);
+    words.forEach((w) => {
+      if (_THR_STOP.has(w)) return;
+      (idx[w] = idx[w] || new Set()).add(i);
+    });
+  });
+  const threads = [];
+  Object.keys(idx).forEach((w) => {
+    const byArt = {};
+    [...idx[w]].forEach((i) => {
+      const a = quotes[i].article;
+      if (byArt[a] === undefined) byArt[a] = i;
+    });
+    const arts = Object.keys(byArt);
+    if (arts.length >= 2) {
+      threads.push({
+        word: w,
+        a: quotes[byArt[arts[0]]],
+        b: quotes[byArt[arts[1]]],
+        span: arts.length,
+      });
+    }
+  });
+  // Prefer specific words (present in few stories) and longer words.
+  threads.sort((x, y) => x.span - y.span || y.word.length - x.word.length);
+  return threads;
+}
+
+function _renderThread(el, thr) {
+  const esc = (x) => (typeof _chronEsc === "function" ? _chronEsc(x) : x);
+  const hi = (text) => {
+    const t = esc(_mgTrim(text, 150));
+    const re = new RegExp(
+      "(" + thr.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")",
+      "ig",
+    );
+    return t.replace(re, '<mark class="thr-mark">$1</mark>');
+  };
+  const q = (m, key) =>
+    `<blockquote class="thr-quote" data-domain="${(m.domain || "").replace(/"/g, "&quot;")}" data-article="${(m.article || "").replace(/"/g, "&quot;")}" data-date="${m.date}">“${hi(m.quote)}”<cite>${esc(m.article)}</cite></blockquote>`;
+  el.innerHTML = `
+    <div class="study-feature-label">The Common Thread</div>
+    <div class="thr-intro">Across two stories, you kept circling the same idea.</div>
+    ${q(thr.a)}
+    <div class="thr-link"><span></span><em>the thread</em> · ${esc(thr.word)}<span></span></div>
+    ${q(thr.b)}
+    <div class="mg-actions">
+      <button class="text-btn" onclick="event.stopPropagation(); showAnotherMargin()">Another thread ↻</button>
+    </div>`;
+  el.querySelectorAll(".thr-quote").forEach((b) => {
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof jumpToArticleByDomainAndName === "function")
+        jumpToArticleByDomainAndName(
+          b.dataset.domain || "",
+          b.dataset.article || "",
+          b.dataset.date || null,
+        );
+    });
+  });
+}
+
 function renderMarginsCard(step) {
+  const el = document.getElementById("marginsCard");
+  if (!el) return;
+  const threads = _buildThreads();
+  if (threads.length) {
+    if (_threadIdx === null)
+      _threadIdx = Math.floor(Date.now() / 86400000) % threads.length;
+    if (step) _threadIdx = (_threadIdx + 1) % threads.length;
+    _renderThread(el, threads[_threadIdx % threads.length]);
+    return;
+  }
+  _renderMarginSingle(step);
+}
+
+function _renderMarginSingle(step) {
   const el = document.getElementById("marginsCard");
   if (!el) return;
   const items = _marginItems();

@@ -8534,4 +8534,64 @@ body.deep-work-active::after {
   flex-shrink: 0;
 }
 
+/* The Common Thread */
+.thr-intro {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: var(--subtitle-color);
+  margin: 8px 0 14px;
+}
+.thr-quote {
+  display: block;
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--glass-border);
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--dark-text);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+@media (hover: hover) {
+  .thr-quote:hover { border-color: var(--accent); }
+}
+.thr-quote cite {
+  display: block;
+  font-style: normal;
+  font-variant: small-caps;
+  letter-spacing: 1.2px;
+  font-size: 0.68rem;
+  color: var(--subtitle-color);
+  margin-top: 6px;
+}
+.thr-mark {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+.thr-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 2px;
+  font-size: 0.72rem;
+  color: var(--accent);
+  text-align: center;
+  justify-content: center;
+}
+.thr-link em { font-style: italic; font-variant: normal; color: var(--subtitle-color); letter-spacing: 0.5px; }
+.thr-link span {
+  height: 1px;
+  background: var(--glass-border);
+  flex: 1;
+  max-width: 60px;
+}
+
 /* End of stylesheet */
