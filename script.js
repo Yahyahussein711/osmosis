@@ -855,6 +855,58 @@ function openHonoursCabinet() {
     cab.id = "honoursCabinet";
     cab.className = "hn-cabinet";
     document.body.appendChild(cab);
+    // Tap the backdrop or press Escape to close.
+    cab.addEventListener("click", (e) => {
+      if (e.target === cab) closeHonoursCabinet();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && cab.style.display === "flex")
+        closeHonoursCabinet();
+    });
+    // Pull the sheet down to dismiss (matches the writing drawer). Only
+    // engages at the top of the sheet, so it never fights scrolling.
+    let hnStartY = -1;
+    let hnCurY = 0;
+    cab.addEventListener(
+      "touchstart",
+      (e) => {
+        const sheet = cab.querySelector(".hn-cab-sheet");
+        hnStartY = sheet && sheet.scrollTop <= 5 ? e.touches[0].clientY : -1;
+        hnCurY = e.touches[0].clientY;
+      },
+      { passive: true },
+    );
+    cab.addEventListener(
+      "touchmove",
+      (e) => {
+        if (hnStartY === -1) return;
+        const sheet = cab.querySelector(".hn-cab-sheet");
+        if (!sheet) return;
+        hnCurY = e.touches[0].clientY;
+        const dy = hnCurY - hnStartY;
+        if (dy > 0) {
+          if (e.cancelable) e.preventDefault();
+          sheet.style.transform = `translateY(${dy * 0.85}px)`;
+          sheet.style.transition = "none";
+          cab.style.background = `rgba(0,0,0,${Math.max(0, 0.45 - dy / 500)})`;
+        }
+      },
+      { passive: false },
+    );
+    const hnEnd = () => {
+      if (hnStartY === -1) return;
+      const sheet = cab.querySelector(".hn-cab-sheet");
+      const dy = hnCurY - hnStartY;
+      if (sheet) {
+        sheet.style.transform = "";
+        sheet.style.transition = "";
+      }
+      cab.style.background = "";
+      if (dy > 60) closeHonoursCabinet();
+      hnStartY = -1;
+    };
+    cab.addEventListener("touchend", hnEnd);
+    cab.addEventListener("touchcancel", hnEnd);
   }
   const rows = HONOURS.map((h) => {
     const on = !!earned[h.id];
@@ -880,7 +932,6 @@ function openHonoursCabinet() {
   const { cur } = _rankFor(pts);
   cab.innerHTML = `
     <div class="hn-cab-sheet">
-      <button class="rv-close" onclick="closeHonoursCabinet()" aria-label="Close">×</button>
       <div class="hn-cab-title">Cabinet of Honours</div>
       <div class="hn-cab-rank">${cur.title} · ${pts} pts</div>
       ${rows}
