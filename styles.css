@@ -8314,4 +8314,72 @@ body.deep-work-active::after {
   .dlg-free:hover { color: var(--dark-text); }
 }
 
+/* Dialogue depth — path chooser, press-further, capstone */
+.dlg-choose-q {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--dark-text);
+  margin-bottom: 16px;
+}
+.dlg-paths {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.dlg-path {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  padding: 14px 16px;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+@media (hover: hover) {
+  .dlg-path:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
+  }
+}
+.dlg-path-name {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--dark-text);
+}
+.dlg-path-tag {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.78rem;
+  color: var(--subtitle-color);
+}
+.dlg-actions #dlgSurprise { margin-left: auto; color: var(--accent); }
+.dlg-move {
+  background: none;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 6px 4px;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.76rem;
+  color: var(--subtitle-color);
+}
+@media (hover: hover) {
+  .dlg-move:hover { color: var(--accent); }
+}
+.dlg-q-cap {
+  border-top: 1px solid var(--glass-border);
+  padding-top: 16px;
+}
+
 /* End of stylesheet */

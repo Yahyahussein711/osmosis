@@ -6850,29 +6850,63 @@ function clearWsDraft() {
 // never face a blank line, and deepens with each answer:
 // notice -> unpack -> connect -> admit -> carry forward.
 // ============================================================
-const _DLG_RUNGS = [
-  {
-    q: ["What made you stop here?", "What did this stir in you?", "Why did this catch you and not let go?"],
-    qNoSeed: ["What did this story stir in you?", "What moment are you still carrying?", "What caught you and wouldn't let go?"],
-    stems: ["What stopped me was…", "It struck me because…", "I felt…"],
+// Four reflection PATHS, each its own ladder of deepening questions.
+const _DLG_PATHS = {
+  understand: {
+    name: "Understand",
+    tag: "make sense of it",
+    rungs: [
+      { q: ["What is this actually claiming?", "What's the core idea here?"], stems: ["It's claiming that…", "The core idea is…"] },
+      { q: ["What must be true for this to hold?", "What assumption does it rest on?"], stems: ["It assumes…", "This only works if…"] },
+      { q: ["How would you explain it to someone who disagreed?", "Put it in the plainest terms you can."], stems: ["Put simply…", "I'd tell them…"] },
+      { q: ["Now that it's clear — what follows?", "What does understanding this change?"], stems: ["So it follows that…", "This changes…"] },
+    ],
   },
-  {
-    q: ["Say it plainly — what is this really about?", "In your own words, what is it saying?", "Strip away the story: what's the idea underneath?"],
-    stems: ["In plain words, this is about…", "The real point is…", "Underneath, it says…"],
+  feel: {
+    name: "Feel",
+    tag: "sit with what it stirred",
+    rungs: [
+      { q: ["What did this stir in you?", "What feeling rose up here?"], stems: ["I felt…", "It stirred…"] },
+      { q: ["Why this feeling, and not another?", "Where does that feeling come from?"], stems: ["Because…", "It comes from…"] },
+      { q: ["When have you felt this before?", "What memory does it touch?"], stems: ["I've felt this when…", "It touches the memory of…"] },
+      { q: ["What is this feeling trying to tell you?", "What does it want from you?"], stems: ["It's telling me…", "It wants…"] },
+    ],
   },
-  {
-    q: ["Where have you met this before — in life, or in yourself?", "Who or what does this remind you of?", "When have you felt this?"],
-    stems: ["It reminds me of…", "I've felt this when…", "This is like the time…"],
+  apply: {
+    name: "Apply",
+    tag: "carry it into your life",
+    rungs: [
+      { q: ["Where is this true for you right now?", "What in your life does this touch?"], stems: ["Right now, this is true of…", "In my life, this touches…"] },
+      { q: ["If you believed this fully, what would change?", "What would taking it seriously look like?"], stems: ["If I believed it, I'd…", "Taking it seriously means…"] },
+      { q: ["What's the smallest step you could take?", "What could you do this week?"], stems: ["The smallest step is…", "This week, I'll…"] },
+      { q: ["What will get in the way — and how will you meet it?", "What makes this hard to do?"], stems: ["What gets in the way is…", "It's hard because…"] },
+    ],
   },
-  {
-    q: ["What does this ask you to admit?", "What belief of yours does it press on?", "What is the uncomfortable part?"],
-    stems: ["What I'm reluctant to admit is…", "It presses on my belief that…", "The uncomfortable truth is…"],
+  question: {
+    name: "Question",
+    tag: "argue with it",
+    rungs: [
+      { q: ["What do you doubt here?", "Where is this wrong, or too easy?"], stems: ["I doubt that…", "This is too easy because…"] },
+      { q: ["What's the strongest case against it?", "How would a sharp critic answer?"], stems: ["The case against is…", "A critic would say…"] },
+      { q: ["What does it conveniently leave out?", "Whose view is missing?"], stems: ["It leaves out…", "Missing is…"] },
+      { q: ["After arguing with it — what still stands?", "What survives your doubt?"], stems: ["What still stands is…", "What survives is…"] },
+    ],
   },
-  {
-    q: ["What will you carry from this?", "What would change if you lived as though this were true?", "What will you do differently?"],
-    stems: ["I want to hold onto…", "From now on…", "This week, I'll…"],
-  },
+};
+const _DLG_PATH_ORDER = ["understand", "feel", "apply", "question"];
+// Lateral deepeners for "press further" — dig into the same thought.
+const _DLG_DEEPEN = [
+  "Say more about that.",
+  "And why does that matter?",
+  "What's underneath that?",
+  "Be more honest — what's the real reason?",
+  "Give one concrete example.",
+  "And what does that cost you?",
 ];
+const _DLG_CAPSTONE = {
+  q: "In one line — what is this reflection really about?",
+  stems: ["In truth, it's about…", "What it comes down to is…"],
+};
 let _dlg = null;
 function _dlgPick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -6896,10 +6930,10 @@ function _dlgSeeds() {
 }
 function startReflectionDialogue() {
   const seeds = _dlgSeeds();
-  _dlg = { rung: 0, answers: [], seeds, seedIdx: 0 };
+  _dlg = { stage: "choose", answers: [], seeds, seedIdx: 0 };
   const left = document.getElementById("reflectLeft");
   if (left) left.classList.add("dlg-on");
-  _renderDialogue(true);
+  _renderDialogueChoose();
 }
 function closeReflectionDialogue() {
   _dlg = null;
@@ -6912,40 +6946,106 @@ function _dlgSeedText() {
   if (!_dlg || !_dlg.seeds.length) return "";
   return _dlg.seeds[_dlg.seedIdx % _dlg.seeds.length];
 }
-function _renderDialogue(freshQuestion) {
+function _dlgSeedHtml() {
+  const seed = _dlgSeedText();
+  if (!seed) return "";
+  return `<div class="dlg-seed"><span class="dlg-seed-q">❝</span>${_chronEsc(seed)}${_dlg.seeds.length > 1 ? `<button class="dlg-reseed" type="button">another passage ↻</button>` : ""}</div>`;
+}
+function _dlgWireSeed(box) {
+  const re = box.querySelector(".dlg-reseed");
+  if (re)
+    re.addEventListener("click", () => {
+      _dlg.seedIdx++;
+      if (_dlg.stage === "choose") _renderDialogueChoose();
+      else _renderDialogue(true);
+    });
+}
+function _dlgWireFree() {
+  const f = document.getElementById("dlgFree");
+  if (f)
+    f.addEventListener("click", () => {
+      closeReflectionDialogue();
+      const ref = document.getElementById("reflectionInput");
+      if (ref) ref.focus();
+    });
+}
+
+// ---- Stage 1: choose a path ----
+function _renderDialogueChoose() {
   const box = document.getElementById("reflectionDialogue");
   if (!box || !_dlg) return;
   box.style.display = "block";
-  const rung = _DLG_RUNGS[Math.min(_dlg.rung, _DLG_RUNGS.length - 1)];
-  const seed = _dlgSeedText();
-  if (freshQuestion || !_dlg.question) {
-    const pool = _dlg.rung === 0 && !seed ? rung.qNoSeed || rung.q : rung.q;
-    _dlg.question = _dlgPick(pool);
+  box.innerHTML = `
+    <div class="dlg-head"><span class="dlg-label">The Dialogue</span></div>
+    ${_dlgSeedHtml()}
+    <div class="dlg-choose-q">How do you want to reflect?</div>
+    <div class="dlg-paths">
+      ${_DLG_PATH_ORDER.map((k) => `<button class="dlg-path" type="button" data-path="${k}"><span class="dlg-path-name">${_DLG_PATHS[k].name}</span><span class="dlg-path-tag">${_DLG_PATHS[k].tag}</span></button>`).join("")}
+    </div>
+    <div class="dlg-actions">
+      <button class="dlg-free" type="button" id="dlgFree">write freely instead</button>
+      <button class="dlg-free" type="button" id="dlgSurprise">surprise me ↻</button>
+    </div>`;
+  box.querySelectorAll(".dlg-path").forEach((b) =>
+    b.addEventListener("click", () => _dlgBeginPath(b.dataset.path)),
+  );
+  const sur = document.getElementById("dlgSurprise");
+  if (sur) sur.addEventListener("click", () => _dlgBeginPath(_dlgPick(_DLG_PATH_ORDER)));
+  _dlgWireSeed(box);
+  _dlgWireFree();
+}
+
+function _dlgBeginPath(pathKey) {
+  _dlg.path = pathKey;
+  _dlg.stage = "ladder";
+  _dlg.rung = 0;
+  _renderDialogue(true);
+}
+
+// ---- Stage 2: the ladder (and capstone) ----
+function _renderDialogue(fresh) {
+  const box = document.getElementById("reflectionDialogue");
+  if (!box || !_dlg) return;
+  box.style.display = "block";
+  const path = _DLG_PATHS[_dlg.path];
+  const capstone = _dlg.stage === "capstone";
+  const rungs = path.rungs;
+  let stems;
+  if (capstone) {
+    if (fresh || !_dlg.question) _dlg.question = _DLG_CAPSTONE.q;
+    stems = _DLG_CAPSTONE.stems;
+  } else if (_dlg.pressing) {
+    if (fresh || !_dlg.question) _dlg.question = _dlgPick(_DLG_DEEPEN);
+    stems = rungs[_dlg.rung].stems;
+  } else {
+    if (fresh || !_dlg.question) _dlg.question = _dlgPick(rungs[_dlg.rung].q);
+    stems = rungs[_dlg.rung].stems;
   }
-  const step = _dlg.rung + 1;
-  const total = _DLG_RUNGS.length;
-  const isLast = _dlg.rung >= _DLG_RUNGS.length - 1;
+  const stepTxt = capstone
+    ? `${path.name} · to close`
+    : `${path.name} · ${_dlg.rung + 1} of ${rungs.length}`;
   const woven = _dlg.answers.length
     ? `<div class="dlg-woven">${_dlg.answers.map((a) => `<p>${_chronEsc(a)}</p>`).join("")}</div>`
     : "";
-  const seedHtml =
-    _dlg.rung === 0 && seed
-      ? `<div class="dlg-seed"><span class="dlg-seed-q">❝</span>${_chronEsc(seed)}${_dlg.seeds.length > 1 ? `<button class="dlg-reseed" type="button">another passage ↻</button>` : ""}</div>`
-      : "";
+  const seedHtml = _dlg.rung === 0 && !_dlg.pressing && !capstone ? _dlgSeedHtml() : "";
+  const isLast = _dlg.rung >= rungs.length - 1;
+  const moves = capstone
+    ? ""
+    : `<button class="dlg-move" type="button" id="dlgPress">Press further ↧</button>${isLast ? `<button class="secondary btn-sm" type="button" id="dlgDeeper">To close →</button>` : `<button class="secondary btn-sm" type="button" id="dlgDeeper">Go deeper →</button>`}`;
   box.innerHTML = `
     <div class="dlg-head">
       <span class="dlg-label">The Dialogue</span>
-      <span class="dlg-step">${step} of ${total}</span>
+      <span class="dlg-step">${stepTxt}</span>
     </div>
     ${seedHtml}
     ${woven}
-    <div class="dlg-q">${_chronEsc(_dlg.question)}</div>
-    <div class="dlg-stems">${rung.stems.map((st) => `<button class="dlg-stem" type="button">${_chronEsc(st)}</button>`).join("")}</div>
+    <div class="dlg-q${capstone ? " dlg-q-cap" : ""}">${_chronEsc(_dlg.question)}</div>
+    <div class="dlg-stems">${stems.map((st) => `<button class="dlg-stem" type="button">${_chronEsc(st)}</button>`).join("")}</div>
     <textarea class="dlg-input" id="dlgInput" placeholder="Begin here…"></textarea>
     <div class="dlg-actions">
       <button class="dlg-free" type="button" id="dlgFree">write freely instead</button>
       <div class="dlg-actions-right">
-        ${isLast ? "" : `<button class="secondary btn-sm" type="button" id="dlgDeeper">Go deeper →</button>`}
+        ${moves}
         <button class="primary btn-sm" type="button" id="dlgFinish">Finish</button>
       </div>
     </div>`;
@@ -6961,47 +7061,63 @@ function _renderDialogue(freshQuestion) {
     });
   });
   input.addEventListener("input", () => _dlgGrow(input));
-  const re = box.querySelector(".dlg-reseed");
-  if (re)
-    re.addEventListener("click", () => {
-      _dlg.seedIdx++;
-      _renderDialogue(true);
-    });
+  _dlgWireSeed(box);
+  _dlgWireFree();
+  const press = document.getElementById("dlgPress");
+  if (press) press.addEventListener("click", () => _dlgPress());
   const deeper = document.getElementById("dlgDeeper");
   if (deeper) deeper.addEventListener("click", () => _dlgAdvance());
   document.getElementById("dlgFinish").addEventListener("click", () => _dlgFinish());
-  document.getElementById("dlgFree").addEventListener("click", () => {
-    closeReflectionDialogue();
-    const ref = document.getElementById("reflectionInput");
-    if (ref) ref.focus();
-  });
   setTimeout(() => input && input.focus(), 60);
 }
 function _dlgGrow(ta) {
   ta.style.height = "auto";
   ta.style.height = Math.max(70, ta.scrollHeight) + "px";
 }
-function _dlgAdvance() {
+function _dlgPushCurrent() {
   const input = document.getElementById("dlgInput");
   if (input && input.value.trim()) _dlg.answers.push(input.value.trim());
-  _dlg.rung = Math.min(_dlg.rung + 1, _DLG_RUNGS.length - 1);
-  _renderDialogue(true);
+}
+function _dlgScroll() {
   const box = document.getElementById("reflectionDialogue");
   if (box) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
+function _dlgPress() {
+  _dlgPushCurrent();
+  _dlg.pressing = true;
+  _renderDialogue(true);
+  _dlgScroll();
+}
+function _dlgAdvance() {
+  _dlgPushCurrent();
+  _dlg.pressing = false;
+  const rungs = _DLG_PATHS[_dlg.path].rungs;
+  if (_dlg.rung >= rungs.length - 1) {
+    _dlg.stage = "capstone";
+  } else {
+    _dlg.rung++;
+  }
+  _renderDialogue(true);
+  _dlgScroll();
+}
 function _dlgFinish() {
+  const capstone = _dlg.stage === "capstone";
   const input = document.getElementById("dlgInput");
-  if (input && input.value.trim()) _dlg.answers.push(input.value.trim());
+  const capText = capstone && input ? input.value.trim() : "";
+  if (!capstone) _dlgPushCurrent();
   const answers = _dlg.answers.slice();
   const seed = _dlgSeedText();
   closeReflectionDialogue();
-  if (!answers.length) return;
+  if (!answers.length && !capText) return;
   const ref = document.getElementById("reflectionInput");
   if (ref) {
     ref.value = answers.join("\n\n");
     if (typeof wsAutoGrow === "function") wsAutoGrow(ref);
   }
-  if (typeof setWsEpigraph === "function") setWsEpigraph(seed ? "“" + seed + "”" : "");
+  // The crystallised capstone line becomes the reflection's title/lead;
+  // otherwise the seed passage does.
+  const lead = capText || (seed ? "“" + seed + "”" : "");
+  if (typeof setWsEpigraph === "function") setWsEpigraph(lead);
   if (typeof updateWsWordCount === "function") updateWsWordCount();
   saveReflection();
 }
