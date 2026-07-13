@@ -8126,6 +8126,17 @@ const _CHRON_GLYPH = {
 function _chronGlyph(t) {
   return _CHRON_GLYPH[t] || "·";
 }
+const _CHRON_COL = {
+  Highlight: "var(--accent)",
+  Note: "#5b7a8c",
+  Reflection: "#6f8a56",
+  Bookmark: "#b0863f",
+  Read: "#8a8578",
+  Badge: "#b08a3e",
+};
+function _chronCol(t) {
+  return _CHRON_COL[t] || "var(--accent)";
+}
 function _chronStoryObj(domain, article) {
   const T = window.topicsData || {};
   const tryDom = (d) => {
@@ -8303,28 +8314,118 @@ function _renderChronRibbon(items) {
       return `<span class="chron-bar${c ? "" : " empty"}" data-ts="${ts}" style="height:${h}%" title="${c} ${c === 1 ? "entry" : "entries"}"></span>`;
     })
     .join("");
-  el.querySelectorAll(".chron-bar").forEach((b) => {
-    b.addEventListener("click", () => {
-      if (chronLens !== "journal") {
-        chronLens = "journal";
-        document
-          .querySelectorAll(".chron-lens")
-          .forEach((x) => x.classList.toggle("active", x.dataset.lens === "journal"));
-        renderTimeline();
-      }
-      const target = parseInt(b.dataset.ts);
-      let best = null,
-        bestDiff = Infinity;
-      document.querySelectorAll(".chron-day").forEach((d) => {
-        const diff = Math.abs(parseInt(d.dataset.ts) - target);
-        if (diff < bestDiff) {
-          bestDiff = diff;
-          best = d;
-        }
-      });
-      if (best) best.scrollIntoView({ behavior: "smooth", block: "start" });
+  el.dataset.min = String(min);
+  el.dataset.max = String(max);
+  _initRibbonScrub(el);
+}
+
+// Drag along the ribbon to scrub the journal through time; a floating
+// date label follows your finger. A tap jumps to that moment.
+function _initRibbonScrub(el) {
+  if (el.dataset.scrubWired) return;
+  el.dataset.scrubWired = "1";
+
+  let label = document.getElementById("chronScrubLabel");
+  if (!label) {
+    label = document.createElement("div");
+    label.id = "chronScrubLabel";
+    label.className = "chron-scrub-label";
+    document.body.appendChild(label);
+  }
+
+  let scrubbing = false;
+  let rect = null;
+  let placeholder = null;
+
+  const start = (clientX) => {
+    if (chronLens !== "journal") {
+      chronLens = "journal";
+      document
+        .querySelectorAll(".chron-lens")
+        .forEach((x) => x.classList.toggle("active", x.dataset.lens === "journal"));
+      renderTimeline();
+    }
+    rect = el.getBoundingClientRect();
+    placeholder = document.createElement("div");
+    placeholder.style.height = rect.height + "px";
+    placeholder.className = "chron-ribbon-ph";
+    el.after(placeholder);
+    el.style.position = "fixed";
+    el.style.top = rect.top + "px";
+    el.style.left = rect.left + "px";
+    el.style.width = rect.width + "px";
+    el.style.margin = "0";
+    el.classList.add("scrubbing");
+    label.style.display = "block";
+    scrubbing = true;
+  };
+
+  const move = (clientX) => {
+    if (!scrubbing || !rect) return;
+    let frac = (clientX - rect.left) / rect.width;
+    frac = Math.max(0, Math.min(1, frac));
+    const min = parseInt(el.dataset.min);
+    const max = parseInt(el.dataset.max);
+    const ts = min + frac * (max - min);
+    const d = new Date(ts);
+    label.textContent = d.toLocaleDateString(undefined, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
+    const lx = rect.left + frac * rect.width;
+    label.style.left = Math.max(64, Math.min(window.innerWidth - 64, lx)) + "px";
+    label.style.top = rect.top - 14 + "px";
+    // highlight the bar under the finger
+    const bars = el.querySelectorAll(".chron-bar");
+    const bi = Math.min(bars.length - 1, Math.floor(frac * bars.length));
+    bars.forEach((b, i) => b.classList.toggle("cur", i === bi));
+    // live-scroll the journal to the nearest day
+    let best = null,
+      bestDiff = Infinity;
+    document.querySelectorAll(".chron-day").forEach((dd) => {
+      const diff = Math.abs(parseInt(dd.dataset.ts) - ts);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = dd;
+      }
+    });
+    if (best) best.scrollIntoView({ behavior: "auto", block: "start" });
+  };
+
+  const end = () => {
+    if (!scrubbing) return;
+    scrubbing = false;
+    el.style.position = "";
+    el.style.top = "";
+    el.style.left = "";
+    el.style.width = "";
+    el.style.margin = "";
+    el.classList.remove("scrubbing");
+    el.querySelectorAll(".chron-bar.cur").forEach((b) => b.classList.remove("cur"));
+    if (placeholder) {
+      placeholder.remove();
+      placeholder = null;
+    }
+    label.style.display = "none";
+  };
+
+  el.addEventListener("pointerdown", (e) => {
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch (er) {}
+    start(e.clientX);
+    move(e.clientX);
+    e.preventDefault();
   });
+  el.addEventListener("pointermove", (e) => {
+    if (scrubbing) {
+      move(e.clientX);
+      e.preventDefault();
+    }
+  });
+  el.addEventListener("pointerup", end);
+  el.addEventListener("pointercancel", end);
 }
 
 // ---- Journal lens ----
@@ -8389,7 +8490,7 @@ function renderChronJournal(body, view) {
 
 function chronEntryEl(item) {
   const el = document.createElement("div");
-  el.className = "chron-entry";
+  el.className = "chron-entry chron-t-" + (item.type || "Note");
   const parsed = _chronParse(item);
   const time = new Date(item.date).toLocaleTimeString([], {
     hour: "2-digit",
@@ -8484,7 +8585,7 @@ function renderChronStories(body, view) {
         .map((i) => {
           const parsed = _chronParse(i);
           const txt = parsed.quote || parsed.note || i.text || "";
-          return `<button class="chron-mark" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-date="${i.date}"><span class="chron-mark-glyph">${_chronGlyph(i.type)}</span><span class="chron-mark-txt">${_chronEsc(_chronTrim(txt, 96))}</span></button>`;
+          return `<button class="chron-mark" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-date="${i.date}"><span class="chron-mark-glyph" style="color:${_chronCol(i.type)}">${_chronGlyph(i.type)}</span><span class="chron-mark-txt">${_chronEsc(_chronTrim(txt, 96))}</span></button>`;
         })
         .join("");
       const more =
@@ -8533,7 +8634,7 @@ function renderChronAnthology(body, view) {
       const obj = _chronStoryObj(i.domain, i.article) || {};
       const cap = `${i.article || ""}${obj.author ? ` · ${obj.author}` : ""}`;
       return `<figure class="chron-plate" data-domain="${_chronAttr(i.domain)}" data-article="${_chronAttr(i.article)}" data-date="${i.date}">
-        <div class="chron-plate-mark">❝</div>
+        <div class="chron-plate-mark" style="color:${_chronCol(i.type)}">${_chronGlyph(i.type)}</div>
         <blockquote class="chron-plate-quote">${_chronEsc(q)}</blockquote>
         ${parsed.quote && parsed.note ? `<div class="chron-plate-note">${_chronEsc(parsed.note)}</div>` : ""}
         ${cap ? `<figcaption class="chron-plate-cap">${_chronEsc(cap)}</figcaption>` : ""}
