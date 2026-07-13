@@ -315,21 +315,48 @@ function _cleanSentence(content) {
   return sentences.length ? _pick(sentences) : null;
 }
 
+function _pgShuffle(a) {
+  return a
+    .map((x) => ({ x, r: Math.random() }))
+    .sort((p, q) => p.r - q.r)
+    .map((o) => o.x);
+}
+function _pgReflections() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.endsWith("_reflections")) continue;
+    let arr;
+    try {
+      arr = JSON.parse(localStorage.getItem(k) || "[]");
+    } catch (e) {
+      continue;
+    }
+    if (!Array.isArray(arr)) continue;
+    arr.forEach((r) => {
+      if (r && r.text && r.text.trim().length > 25 && r.article) out.push(r);
+    });
+  }
+  return out;
+}
+function _pgReaction(run) {
+  if (run >= 12) return "Unstoppable — a scholar's recall.";
+  if (run >= 9) return "On fire.";
+  if (run >= 6) return "A sharp memory.";
+  if (run >= 3) return "Warming up.";
+  return "";
+}
+
 let _pgQuestion = null;
 let _pgRun = 0;
+let _pgScore = 0;
 function _buildParlourQuestion() {
   const read = _readStoriesList();
   const allNames = _allStoryNames();
-  const types = [];
+  const nd = _pgRun >= 3 ? 3 : 2; // gets harder (4 choices) once you're hot
 
-  if (read.length && allNames.length >= 3) types.push("passage");
   const authored = read.filter((r) => r.art.author);
-  const allAuthors = [
-    ...new Set(
-      read.map((r) => r.art.author).filter(Boolean),
-    ),
-  ];
-  if (authored.length && allAuthors.length >= 3) types.push("author");
+  const allAuthors = [...new Set(read.map((r) => r.art.author).filter(Boolean))];
   const hls = (userLearningJourney.timeline || []).filter(
     (t) =>
       (isType(t.type, "Highlight") || isType(t.type, "Note")) &&
@@ -337,17 +364,31 @@ function _buildParlourQuestion() {
       t.article &&
       t.text.trim().length > 30,
   );
-  if (hls.length && allNames.length >= 3) types.push("margin");
+  const refs = _pgReflections();
+  const byAuthor = {};
+  authored.forEach((r) => {
+    (byAuthor[r.art.author] = byAuthor[r.art.author] || []).push(r.name);
+  });
+  const multiAuthors = Object.keys(byAuthor).filter(
+    (a) => [...new Set(byAuthor[a])].length >= 2,
+  );
 
+  const types = [];
+  if (read.length && allNames.length >= nd + 1) types.push("passage", "finish");
+  if (authored.length && allAuthors.length >= nd + 1) types.push("author");
+  if (hls.length && allNames.length >= nd + 1) types.push("margin");
+  if (refs.length && allNames.length >= nd + 1) types.push("reflection");
+  if (multiAuthors.length && allNames.length >= 3) types.push("odd");
   if (!types.length) return null;
   const type = _pick(types);
 
   if (type === "author") {
     const r = _pick(authored);
     return {
+      type,
       q: `Who wrote <em>${r.name}</em>?`,
       answer: r.art.author,
-      choices: [r.art.author, ..._distractors(r.art.author, allAuthors, 2)],
+      choices: [r.art.author, ..._distractors(r.art.author, allAuthors, nd)],
     };
   }
   if (type === "margin") {
@@ -355,20 +396,81 @@ function _buildParlourQuestion() {
     let txt = h.text.replace(/\s+/g, " ").trim().replace(/^"|"$/g, "");
     if (txt.length > 140) txt = txt.slice(0, 140) + "…";
     return {
+      type,
       q: `You marked this passage — in which story?<div class="pg-passage">“${txt}”</div>`,
       answer: h.article,
-      choices: [h.article, ..._distractors(h.article, allNames, 2)],
+      choices: [h.article, ..._distractors(h.article, allNames, nd)],
     };
   }
-  // passage
-  for (let tries = 0; tries < 6; tries++) {
+  if (type === "reflection") {
+    const rf = _pick(refs);
+    let txt = rf.text.replace(/\s+/g, " ").trim();
+    if (txt.length > 150) txt = txt.slice(0, 150) + "…";
+    return {
+      type,
+      q: `You reflected this — on which story?<div class="pg-passage">“${txt}”</div>`,
+      answer: rf.article,
+      choices: [rf.article, ..._distractors(rf.article, allNames, nd)],
+    };
+  }
+  if (type === "odd") {
+    const a = _pick(multiAuthors);
+    const two = _pgShuffle([...new Set(byAuthor[a])]).slice(0, 2);
+    const others = authored
+      .filter((r) => r.art.author !== a)
+      .map((r) => r.name)
+      .filter((n) => !two.includes(n));
+    if (others.length) {
+      const odd = _pick(others);
+      return {
+        type,
+        q: `Two of these were written by the same hand — which is the odd one out?`,
+        answer: odd,
+        choices: [odd, ...two],
+      };
+    }
+  }
+  if (type === "finish") {
+    for (let tries = 0; tries < 8; tries++) {
+      const r = _pick(read);
+      const sentence = _cleanSentence(r.art.content || "");
+      if (!sentence) continue;
+      const words = sentence.split(" ");
+      if (words.length < 9) continue;
+      const tail = _pick([3, 4]);
+      const cut = words.length - tail;
+      const stem = words.slice(0, cut).join(" ");
+      const answer = words.slice(cut).join(" ").replace(/[.!?"'”’]+$/, "").trim();
+      if (!answer || answer.length < 6) continue;
+      const dist = [];
+      for (let t = 0; t < 16 && dist.length < nd; t++) {
+        const r2 = _pick(read);
+        const s2 = _cleanSentence(r2.art.content || "");
+        if (!s2) continue;
+        const w2 = s2.split(" ");
+        if (w2.length < 9) continue;
+        const e = w2.slice(w2.length - _pick([3, 4])).join(" ").replace(/[.!?"'”’]+$/, "").trim();
+        if (e && e.length >= 6 && e !== answer && !dist.includes(e)) dist.push(e);
+      }
+      if (dist.length < nd) continue;
+      return {
+        type,
+        q: `Finish the line:<div class="pg-passage">“${stem} …”</div>`,
+        answer,
+        choices: [answer, ...dist],
+      };
+    }
+  }
+  // passage (default / fallback)
+  for (let tries = 0; tries < 8; tries++) {
     const r = _pick(read);
     const sentence = _cleanSentence(r.art.content || "");
     if (!sentence) continue;
     return {
+      type: "passage",
       q: `Which story is this from?<div class="pg-passage">“${sentence}”</div>`,
       answer: r.name,
-      choices: [r.name, ..._distractors(r.name, allNames, 2)],
+      choices: [r.name, ..._distractors(r.name, allNames, nd)],
     };
   }
   return null;
@@ -386,20 +488,43 @@ function renderParlourCard(next) {
       <div class="mg-quote mg-empty">Finish a story or two and the game begins — you'll be quizzed on what you've read.</div>`;
     return;
   }
-  // shuffle choices
-  const choices = [..._pgQuestion.choices]
-    .map((c) => ({ c, r: Math.random() }))
-    .sort((a, b) => a.r - b.r)
-    .map((o) => o.c);
+  const choices = _pgShuffle([..._pgQuestion.choices]);
   _pgQuestion.shuffled = choices;
+  _pgQuestion.used5050 = false;
+
+  const reaction = _pgReaction(_pgRun);
+  const flame = _pgRun >= 3
+    ? `<div class="pg-flame" style="--heat:${Math.min(1, _pgRun / 12)}">${"✦".repeat(Math.min(5, Math.floor(_pgRun / 3)))} <span>${reaction}</span></div>`
+    : "";
+  const show5050 = choices.length === 4;
 
   el.innerHTML = `
     <div class="study-feature-label">The Parlour Game</div>
+    ${flame}
     <div class="pg-question">${_pgQuestion.q}</div>
     <div class="pg-choices">
       ${choices.map((c, i) => `<button class="pg-choice" onclick="event.stopPropagation(); answerParlour(${i})">${c}</button>`).join("")}
     </div>
-    <div class="pg-foot"><span>Run: ${_pgRun}</span><span>Best: ${best}</span></div>`;
+    ${show5050 ? `<div class="pg-tools"><button class="pg-5050" id="pg5050" onclick="event.stopPropagation(); parlourFiftyFifty()">50 / 50</button></div>` : ""}
+    <div class="pg-foot"><span>Run ${_pgRun}</span><span>Best ${best}</span><span>${_pgScore} pts</span></div>`;
+}
+
+function parlourFiftyFifty() {
+  const el = document.getElementById("parlourCard");
+  if (!el || !_pgQuestion || _pgQuestion.done || _pgQuestion.used5050) return;
+  _pgQuestion.used5050 = true;
+  const btns = [...el.querySelectorAll(".pg-choice")];
+  const wrong = btns.filter(
+    (b) => b.textContent !== _pgQuestion.answer,
+  );
+  _pgShuffle(wrong)
+    .slice(0, 2)
+    .forEach((b) => {
+      b.disabled = true;
+      b.classList.add("pg-dim");
+    });
+  const t = document.getElementById("pg5050");
+  if (t) t.style.display = "none";
 }
 
 function answerParlour(i) {
@@ -415,8 +540,11 @@ function answerParlour(i) {
     else if (j === i) b.classList.add("pg-wrong");
     else b.classList.add("pg-dim");
   });
+  let gained = 0;
   if (right) {
     _pgRun++;
+    gained = 10 + (_pgRun - 1) * 5;
+    _pgScore += gained;
     const best = parseInt(localStorage.getItem("osmosis_parlour_best")) || 0;
     if (_pgRun > best)
       localStorage.setItem("osmosis_parlour_best", String(_pgRun));
@@ -426,14 +554,18 @@ function answerParlour(i) {
   const best = parseInt(localStorage.getItem("osmosis_parlour_best")) || 0;
   const foot = el.querySelector(".pg-foot");
   if (foot)
-    foot.innerHTML = `<span>Run: ${_pgRun}</span><span>Best: ${best}</span>`;
+    foot.innerHTML = `<span>Run ${_pgRun}</span><span>Best ${best}</span><span>${_pgScore} pts</span>`;
   const wrap = document.createElement("div");
-  wrap.className = "mg-actions";
-  wrap.innerHTML = `<button class="text-btn" onclick="event.stopPropagation(); renderParlourCard(true)">${right ? "Next question →" : "Try another →"}</button>`;
+  wrap.className = "pg-after";
+  const verdict = right
+    ? `<span class="pg-gain">+${gained}</span> ${_pgRun >= 3 ? _pgReaction(_pgRun) : "Correct."}`
+    : `<span class="pg-miss">Missed</span> — the answer was “${_pgQuestion.answer}”.`;
+  wrap.innerHTML = `<span class="pg-verdict">${verdict}</span><button class="text-btn pg-next" onclick="event.stopPropagation(); renderParlourCard(true)">${right ? "Next →" : "Again →"}</button>`;
   el.appendChild(wrap);
 }
 window.renderParlourCard = renderParlourCard;
 window.answerParlour = answerParlour;
+window.parlourFiftyFifty = parlourFiftyFifty;
 
 // ---- Honours: seals, ranks & ceremonies (a real reward system) ----
 // Every honour is a stamped seal worth points; points carry a RANK.

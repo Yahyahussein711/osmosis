@@ -8463,4 +8463,75 @@ body.deep-work-active::after {
 }
 .rv-add-input:focus { border-color: var(--accent); }
 
+/* Parlour Game — depth & fun */
+.pg-flame {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+  font-family: "Lora", Georgia, serif;
+  letter-spacing: 2px;
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--accent) calc(60% + var(--heat, 0) * 40%), var(--subtitle-color));
+}
+.pg-flame span {
+  font-variant: small-caps;
+  letter-spacing: 1.2px;
+  font-size: 0.72rem;
+  font-style: italic;
+}
+.pg-tools { margin-top: 12px; }
+.pg-5050 {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 5px 14px;
+  cursor: pointer;
+  box-shadow: none;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+@media (hover: hover) {
+  .pg-5050:hover { border-color: var(--accent); }
+}
+.pg-after {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+}
+.pg-verdict {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.86rem;
+  color: var(--subtitle-color);
+}
+.pg-gain {
+  font-style: normal;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.pg-miss {
+  font-style: normal;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  color: var(--dark-text);
+}
+.pg-next {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.2px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
 /* End of stylesheet */
