@@ -1610,7 +1610,8 @@ html:has(body.drawer-active) {
   transition:
     transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1),
     opacity 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  overflow-y: auto;
+  overflow: hidden auto; /* never pannable sideways, ever */
+  overscroll-behavior: contain;
   opacity: 0;
   pointer-events: none;
 }
