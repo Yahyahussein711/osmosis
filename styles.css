@@ -3564,26 +3564,34 @@ body.compact-mode .annotation-item {
 /* ============================================================
    15. MOBILE & IOS OPTIMIZATIONS
    ============================================================ */
+/* Mobile selection menu — an editorial ink-stamp card, icon over label */
 .mobile-selection-actions {
   position: fixed;
-  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   left: 50%;
-  transform: translateX(-50%) translateY(150%);
-  background: var(--dark-text);
-  padding: 12px 24px;
-  border-radius: 30px;
+  transform: translateX(-50%) translateY(180%);
+  background: #211d18;
+  padding: 7px 6px;
+  border-radius: 18px;
+  border: 1px solid rgba(242, 234, 216, 0.14);
   display: flex;
-  gap: 20px;
+  align-items: stretch;
+  gap: 0;
   z-index: 2000;
-  box-shadow: none;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 16px 44px rgba(0, 0, 0, 0.45);
   opacity: 0;
   pointer-events: none;
-  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition:
+    opacity 0.3s ease,
+    transform 0.42s cubic-bezier(0.2, 0.9, 0.3, 1);
+  max-width: calc(100vw - 20px);
 }
 [data-theme="dark"] .mobile-selection-actions,
 [data-theme="midnight"] .mobile-selection-actions {
-  background: var(--glass-solid);
-  border: 1px solid var(--glass-border);
+  background: #201c17;
+  border-color: rgba(242, 234, 216, 0.14);
 }
 .mobile-selection-actions.show {
   opacity: 1;
@@ -3591,18 +3599,43 @@ body.compact-mode .annotation-item {
   pointer-events: auto;
 }
 .mobile-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 60px;
   background: transparent;
   border: none;
-  color: var(--cream);
-  font-family: "Outfit", sans-serif;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0;
+  border-radius: 12px;
+  color: #f2ead8;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 9px 8px 8px;
   cursor: pointer;
+  box-shadow: none;
+  transition: background 0.15s ease;
 }
 [data-theme="dark"] .mobile-action-btn,
 [data-theme="midnight"] .mobile-action-btn {
-  color: var(--dark-text);
+  color: #f2ead8;
+}
+.mobile-action-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke: #e8c98a;
+}
+.mobile-action-btn:active {
+  background: rgba(242, 234, 216, 0.12);
+}
+.mobile-action-divider {
+  width: 1px;
+  background: rgba(242, 234, 216, 0.16);
+  margin: 8px 0;
+  flex-shrink: 0;
 }
 
 @media (max-width: 767px) {
@@ -7453,6 +7486,42 @@ body.deep-work-active::after {
   color: var(--subtitle-color);
   text-align: center;
   margin-top: 8px;
+}
+
+/* Definition card: a slide-up sheet on phones, centered card on desktop */
+@media (max-width: 600px) {
+  .def-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .def-card {
+    max-width: none;
+    width: 100%;
+    max-height: 76vh;
+    border-radius: 20px 20px 0 0;
+    padding: 22px 22px calc(26px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 44px rgba(0, 0, 0, 0.4);
+  }
+  /* a grab handle at the top of the sheet */
+  .def-card::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--dark-text) 22%, transparent);
+    margin: -6px auto 14px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .def-overlay[style*="flex"] .def-card {
+      animation: defSheetUp 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+  }
+}
+@keyframes defSheetUp {
+  from {
+    transform: translateY(100%);
+  }
 }
 
 /* End of stylesheet */
