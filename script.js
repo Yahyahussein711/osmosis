@@ -3754,47 +3754,8 @@ function setupEvents() {
     .getElementById("saveReflectionBtn")
     ?.addEventListener("click", saveReflection);
 
-  document.getElementById("socraticBtn").addEventListener("click", () => {
-    const box = document.getElementById("socraticPromptsBox");
-    if (box.style.display === "block") {
-      box.style.display = "none";
-      return;
-    }
-    const prompts = [
-      "What is this story asking you to admit to yourself?",
-      "Which character are you — not the one you'd like to be, the one you actually are? What does that cost you?",
-      "What did you skim past because it hit too close? Go back to it. Why that passage?",
-      "If this story is right about the world, what in your life has to change? If it's wrong — prove it.",
-      "What would the you of ten years ago not understand about why this moved you?",
-      "Write the sentence you were afraid the author would write next.",
-      "What has this story made harder to ignore?",
-      "Whose voice did you hear while reading this — and what do you owe them?",
-      "Finish honestly: 'I keep pretending that…'",
-      "Where does this story's wound overlap with your own?",
-      "If you lived for one week as though this story were true, what would Monday morning look like?",
-      "What did the author leave unsaid that you have been leaving unsaid too?",
-    ];
-    const selected = prompts.sort(() => 0.5 - Math.random()).slice(0, 2);
-    const numerals = ["I.", "II."];
-    box.innerHTML = `${selected
-      .map(
-        (pr, i) => `
-      <div class="ws-prompt">
-        <span class="ws-prompt-no">${numerals[i]}</span>
-        <span class="ws-prompt-text">${pr}</span>
-      </div>`,
-      )
-      .join("")}
-      <div class="ws-prompt-hint">Tap a question to pin it above your page — then answer it.</div>`;
-    box.querySelectorAll(".ws-prompt").forEach((row) =>
-      row.addEventListener("click", () => {
-        setWsEpigraph(row.querySelector(".ws-prompt-text").textContent.trim());
-        box.style.display = "none";
-      }),
-    );
-    box.style.display = "block";
-  });
-
+  const _sBtn = document.getElementById("socraticBtn");
+  if (_sBtn) _sBtn.addEventListener("click", startReflectionDialogue);
   const refInput = document.getElementById("reflectionInput");
   if (refInput) {
     refInput.addEventListener("input", (e) => {
@@ -6882,6 +6843,169 @@ function clearWsDraft() {
   const mark = document.getElementById("wsDraftMark");
   if (mark) mark.style.display = "none";
 }
+
+// ============================================================
+// THE DIALOGUE — a guided, laddered reflection companion.
+// Starts from a passage you marked, offers sentence-stems so you
+// never face a blank line, and deepens with each answer:
+// notice -> unpack -> connect -> admit -> carry forward.
+// ============================================================
+const _DLG_RUNGS = [
+  {
+    q: ["What made you stop here?", "What did this stir in you?", "Why did this catch you and not let go?"],
+    qNoSeed: ["What did this story stir in you?", "What moment are you still carrying?", "What caught you and wouldn't let go?"],
+    stems: ["What stopped me was…", "It struck me because…", "I felt…"],
+  },
+  {
+    q: ["Say it plainly — what is this really about?", "In your own words, what is it saying?", "Strip away the story: what's the idea underneath?"],
+    stems: ["In plain words, this is about…", "The real point is…", "Underneath, it says…"],
+  },
+  {
+    q: ["Where have you met this before — in life, or in yourself?", "Who or what does this remind you of?", "When have you felt this?"],
+    stems: ["It reminds me of…", "I've felt this when…", "This is like the time…"],
+  },
+  {
+    q: ["What does this ask you to admit?", "What belief of yours does it press on?", "What is the uncomfortable part?"],
+    stems: ["What I'm reluctant to admit is…", "It presses on my belief that…", "The uncomfortable truth is…"],
+  },
+  {
+    q: ["What will you carry from this?", "What would change if you lived as though this were true?", "What will you do differently?"],
+    stems: ["I want to hold onto…", "From now on…", "This week, I'll…"],
+  },
+];
+let _dlg = null;
+function _dlgPick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+function _dlgSeeds() {
+  let anns = [];
+  try {
+    anns = getAnnotations().filter((a) => a && a.text && a.note !== "Bookmarked");
+  } catch (e) {}
+  const out = [];
+  anns.forEach((a) => {
+    let t = a.text || "";
+    if (t.includes('\n\n"')) {
+      const parts = t.split('\n\n"');
+      t = parts.slice(1).join('\n\n"');
+    }
+    t = t.replace(/^"|"$/g, "").replace(/\s+/g, " ").trim();
+    if (t.length > 12) out.push(t);
+  });
+  return out;
+}
+function startReflectionDialogue() {
+  const seeds = _dlgSeeds();
+  _dlg = { rung: 0, answers: [], seeds, seedIdx: 0 };
+  const left = document.getElementById("reflectLeft");
+  if (left) left.classList.add("dlg-on");
+  _renderDialogue(true);
+}
+function closeReflectionDialogue() {
+  _dlg = null;
+  const left = document.getElementById("reflectLeft");
+  if (left) left.classList.remove("dlg-on");
+  const box = document.getElementById("reflectionDialogue");
+  if (box) box.style.display = "none";
+}
+function _dlgSeedText() {
+  if (!_dlg || !_dlg.seeds.length) return "";
+  return _dlg.seeds[_dlg.seedIdx % _dlg.seeds.length];
+}
+function _renderDialogue(freshQuestion) {
+  const box = document.getElementById("reflectionDialogue");
+  if (!box || !_dlg) return;
+  box.style.display = "block";
+  const rung = _DLG_RUNGS[Math.min(_dlg.rung, _DLG_RUNGS.length - 1)];
+  const seed = _dlgSeedText();
+  if (freshQuestion || !_dlg.question) {
+    const pool = _dlg.rung === 0 && !seed ? rung.qNoSeed || rung.q : rung.q;
+    _dlg.question = _dlgPick(pool);
+  }
+  const step = _dlg.rung + 1;
+  const total = _DLG_RUNGS.length;
+  const isLast = _dlg.rung >= _DLG_RUNGS.length - 1;
+  const woven = _dlg.answers.length
+    ? `<div class="dlg-woven">${_dlg.answers.map((a) => `<p>${_chronEsc(a)}</p>`).join("")}</div>`
+    : "";
+  const seedHtml =
+    _dlg.rung === 0 && seed
+      ? `<div class="dlg-seed"><span class="dlg-seed-q">❝</span>${_chronEsc(seed)}${_dlg.seeds.length > 1 ? `<button class="dlg-reseed" type="button">another passage ↻</button>` : ""}</div>`
+      : "";
+  box.innerHTML = `
+    <div class="dlg-head">
+      <span class="dlg-label">The Dialogue</span>
+      <span class="dlg-step">${step} of ${total}</span>
+    </div>
+    ${seedHtml}
+    ${woven}
+    <div class="dlg-q">${_chronEsc(_dlg.question)}</div>
+    <div class="dlg-stems">${rung.stems.map((st) => `<button class="dlg-stem" type="button">${_chronEsc(st)}</button>`).join("")}</div>
+    <textarea class="dlg-input" id="dlgInput" placeholder="Begin here…"></textarea>
+    <div class="dlg-actions">
+      <button class="dlg-free" type="button" id="dlgFree">write freely instead</button>
+      <div class="dlg-actions-right">
+        ${isLast ? "" : `<button class="secondary btn-sm" type="button" id="dlgDeeper">Go deeper →</button>`}
+        <button class="primary btn-sm" type="button" id="dlgFinish">Finish</button>
+      </div>
+    </div>`;
+  const input = document.getElementById("dlgInput");
+  box.querySelectorAll(".dlg-stem").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const stem = chip.textContent;
+      if (!input.value.trim()) input.value = stem + " ";
+      else input.value = input.value.replace(/\s*$/, " ") + stem + " ";
+      input.focus();
+      input.selectionStart = input.selectionEnd = input.value.length;
+      _dlgGrow(input);
+    });
+  });
+  input.addEventListener("input", () => _dlgGrow(input));
+  const re = box.querySelector(".dlg-reseed");
+  if (re)
+    re.addEventListener("click", () => {
+      _dlg.seedIdx++;
+      _renderDialogue(true);
+    });
+  const deeper = document.getElementById("dlgDeeper");
+  if (deeper) deeper.addEventListener("click", () => _dlgAdvance());
+  document.getElementById("dlgFinish").addEventListener("click", () => _dlgFinish());
+  document.getElementById("dlgFree").addEventListener("click", () => {
+    closeReflectionDialogue();
+    const ref = document.getElementById("reflectionInput");
+    if (ref) ref.focus();
+  });
+  setTimeout(() => input && input.focus(), 60);
+}
+function _dlgGrow(ta) {
+  ta.style.height = "auto";
+  ta.style.height = Math.max(70, ta.scrollHeight) + "px";
+}
+function _dlgAdvance() {
+  const input = document.getElementById("dlgInput");
+  if (input && input.value.trim()) _dlg.answers.push(input.value.trim());
+  _dlg.rung = Math.min(_dlg.rung + 1, _DLG_RUNGS.length - 1);
+  _renderDialogue(true);
+  const box = document.getElementById("reflectionDialogue");
+  if (box) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function _dlgFinish() {
+  const input = document.getElementById("dlgInput");
+  if (input && input.value.trim()) _dlg.answers.push(input.value.trim());
+  const answers = _dlg.answers.slice();
+  const seed = _dlgSeedText();
+  closeReflectionDialogue();
+  if (!answers.length) return;
+  const ref = document.getElementById("reflectionInput");
+  if (ref) {
+    ref.value = answers.join("\n\n");
+    if (typeof wsAutoGrow === "function") wsAutoGrow(ref);
+  }
+  if (typeof setWsEpigraph === "function") setWsEpigraph(seed ? "“" + seed + "”" : "");
+  if (typeof updateWsWordCount === "function") updateWsWordCount();
+  saveReflection();
+}
+window.startReflectionDialogue = startReflectionDialogue;
 
 function saveReflection() {
   const text = document.getElementById("reflectionInput").value.trim();

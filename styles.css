@@ -8159,4 +8159,159 @@ body.deep-work-active::after {
   }
 }
 
+/* ============================================================
+   THE DIALOGUE — guided reflection companion
+   ============================================================ */
+/* When the dialogue runs, the free sheet steps aside */
+.ws-page-left.dlg-on .ws-lead,
+.ws-page-left.dlg-on .ws-sheet,
+.ws-page-left.dlg-on #wsEpigraph {
+  display: none !important;
+}
+.dlg {
+  animation: dlgIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes dlgIn {
+  from { opacity: 0; transform: translateY(8px); }
+}
+.dlg-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+.dlg-label {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.62rem;
+  color: var(--accent);
+}
+.dlg-step {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  font-size: 0.66rem;
+  color: var(--subtitle-color);
+}
+/* the passage that seeds the dialogue */
+.dlg-seed {
+  position: relative;
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--dark-text);
+  border-left: 2px solid var(--accent);
+  padding: 4px 0 4px 14px;
+  margin-bottom: 18px;
+}
+.dlg-seed-q {
+  color: var(--accent);
+  font-size: 1.1rem;
+  margin-right: 4px;
+}
+.dlg-reseed {
+  display: block;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.68rem;
+  font-style: normal;
+  color: var(--subtitle-color);
+}
+/* the reflection composed so far */
+.dlg-woven {
+  border-left: 1px solid var(--glass-border);
+  padding-left: 14px;
+  margin-bottom: 20px;
+}
+.dlg-woven p {
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--dark-text);
+  margin-bottom: 10px;
+}
+.dlg-woven p:last-child { margin-bottom: 0; }
+/* the current question */
+.dlg-q {
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 1.35rem;
+  line-height: 1.4;
+  color: var(--dark-text);
+  margin-bottom: 14px;
+}
+.dlg-stems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.dlg-stem {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+  box-shadow: none;
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.82rem;
+  color: var(--accent);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+@media (hover: hover) {
+  .dlg-stem:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); }
+}
+.dlg-input {
+  width: 100%;
+  min-height: 90px;
+  border: none;
+  border-bottom: 1px solid var(--glass-border);
+  outline: none;
+  background: transparent;
+  resize: none;
+  padding: 4px 2px 10px;
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--dark-text);
+  box-sizing: border-box;
+}
+.dlg-input:focus { border-bottom-color: var(--accent); }
+.dlg-input::placeholder { color: var(--subtitle-color); opacity: 0.5; font-style: italic; }
+.dlg-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.dlg-actions-right { display: flex; gap: 10px; }
+.dlg-free {
+  background: none;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 2px 0;
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--subtitle-color);
+}
+@media (hover: hover) {
+  .dlg-free:hover { color: var(--dark-text); }
+}
+
 /* End of stylesheet */
