@@ -3286,6 +3286,25 @@ function setupEvents() {
     if (floatingMenu) floatingMenu.classList.remove("active");
   }
 
+  function handleDefineAction(e) {
+    if (e && e.cancelable) e.preventDefault();
+    const raw = (activeSelection || lastSelectionSnapshot.text || "").trim();
+    if (!raw) {
+      showToast("Select a word first.");
+      return;
+    }
+    const word = raw
+      .split(/\s+/)[0]
+      .replace(/[^A-Za-zÀ-ɏ'’-]/g, "")
+      .toLowerCase();
+    if (mobileSelectionActions) mobileSelectionActions.classList.remove("show");
+    if (floatingMenu) floatingMenu.classList.remove("active");
+    try {
+      window.getSelection().removeAllRanges();
+    } catch (e2) {}
+    if (word) showDefinition(word);
+  }
+
   if (mobileHighlightBtn) {
     mobileHighlightBtn.addEventListener("touchstart", handleHighlightAction, {
       passive: false,
@@ -3366,6 +3385,21 @@ function setupEvents() {
       passive: false,
     });
     fabBookmark.addEventListener("click", handleBookmarkAction);
+  }
+
+  const fabDefine = document.getElementById("fabDefine");
+  if (fabDefine) {
+    fabDefine.addEventListener("touchstart", handleDefineAction, {
+      passive: false,
+    });
+    fabDefine.addEventListener("click", handleDefineAction);
+  }
+  const mobileDefineBtn = document.getElementById("mobileDefineBtn");
+  if (mobileDefineBtn) {
+    mobileDefineBtn.addEventListener("touchstart", handleDefineAction, {
+      passive: false,
+    });
+    mobileDefineBtn.addEventListener("click", handleDefineAction);
   }
 
   if (mobileBookmarkBtn) {
@@ -5885,6 +5919,95 @@ function renderContinuation() {
     };
 }
 window.renderContinuation = renderContinuation;
+
+// ---- Tap a word for its meaning: an editorial dictionary gloss ----
+const _defCache = {};
+function showDefinition(word) {
+  let ov = document.getElementById("defineOverlay");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "defineOverlay";
+    ov.className = "def-overlay";
+    ov.innerHTML = '<div class="def-card"></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click", (e) => {
+      if (e.target === ov) closeDefinition();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeDefinition();
+    });
+  }
+  const card = ov.querySelector(".def-card");
+  card.innerHTML = `<div class="def-word">${word}</div><div class="def-loading">Consulting the dictionary…</div>`;
+  ov.style.display = "flex";
+  if (_defCache[word]) {
+    renderDefinition(word, _defCache[word]);
+    return;
+  }
+  fetch(
+    `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`,
+  )
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((data) => {
+      _defCache[word] = data;
+      renderDefinition(word, data);
+    })
+    .catch((err) => renderDefError(word, err));
+}
+function closeDefinition() {
+  const ov = document.getElementById("defineOverlay");
+  if (ov) ov.style.display = "none";
+}
+function renderDefinition(word, data) {
+  const ov = document.getElementById("defineOverlay");
+  if (!ov) return;
+  const card = ov.querySelector(".def-card");
+  const entry = Array.isArray(data) ? data[0] : null;
+  if (!entry || !entry.meanings) return renderDefError(word, 404);
+  const phon =
+    entry.phonetic ||
+    (entry.phonetics || []).map((p) => p.text).find(Boolean) ||
+    "";
+  const meanings = (entry.meanings || [])
+    .slice(0, 3)
+    .map((m) => {
+      const defs = (m.definitions || [])
+        .slice(0, 2)
+        .map((d) => {
+          const ex = d.example
+            ? `<div class="def-ex">“${d.example}”</div>`
+            : "";
+          return `<div class="def-line">${d.definition}${ex}</div>`;
+        })
+        .join("");
+      return `<div class="def-meaning"><div class="def-pos">${m.partOfSpeech}</div>${defs}</div>`;
+    })
+    .join("");
+  card.innerHTML = `
+    <button class="def-close" onclick="closeDefinition()" aria-label="Close">×</button>
+    <div class="def-word">${entry.word || word}</div>
+    ${phon ? `<div class="def-phon">${phon}</div>` : ""}
+    <div class="def-rule"></div>
+    ${meanings || '<div class="def-loading">No definition found.</div>'}
+    <div class="def-foot">— from the dictionary —</div>`;
+}
+function renderDefError(word, err) {
+  const ov = document.getElementById("defineOverlay");
+  if (!ov) return;
+  const card = ov.querySelector(".def-card");
+  const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+  card.innerHTML = `
+    <button class="def-close" onclick="closeDefinition()" aria-label="Close">×</button>
+    <div class="def-word">${word}</div>
+    <div class="def-rule"></div>
+    <div class="def-loading">${
+      offline
+        ? "The dictionary is unreachable — you appear to be offline."
+        : `No entry found for “${word}.”`
+    }</div>`;
+}
+window.showDefinition = showDefinition;
+window.closeDefinition = closeDefinition;
 
 function setupDoomscrollObserver() {
   const observer = new IntersectionObserver(
