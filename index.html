@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260713y" />
+    <link rel="stylesheet" href="styles.css?v=20260713z" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -815,6 +815,10 @@
 
         <div class="dash-column">
           <div class="settings-masonry">
+            <div class="settings-group" id="accountGroup">
+              <div class="settings-group-label">Account</div>
+              <div id="accountPanel" class="account-panel"></div>
+            </div>
             <div class="settings-group">
               <div class="settings-group-label">Appearance</div>
               <div class="setting-row">
@@ -2039,7 +2043,24 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260713y"></script>
-    <script src="script.js?v=20260713y"></script>
+    <script src="stories.js?v=20260713z"></script>
+    <script src="script.js?v=20260713z"></script>
+
+    <!-- ============================================================
+         Cloud sync (optional). Paste your Firebase web-app config
+         below to enable Google sign-in + cross-device sync. Until
+         you do, the app runs local-only exactly as before.
+         Get these from: Firebase console → Project settings →
+         General → Your apps → Web app → firebaseConfig.
+         ============================================================ -->
+    <script>
+      window.OSMOSIS_FIREBASE_CONFIG = {
+        apiKey: "PASTE_API_KEY",
+        authDomain: "PASTE_PROJECT.firebaseapp.com",
+        projectId: "PASTE_PROJECT_ID",
+        appId: "PASTE_APP_ID",
+      };
+    </script>
+    <script src="firebase-sync.js?v=20260713z"></script>
   </body>
 </html>
