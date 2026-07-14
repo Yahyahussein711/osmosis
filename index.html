@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260713v" />
+    <link rel="stylesheet" href="styles.css?v=20260713w" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -1760,10 +1760,13 @@
 
           <!-- Slide 2: Notes -->
           <div class="carousel-slide ws-slide">
-            <div class="ws-page ws-page-left">
+            <div class="ws-page ws-page-left" id="noteLeft">
             <p class="ws-hint" id="selectedTextPreview">
               Select text in the story, then type a note below.
             </p>
+
+            <button class="ws-inspire" id="noteGuideBtn">✦ Guide me</button>
+            <div id="annotationDialogue" class="dlg" style="display: none"></div>
 
             <div class="ws-sheet">
               <textarea
@@ -2036,7 +2039,7 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260713v"></script>
-    <script src="script.js?v=20260713v"></script>
+    <script src="stories.js?v=20260713w"></script>
+    <script src="script.js?v=20260713w"></script>
   </body>
 </html>

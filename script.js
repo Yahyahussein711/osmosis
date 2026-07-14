@@ -897,13 +897,35 @@ function openHonoursCabinet() {
       if (hnStartY === -1) return;
       const sheet = cab.querySelector(".hn-cab-sheet");
       const dy = hnCurY - hnStartY;
-      if (sheet) {
-        sheet.style.transform = "";
-        sheet.style.transition = "";
-      }
-      cab.style.background = "";
-      if (dy > 60) closeHonoursCabinet();
       hnStartY = -1;
+      if (!sheet) {
+        cab.style.background = "";
+        return;
+      }
+      if (dy > sheet.offsetHeight * 0.5) {
+        // Slide out, then close — smoothly.
+        sheet.style.transition = "transform 0.26s cubic-bezier(0.4, 0, 0.2, 1)";
+        sheet.style.transform = "translateY(100%)";
+        cab.style.transition = "background 0.26s ease";
+        cab.style.background = "rgba(0,0,0,0)";
+        setTimeout(() => {
+          closeHonoursCabinet();
+          sheet.style.transition = "";
+          sheet.style.transform = "";
+          cab.style.transition = "";
+          cab.style.background = "";
+        }, 250);
+      } else {
+        // Spring back to rest.
+        sheet.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
+        sheet.style.transform = "";
+        cab.style.transition = "background 0.34s ease";
+        cab.style.background = "";
+        setTimeout(() => {
+          sheet.style.transition = "";
+          cab.style.transition = "";
+        }, 340);
+      }
     };
     cab.addEventListener("touchend", hnEnd);
     cab.addEventListener("touchcancel", hnEnd);
@@ -2467,6 +2489,10 @@ function openNotesDrawer(targetStep = 0) {
 function closeNotesDrawer(isFromHistory) {
   const fromHistory = isFromHistory === true;
 
+  // Reset any open guided flows so they don't linger behind the sheet.
+  if (typeof closeNoteDialogue === "function") closeNoteDialogue();
+  if (typeof closeReflectionDialogue === "function") closeReflectionDialogue();
+
   document.body.classList.remove("drawer-active");
   // Restore the document scroller locked in openNotesDrawer()
   document.documentElement.style.overflow = "";
@@ -3331,17 +3357,28 @@ function setupEvents() {
 
         if (drawerStartY !== -1) {
           const deltaY = drawerCurrentY - drawerStartY;
-          // Clear the manual tracking styles so CSS classes can take over again
-          nDrawer.style.transform = "";
-          nDrawer.style.transition = "";
-          if (nBackdrop) {
-            nBackdrop.style.opacity = "";
-            nBackdrop.style.transition = "";
-          }
-
-          if (isDrawerPulling && deltaY > 40) {
-            // If pulled down more than 40px, close it
+          if (isDrawerPulling && deltaY > nDrawer.offsetHeight * 0.5) {
+            // Only close once pulled at least halfway down the sheet.
+            nDrawer.style.transform = "";
+            nDrawer.style.transition = "";
+            if (nBackdrop) {
+              nBackdrop.style.opacity = "";
+              nBackdrop.style.transition = "";
+            }
             closeNotesDrawer();
+          } else {
+            // Spring the sheet smoothly back to rest.
+            nDrawer.style.transition =
+              "transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1)";
+            nDrawer.style.transform = "";
+            if (nBackdrop) {
+              nBackdrop.style.transition = "opacity 0.4s ease";
+              nBackdrop.style.opacity = "";
+            }
+            setTimeout(() => {
+              nDrawer.style.transition = "";
+              if (nBackdrop) nBackdrop.style.transition = "";
+            }, 400);
           }
         }
         drawerStartY = -1;
@@ -3390,10 +3427,20 @@ function setupEvents() {
             if (zoneStartY === -1) return;
             e.stopPropagation();
             const dy = zoneCurY - zoneStartY;
-            nDrawer.style.transform = "";
-            nDrawer.style.transition = "";
-            if (dy > 70) closeNotesDrawer();
             zoneStartY = -1;
+            if (dy > nDrawer.offsetHeight * 0.5) {
+              nDrawer.style.transform = "";
+              nDrawer.style.transition = "";
+              closeNotesDrawer();
+            } else {
+              // Spring smoothly back to rest.
+              nDrawer.style.transition =
+                "transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1)";
+              nDrawer.style.transform = "";
+              setTimeout(() => {
+                nDrawer.style.transition = "";
+              }, 400);
+            }
           };
           zone.addEventListener("touchend", zoneEnd);
           zone.addEventListener("touchcancel", zoneEnd);
@@ -4053,6 +4100,8 @@ function setupEvents() {
 
   const _sBtn = document.getElementById("socraticBtn");
   if (_sBtn) _sBtn.addEventListener("click", startReflectionDialogue);
+  const _nBtn = document.getElementById("noteGuideBtn");
+  if (_nBtn) _nBtn.addEventListener("click", startNoteDialogue);
   const refInput = document.getElementById("reflectionInput");
   if (refInput) {
     refInput.addEventListener("input", (e) => {
@@ -6229,11 +6278,31 @@ function showDefinition(word) {
     const defEnd = () => {
       if (defStartY === -1) return;
       const dy = defCurY - defStartY;
-      dcard.style.transform = "";
-      dcard.style.transition = "";
-      ov.style.background = "";
-      if (dy > 60) closeDefinition();
       defStartY = -1;
+      if (dy > dcard.offsetHeight * 0.5) {
+        // Slide the rest of the way out, then close — smoothly.
+        dcard.style.transition = "transform 0.26s cubic-bezier(0.4, 0, 0.2, 1)";
+        dcard.style.transform = "translateY(100%)";
+        ov.style.transition = "background 0.26s ease";
+        ov.style.background = "rgba(0,0,0,0)";
+        setTimeout(() => {
+          closeDefinition();
+          dcard.style.transition = "";
+          dcard.style.transform = "";
+          ov.style.transition = "";
+          ov.style.background = "";
+        }, 250);
+      } else {
+        // Spring back to rest.
+        dcard.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
+        dcard.style.transform = "";
+        ov.style.transition = "background 0.34s ease";
+        ov.style.background = "";
+        setTimeout(() => {
+          dcard.style.transition = "";
+          ov.style.transition = "";
+        }, 340);
+      }
     };
     dcard.addEventListener("touchend", defEnd);
     dcard.addEventListener("touchcancel", defEnd);
@@ -7226,8 +7295,18 @@ const _DLG_PATHS = {
       { q: ["After arguing with it — what still stands?", "What survives your doubt?"], stems: ["What still stands is…", "What survives is…"] },
     ],
   },
+  connect: {
+    name: "Connect",
+    tag: "link it to your world",
+    rungs: [
+      { q: ["What does this connect to — another book, a moment, a person?", "What does it rhyme with in your life?"], stems: ["This connects to…", "It rhymes with…"] },
+      { q: ["What's the thread running between them?", "Why do they belong together?"], stems: ["The thread is…", "They share…"] },
+      { q: ["What does seeing them side by side reveal?", "What's clearer now that they're together?"], stems: ["Together they reveal…", "Now I see…"] },
+      { q: ["Where else might this pattern appear?", "What else would it explain?"], stems: ["It might also appear in…", "It would explain…"] },
+    ],
+  },
 };
-const _DLG_PATH_ORDER = ["understand", "feel", "apply", "question"];
+const _DLG_PATH_ORDER = ["understand", "feel", "apply", "question", "connect"];
 // Lateral deepeners for "press further" — dig into the same thought.
 const _DLG_DEEPEN = [
   "Say more about that.",
@@ -7236,6 +7315,10 @@ const _DLG_DEEPEN = [
   "Be more honest — what's the real reason?",
   "Give one concrete example.",
   "And what does that cost you?",
+  "What would you say if no one were watching?",
+  "What are you avoiding here?",
+  "And then what follows?",
+  "What's the truest version of that sentence?",
 ];
 const _DLG_CAPSTONE = {
   q: "In one line — what is this reflection really about?",
@@ -7493,6 +7576,276 @@ function _dlgFinish() {
   saveReflection();
 }
 window.startReflectionDialogue = startReflectionDialogue;
+
+// ============================================================
+// The Margin Dialogue — guided prompts for annotating a passage.
+// A note is anchored to a specific line, so the lenses read THAT line.
+// ============================================================
+const _NOTE_LENSES = {
+  unpack: {
+    name: "Unpack",
+    tag: "what it means",
+    rungs: [
+      { q: ["What is this passage actually saying?", "Put this line in your own words."], stems: ["This says…", "In plain terms…"] },
+      { q: ["What's beneath the surface here?", "What's implied but left unsaid?"], stems: ["Underneath, it means…", "It implies…"] },
+      { q: ["So what does it want you to see?", "What's the point of it?"], stems: ["It wants me to see…", "The point is…"] },
+    ],
+  },
+  react: {
+    name: "React",
+    tag: "why it stopped you",
+    rungs: [
+      { q: ["Why did this stop you?", "What made you mark this line?"], stems: ["It stopped me because…", "I marked it because…"] },
+      { q: ["What does that reaction reveal about you?", "What in you does it touch?"], stems: ["It reveals…", "It touches…"] },
+      { q: ["What will you carry from it?", "What do you want to remember here?"], stems: ["I'll carry…", "I want to remember…"] },
+    ],
+  },
+  connect: {
+    name: "Connect",
+    tag: "what it links to",
+    rungs: [
+      { q: ["What does this connect to — another line, book, or moment?", "What does it remind you of?"], stems: ["This connects to…", "It reminds me of…"] },
+      { q: ["What's the thread between them?", "Why do they belong together?"], stems: ["The thread is…", "They share…"] },
+    ],
+  },
+  question: {
+    name: "Question",
+    tag: "argue with it",
+    rungs: [
+      { q: ["What do you resist here?", "Where might this be wrong?"], stems: ["I doubt…", "But…"] },
+      { q: ["What's the counter-case?", "What would change your mind?"], stems: ["The counter is…", "I'd change my mind if…"] },
+    ],
+  },
+  name: {
+    name: "Name it",
+    tag: "a phrase to keep",
+    rungs: [
+      { q: ["Capture this line in a single phrase.", "If this idea had a name, what is it?"], stems: ["Call it…", "In a word…"] },
+    ],
+  },
+};
+const _NOTE_ORDER = ["unpack", "react", "connect", "question", "name"];
+let _ndlg = null;
+
+function _ndlgPassage() {
+  return (activeSelection || lastSelectionSnapshot.text || "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function startNoteDialogue() {
+  const passage = _ndlgPassage();
+  if (!passage) {
+    showToast("Select a passage in the story first.");
+    return;
+  }
+  _ndlg = {
+    stage: "choose",
+    lens: null,
+    rung: 0,
+    pressing: false,
+    answers: [],
+    history: [],
+    passage,
+  };
+  const left = document.getElementById("noteLeft");
+  if (left) left.classList.add("dlg-on");
+  _renderNoteChoose();
+}
+function closeNoteDialogue() {
+  _ndlg = null;
+  const left = document.getElementById("noteLeft");
+  if (left) left.classList.remove("dlg-on");
+  const box = document.getElementById("annotationDialogue");
+  if (box) box.style.display = "none";
+}
+function _ndlgPassageHtml() {
+  if (!_ndlg || !_ndlg.passage) return "";
+  const p =
+    _ndlg.passage.length > 160
+      ? _ndlg.passage.slice(0, 160) + "…"
+      : _ndlg.passage;
+  return `<div class="dlg-seed"><span class="dlg-seed-q">❝</span>${_chronEsc(p)}</div>`;
+}
+function _renderNoteChoose() {
+  const box = document.getElementById("annotationDialogue");
+  if (!box || !_ndlg) return;
+  box.style.display = "block";
+  box.innerHTML = `
+    <div class="dlg-head"><span class="dlg-label">The Margin</span></div>
+    ${_ndlgPassageHtml()}
+    <div class="dlg-choose-q">How do you want to read this line?</div>
+    <div class="dlg-paths">
+      ${_NOTE_ORDER.map((k) => `<button class="dlg-path" type="button" data-lens="${k}"><span class="dlg-path-name">${_NOTE_LENSES[k].name}</span><span class="dlg-path-tag">${_NOTE_LENSES[k].tag}</span></button>`).join("")}
+    </div>
+    <div class="dlg-actions">
+      <button class="dlg-free" type="button" id="ndlgFree">write freely instead</button>
+      <button class="dlg-free" type="button" id="ndlgSurprise">surprise me ↻</button>
+    </div>`;
+  box
+    .querySelectorAll(".dlg-path")
+    .forEach((b) =>
+      b.addEventListener("click", () => _ndlgBeginLens(b.dataset.lens)),
+    );
+  const sur = document.getElementById("ndlgSurprise");
+  if (sur)
+    sur.addEventListener("click", () => _ndlgBeginLens(_dlgPick(_NOTE_ORDER)));
+  const fr = document.getElementById("ndlgFree");
+  if (fr)
+    fr.addEventListener("click", () => {
+      closeNoteDialogue();
+      const a = document.getElementById("annotationInput");
+      if (a) a.focus();
+    });
+}
+function _ndlgSnapshot() {
+  const inp = document.getElementById("ndlgInput");
+  return {
+    stage: _ndlg.stage,
+    lens: _ndlg.lens,
+    rung: _ndlg.rung,
+    pressing: !!_ndlg.pressing,
+    question: _ndlg.question,
+    answers: _ndlg.answers.slice(),
+    inputText: inp ? inp.value : "",
+  };
+}
+function _ndlgBack() {
+  if (!_ndlg || !_ndlg.history.length) return;
+  const s = _ndlg.history.pop();
+  _ndlg.stage = s.stage;
+  _ndlg.lens = s.lens;
+  _ndlg.rung = s.rung;
+  _ndlg.pressing = s.pressing;
+  _ndlg.question = s.question;
+  _ndlg.answers = s.answers;
+  _ndlg.restoreInput = s.inputText;
+  if (s.stage === "choose") _renderNoteChoose();
+  else _renderNoteDialogue(false);
+}
+function _ndlgBeginLens(k) {
+  _ndlg.history.push(_ndlgSnapshot());
+  _ndlg.lens = k;
+  _ndlg.stage = "ladder";
+  _ndlg.rung = 0;
+  _ndlg.pressing = false;
+  _ndlg.question = null;
+  _renderNoteDialogue(true);
+}
+function _renderNoteDialogue(fresh) {
+  const box = document.getElementById("annotationDialogue");
+  if (!box || !_ndlg) return;
+  box.style.display = "block";
+  const lens = _NOTE_LENSES[_ndlg.lens];
+  const rungs = lens.rungs;
+  let stems;
+  if (_ndlg.pressing) {
+    if (fresh || !_ndlg.question) _ndlg.question = _dlgPick(_DLG_DEEPEN);
+    stems = rungs[_ndlg.rung].stems;
+  } else {
+    if (fresh || !_ndlg.question) _ndlg.question = _dlgPick(rungs[_ndlg.rung].q);
+    stems = rungs[_ndlg.rung].stems;
+  }
+  const stepTxt = `${lens.name} · ${_ndlg.rung + 1} of ${rungs.length}`;
+  const woven = _ndlg.answers.length
+    ? `<div class="dlg-woven">${_ndlg.answers.map((a) => `<p>${_chronEsc(a)}</p>`).join("")}</div>`
+    : "";
+  const passageHtml =
+    _ndlg.rung === 0 && !_ndlg.pressing ? _ndlgPassageHtml() : "";
+  const isLast = _ndlg.rung >= rungs.length - 1;
+  const moves = `<button class="dlg-move" type="button" id="ndlgPress">Press further ↧</button>${isLast ? "" : `<button class="secondary btn-sm" type="button" id="ndlgDeeper">Go deeper →</button>`}`;
+  box.innerHTML = `
+    <div class="dlg-head">
+      <div class="dlg-head-left">${_ndlg.history.length ? '<button class="dlg-back" type="button" id="ndlgBack">← back</button>' : ""}<span class="dlg-label">The Margin</span></div>
+      <span class="dlg-step">${stepTxt}</span>
+    </div>
+    ${passageHtml}
+    ${woven}
+    <div class="dlg-q">${_chronEsc(_ndlg.question)}</div>
+    <div class="dlg-stems">${stems.map((st) => `<button class="dlg-stem" type="button">${_chronEsc(st)}</button>`).join("")}</div>
+    <textarea class="dlg-input" id="ndlgInput" placeholder="Begin here…"></textarea>
+    <div class="dlg-actions">
+      <button class="dlg-free" type="button" id="ndlgFree">write freely instead</button>
+      <div class="dlg-actions-right">
+        ${moves}
+        <button class="primary btn-sm" type="button" id="ndlgFinish">Save note</button>
+      </div>
+    </div>`;
+  const input = document.getElementById("ndlgInput");
+  box.querySelectorAll(".dlg-stem").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const stem = chip.textContent;
+      if (!input.value.trim()) input.value = stem + " ";
+      else input.value = input.value.replace(/\s*$/, " ") + stem + " ";
+      input.focus();
+      input.selectionStart = input.selectionEnd = input.value.length;
+      _dlgGrow(input);
+    });
+  });
+  input.addEventListener("input", () => _dlgGrow(input));
+  const fr = document.getElementById("ndlgFree");
+  if (fr)
+    fr.addEventListener("click", () => {
+      const parts = _ndlg.answers.slice();
+      if (input.value.trim()) parts.push(input.value.trim());
+      const compiled = parts.join(" ");
+      closeNoteDialogue();
+      const a = document.getElementById("annotationInput");
+      if (a) {
+        if (compiled) a.value = compiled;
+        a.focus();
+        if (typeof wsAutoGrow === "function") wsAutoGrow(a);
+      }
+    });
+  const press = document.getElementById("ndlgPress");
+  if (press) press.addEventListener("click", () => _ndlgPress());
+  const deeper = document.getElementById("ndlgDeeper");
+  if (deeper) deeper.addEventListener("click", () => _ndlgAdvance());
+  document
+    .getElementById("ndlgFinish")
+    .addEventListener("click", () => _ndlgFinish());
+  const back = document.getElementById("ndlgBack");
+  if (back) back.addEventListener("click", () => _ndlgBack());
+  if (_ndlg.restoreInput != null && _ndlg.restoreInput !== "") {
+    input.value = _ndlg.restoreInput;
+    _dlgGrow(input);
+  }
+  _ndlg.restoreInput = null;
+  setTimeout(() => input && input.focus(), 60);
+}
+function _ndlgPush() {
+  const i = document.getElementById("ndlgInput");
+  if (i && i.value.trim()) _ndlg.answers.push(i.value.trim());
+}
+function _ndlgPress() {
+  _ndlg.history.push(_ndlgSnapshot());
+  _ndlgPush();
+  _ndlg.pressing = true;
+  _ndlg.question = null;
+  _renderNoteDialogue(true);
+}
+function _ndlgAdvance() {
+  _ndlg.history.push(_ndlgSnapshot());
+  _ndlgPush();
+  _ndlg.pressing = false;
+  _ndlg.question = null;
+  const rungs = _NOTE_LENSES[_ndlg.lens].rungs;
+  if (_ndlg.rung < rungs.length - 1) _ndlg.rung++;
+  _renderNoteDialogue(true);
+}
+function _ndlgFinish() {
+  _ndlgPush();
+  const compiled = _ndlg.answers.join(" ").trim();
+  closeNoteDialogue();
+  const a = document.getElementById("annotationInput");
+  if (a && compiled) {
+    a.value = compiled;
+    if (typeof wsAutoGrow === "function") wsAutoGrow(a);
+  }
+  // Save straight away through the normal note path (anchors to the selection).
+  if (compiled && typeof saveNewAnnotation === "function")
+    saveNewAnnotation(compiled);
+}
+window.startNoteDialogue = startNoteDialogue;
 
 function saveReflection() {
   const text = document.getElementById("reflectionInput").value.trim();
