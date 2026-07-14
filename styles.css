@@ -5584,9 +5584,11 @@ html[data-skin="editorial"] {
 [data-skin="editorial"] #articlesGrid .category-card:hover {
   transform: none;
 }
-/* Photographs print slightly warm, like good paper stock */
+/* Photographs print slightly warm, like good paper stock — framed with a
+   hairline border and softly rounded corners. */
 [data-skin="editorial"] .story-cover {
-  border-radius: 2px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--glass-border);
   filter: sepia(0.12) contrast(1.02) saturate(0.9);
 }
 
