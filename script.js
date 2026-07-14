@@ -9349,6 +9349,105 @@ function renderChronPatterns(body) {
   const rank = (obj) =>
     Object.entries(obj).sort((a, b) => b[1] - a[1]);
 
+  // ---- Portrait: a reader archetype drawn from your habits ----
+  const hourBuckets = [0, 0, 0, 0]; // Dawn / Day / Evening / Night
+  const bucketOf = (h) =>
+    h >= 5 && h < 11 ? 0 : h >= 11 && h < 17 ? 1 : h >= 17 && h < 22 ? 2 : 3;
+  const monthSeq = {}; // sortable YYYY-MM -> count
+  let firstT = Infinity;
+  let lastT = -Infinity;
+  items.forEach((i) => {
+    const d = new Date(i.date);
+    hourBuckets[bucketOf(d.getHours())]++;
+    const t = d.getTime();
+    if (t < firstT) firstT = t;
+    if (t > lastT) lastT = t;
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    monthSeq[ym] = (monthSeq[ym] || 0) + 1;
+  });
+  const busiestHour = hourBuckets.indexOf(Math.max(...hourBuckets));
+  const TIME_WORD = ["Morning", "Daytime", "Evening", "Midnight"];
+  const engaged = {
+    Note: ["Annotator", types.Note || 0],
+    Reflection: ["Essayist", types.Reflection || 0],
+    Highlight: ["Marginalist", types.Highlight || 0],
+    Bookmark: ["Curator", types.Bookmark || 0],
+  };
+  let typeWord = "Reader";
+  let typeBest = 0;
+  Object.values(engaged).forEach(([w, n]) => {
+    if (n > typeBest) {
+      typeBest = n;
+      typeWord = w;
+    }
+  });
+  const archetype = `The ${TIME_WORD[busiestHour]} ${typeWord}`;
+  const totalMarks = items.length;
+  const sinceLbl = isFinite(firstT)
+    ? new Date(firstT).toLocaleDateString(undefined, {
+        month: "long",
+        year: "numeric",
+      })
+    : "—";
+  const storyCountEarly = Object.keys(stories).length;
+  const portrait = `
+    <div class="pat-portrait">
+      <div class="pat-portrait-eyebrow">Your Reading Character</div>
+      <div class="pat-archetype">${_chronEsc(archetype)}</div>
+      <div class="pat-portrait-stat">${totalMarks} marks · ${storyCountEarly} ${storyCountEarly === 1 ? "story" : "stories"} · since ${_chronEsc(sinceLbl)}</div>
+      <div class="pat-fleuron">❦</div>
+    </div>`;
+
+  // ---- Mini bar charts (small multiples): week, hours, cadence ----
+  const chart = (cols, maxBarPx) => {
+    const max = Math.max(1, ...cols.map((c) => c.v));
+    return (
+      '<div class="pat-chart">' +
+      cols
+        .map(
+          (c) =>
+            `<div class="pat-col ${c.on ? "on" : ""}"><span class="pat-col-val">${c.v || ""}</span><span class="pat-col-bar" style="height:${c.v ? Math.max(3, Math.round((c.v / max) * maxBarPx)) : 0}px"></span><span class="pat-col-lab">${c.l}</span></div>`,
+        )
+        .join("") +
+      "</div>"
+    );
+  };
+
+  const WDINIT = ["S", "M", "T", "W", "T", "F", "S"];
+  const wdMax = Math.max(...weekdays);
+  const weekChart = chart(
+    weekdays.map((v, i) => ({ v, l: WDINIT[i], on: v === wdMax && v > 0 })),
+    56,
+  );
+
+  const HOUR_LAB = ["Dawn", "Noon", "Eve", "Night"];
+  const hoursChart = chart(
+    hourBuckets.map((v, i) => ({
+      v,
+      l: HOUR_LAB[i],
+      on: i === busiestHour && v > 0,
+    })),
+    56,
+  );
+
+  // Cadence — up to the last 12 months, chronological
+  const monthKeys = Object.keys(monthSeq).sort().slice(-12);
+  const cadMax = Math.max(1, ...monthKeys.map((k) => monthSeq[k]));
+  const cadenceChart =
+    monthKeys.length > 1
+      ? chart(
+          monthKeys.map((k) => {
+            const mi = parseInt(k.slice(5), 10) - 1;
+            return {
+              v: monthSeq[k],
+              l: "JFMAMJJASOND"[mi],
+              on: monthSeq[k] === cadMax,
+            };
+          }),
+          56,
+        )
+      : "";
+
   // Most kept company (authors) — ranked bars
   const authorRank = rank(authors).slice(0, 5);
   const authorMax = authorRank.length ? authorRank[0][1] : 1;
@@ -9372,17 +9471,19 @@ function renderChronPatterns(body) {
         .join("")
     : `<div class="pat-none">Genres appear as you tag your stories.</div>`;
 
-  // Tiles
-  const WD = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const busiestWd = weekdays.indexOf(Math.max(...weekdays));
-  const busiestMonth = rank(months)[0];
+  // Tiles — the headline numbers
   const streak = typeof calcStreak === "function" ? calcStreak() : { longest: 0 };
   const storyCount = Object.keys(stories).length;
+  const deepest = Object.values(stories).reduce((m, s) => Math.max(m, s.n), 0);
+  const reflectionsN = types.Reflection || 0;
+  const spanDays = isFinite(firstT)
+    ? Math.max(1, Math.round((lastT - firstT) / 86400000) + 1)
+    : 0;
   const tiles = [
-    [WD[busiestWd], "day of letters"],
-    [busiestMonth ? busiestMonth[0].split(" ")[0] : "—", "busiest month"],
-    [String(streak.longest || 0), "longest streak"],
-    [String(storyCount), storyCount === 1 ? "story marked" : "stories marked"],
+    [String(streak.longest || 0), "day streak"],
+    [String(deepest), "deepest dive"],
+    [String(reflectionsN), reflectionsN === 1 ? "reflection" : "reflections"],
+    [String(spanDays), "days of reading"],
   ]
     .map(
       ([v, c]) =>
@@ -9418,6 +9519,24 @@ function renderChronPatterns(body) {
 
   body.innerHTML = `
     <div class="chron-patterns">
+      ${portrait}
+      <div class="pat-tiles">${tiles}</div>
+      <div class="pat-block">
+        <div class="pat-label">Rhythm of the Week</div>
+        ${weekChart}
+      </div>
+      <div class="pat-block">
+        <div class="pat-label">Hours You Keep</div>
+        ${hoursChart}
+      </div>
+      ${
+        cadenceChart
+          ? `<div class="pat-block">
+        <div class="pat-label">The Cadence</div>
+        ${cadenceChart}
+      </div>`
+          : ""
+      }
       <div class="pat-block">
         <div class="pat-label">Most Kept Company</div>
         <div class="pat-bars">${authorsHtml}</div>
@@ -9426,7 +9545,6 @@ function renderChronPatterns(body) {
         <div class="pat-label">Your Shelf Leans</div>
         <div class="pat-genres">${genresHtml}</div>
       </div>
-      <div class="pat-tiles">${tiles}</div>
       <div class="pat-block">
         <div class="pat-label">The Mix</div>
         <div class="pat-mixbar">${seg}</div>
