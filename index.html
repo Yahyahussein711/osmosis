@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260714b" />
+    <link rel="stylesheet" href="styles.css?v=20260715a" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -1895,83 +1895,210 @@
         >
           <!-- Slide 1 -->
           <div class="tutorial-slide active">
-            <div style="color: var(--accent); margin-bottom: 20px; display: flex; justify-content: center;">
-              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+            <div class="tut-eyebrow">The Quarterly</div>
+            <h2 class="tut-title">Welcome to Osmosis</h2>
+            <div class="tut-visual" style="text-align:center;">
+              <div style="font-size:2rem;color:var(--accent);line-height:1;">&#10086;</div>
+              <div class="tm-quote" style="text-align:center;margin-top:8px;">&ldquo;Read. Mark. Reflect. Remember.&rdquo;</div>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Welcome to Osmosis</h2>
-            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              Osmosis turns reading into <strong>lasting knowledge</strong>. Instead of passively scrolling, you capture what matters, reflect on it, and revisit it over time — building a private library that compounds. Everything lives <strong>locally on your device</strong>: no account, no cloud, fully yours.
-            </p>
+            <p class="tut-desc">Osmosis turns reading into <strong>lasting knowledge</strong>. You capture what matters, think it through, and revisit it over time &mdash; building a private library that compounds. This quick tour shows you <strong>everything</strong> it can do.</p>
           </div>
           <!-- Slide 2 -->
-          <div class="tutorial-slide" style="display: none">
-            <div style="color: var(--sage); margin-bottom: 20px; display: flex; justify-content: center;">
-              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Your Shelf</div>
+            <h2 class="tut-title">The Library</h2>
+            <div class="tut-visual">
+              <div class="tm-row">
+                <div class="tm-cover"></div>
+                <div style="flex:1;min-width:0;">
+                  <div class="tm-title-s">The Raven</div>
+                  <div class="tm-sub">6 min &middot; 3 notes</div>
+                  <div class="tm-progress"><i style="width:64%"></i></div>
+                </div>
+              </div>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Library</h2>
-            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              Your home base. Each story card shows its <strong>read time</strong>, a <strong>progress bar</strong> for ones you've started, and how many notes you've made. The count beside the title shows your totals and how many you've read, and finished stories dim so unread ones stand out. Tap the <strong>✎ Create</strong> tab to add your own — just a Title, Summary, and Content (Markdown supported).
-            </p>
+            <p class="tut-desc">Each story card shows its <strong>read time</strong>, a <strong>progress bar</strong>, and your notes. Finished ones dim so the unread stand out. Tap <strong>Create</strong> to write your own &mdash; a title, a hook, and content (Markdown works).</p>
           </div>
           <!-- Slide 3 -->
-          <div class="tutorial-slide" style="display: none">
-            <div style="color: var(--earth); margin-bottom: 20px; display: flex; justify-content: center;">
-              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">While Reading</div>
+            <h2 class="tut-title">Select text to mark it</h2>
+            <div class="tut-visual">
+              <div class="tm-quote">Deep into that <span class="tm-mark">darkness</span> peering, long I stood there wondering&hellip;</div>
+              <div style="text-align:center;margin-top:14px;">
+                <span class="tm-toolbar">
+                  <span class="tm-tool"><b>&#9998;</b>Highlight</span>
+                  <span class="tm-tool"><b>&#9998;</b>Note</span>
+                  <span class="tm-tool"><b>&#9873;</b>Mark</span>
+                  <span class="tm-tool"><b>A</b>Define</span>
+                </span>
+              </div>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Read &amp; Capture</h2>
-            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              While reading, select any text to <strong>Highlight</strong> it, attach a <strong>Note</strong>, or <strong>Bookmark</strong> your place. A highlight carrying a note gets a dotted underline — tap it anytime to read what you wrote. Use <strong>Focus mode</strong> for a distraction-free, full-screen view (double-tap the screen or press Esc to leave).
-            </p>
+            <p class="tut-desc">Select any passage to <strong>Highlight</strong> it, attach a <strong>Note</strong>, drop a <strong>Bookmark</strong>, or <strong>Define</strong> a word. A highlight carrying a note gets a dotted underline &mdash; tap it to reread your thought.</p>
           </div>
           <!-- Slide 4 -->
-          <div class="tutorial-slide" style="display: none">
-            <div style="color: var(--accent); margin-bottom: 20px; display: flex; justify-content: center;">
-              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">A Tap Away</div>
+            <h2 class="tut-title">The dictionary, built in</h2>
+            <div class="tut-visual">
+              <div class="tm-title-s" style="font-size:1.15rem;">serendipity</div>
+              <div class="tm-sub" style="font-style:italic;">/&#716;s&#603;r&#601;n&#712;d&#618;p&#618;ti/ &middot; noun</div>
+              <div class="tm-quote" style="margin-top:8px;font-style:normal;">the occurrence of happy or beneficial events by chance.</div>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Workstation</h2>
-            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              Open <strong>Notes</strong> from the reading view to manage everything you've captured for a story. Edit or delete any note, jump back to where it sits in the text, and write <strong>Reflections</strong> — your own synthesis in your own words. Stuck? <strong>Socratic prompts</strong> spark deeper thinking. Add note text to a plain highlight and it automatically becomes a Note.
-            </p>
+            <p class="tut-desc">Look up any word without leaving the page. The sheet slides up from the bottom &mdash; <strong>swipe it down</strong> to dismiss.</p>
           </div>
           <!-- Slide 5 -->
-          <div class="tutorial-slide" style="display: none">
-            <div style="color: var(--sage); margin-bottom: 20px; display: flex; justify-content: center;">
-              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Swipe Up</div>
+            <h2 class="tut-title">The Workstation</h2>
+            <div class="tut-visual">
+              <div style="border:1px solid var(--glass-border);border-radius:12px 12px 0 0;padding:12px;background:var(--glass-solid);">
+                <div style="width:36px;height:4px;border-radius:9px;background:var(--glass-border);margin:0 auto 10px;"></div>
+                <div class="tm-sub">Re: The Raven</div>
+                <div class="tm-line" style="width:82%;margin-top:9px;"></div>
+                <div class="tm-line" style="width:58%;margin-top:6px;"></div>
+                <div style="margin-top:12px;"><span class="tm-btn ghost">&#10022; Guide me</span></div>
+              </div>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Chronicle</h2>
-            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              A chronological record of your whole intellectual journey — every highlight, note, bookmark, reflection, and story you've read. <strong>Filter by type</strong> (each chip shows its count), tap the <strong>♥</strong> to favorite the ones that matter, switch between <strong>Daily and Weekly</strong> views, and edit or delete any entry. "View in Story" jumps you straight back to the source.
-            </p>
+            <p class="tut-desc">Every story has a writing desk: manage your notes, jump back to where each sits in the text, and write <strong>Reflections</strong> in your own words. Facing a blank page? Tap <strong>&#10022; Guide me</strong>.</p>
           </div>
           <!-- Slide 6 -->
-          <div class="tutorial-slide" style="display: none">
-            <div style="color: var(--earth); margin-bottom: 20px; display: flex; justify-content: center;">
-              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Never a Blank Page</div>
+            <h2 class="tut-title">Guided by dialogue</h2>
+            <div class="tut-visual">
+              <div style="text-align:center;">
+                <span class="tm-chip on">Understand</span><span class="tm-chip">Feel</span><span class="tm-chip">Apply</span><span class="tm-chip">Question</span><span class="tm-chip">Connect</span>
+              </div>
+              <div class="tm-quote" style="margin-top:12px;">&ldquo;What is this really claiming?&rdquo;</div>
+              <div style="margin-top:6px;"><span class="tm-chip">It&rsquo;s claiming that&hellip;</span></div>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">The Study</h2>
-            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              Your progress at a glance, as expandable cards: <strong>Overview Stats</strong>, a 28-day <strong>Activity Heatmap</strong>, the <strong>Reflection Tracker</strong>, and the <strong>Serendipity Engine</strong> — which resurfaces a random story or note to spark unexpected connections across your library.
-            </p>
+            <p class="tut-desc">Both <strong>notes</strong> and <strong>reflections</strong> can be guided: choose a lens, answer with tap-in sentence starters, then <strong>press further</strong> to go deeper &mdash; closing on one crystallising line.</p>
           </div>
           <!-- Slide 7 -->
-          <div class="tutorial-slide" style="display: none">
-            <div style="color: var(--accent); margin-bottom: 20px; display: flex; justify-content: center;">
-              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.36 2.64L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Everything You&rsquo;ve Marked</div>
+            <h2 class="tut-title">The Chronicle</h2>
+            <div class="tut-visual">
+              <div class="tm-tabs"><span class="tm-tab on">Journal</span><span class="tm-tab">By Story</span><span class="tm-tab">Patterns</span></div>
+              <div class="tm-row" style="margin-bottom:9px;"><span class="tm-seal" style="background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);">&#9998;</span><div class="tm-quote" style="flex:1;">&ldquo;Deep into that darkness&hellip;&rdquo;</div></div>
+              <div class="tm-row"><span class="tm-seal" style="background:color-mix(in srgb,#6b8e6f 24%,transparent);color:#6b8e6f;">&#9998;</span><div class="tm-quote" style="flex:1;">A note on grief and memory.</div></div>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Daily Review</h2>
-            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              This is where reading becomes <strong>remembering</strong>. Osmosis schedules your highlights and notes for review using <strong>spaced repetition</strong>. From the Study, open <strong>Daily Review</strong>: you'll see a highlight, try to recall it, then rate yourself <strong>Again, Good, or Easy</strong>. Things you know well space out over weeks; ones you struggle with return soon — so knowledge actually sticks.
-            </p>
+            <p class="tut-desc">A record of your whole reading life through three lenses. <strong>Journal</strong> is the timeline &mdash; search it, favourite entries, and scrub through time. Colour-coded seals tell highlights, notes, and reflections apart at a glance.</p>
           </div>
           <!-- Slide 8 -->
-          <div class="tutorial-slide" style="display: none">
-            <div style="color: var(--sage); margin-bottom: 20px; display: flex; justify-content: center;">
-              <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Chronicle &middot; By Story</div>
+            <h2 class="tut-title">Every story, dossiered</h2>
+            <div class="tut-visual">
+              <div class="tm-row">
+                <div class="tm-cover"></div>
+                <div style="flex:1;min-width:0;">
+                  <div class="tm-title-s">The Cask of Amontillado</div>
+                  <div class="tm-sub" style="font-style:italic;">Edgar Allan Poe</div>
+                  <div style="margin-top:7px;"><span class="tm-chip">3 Highlights</span><span class="tm-chip">2 Notes</span></div>
+                </div>
+              </div>
             </div>
-            <h2 class="modal-title" style="font-size: 1.5rem; margin-bottom: 12px; line-height: 1.2">Make it yours</h2>
-            <p style="font-size: 0.92rem; color: var(--subtitle-color); line-height: 1.6;">
-              In <strong>Settings</strong> (the gear) you can switch themes, adjust reading size and background, pick a reading voice, and <strong>export or import</strong> your entire library as a backup. Everything stays on your device. You can replay this tour anytime from Settings. That's it — pick a story and begin.
-            </p>
+            <p class="tut-desc"><strong>By Story</strong> gathers everything you did in each story into an expandable dossier &mdash; grouped by type, with author, dates, and a tap back to any mark.</p>
+          </div>
+          <!-- Slide 9 -->
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Chronicle &middot; Patterns</div>
+            <h2 class="tut-title">Your reading character</h2>
+            <div class="tut-visual" style="text-align:center;">
+              <div class="tut-eyebrow">Your Reading Character</div>
+              <div class="tm-title-s" style="font-size:1.2rem;margin:4px 0 12px;">The Midnight Annotator</div>
+              <div class="tm-bars"><i style="height:40%"></i><i style="height:62%"></i><i style="height:30%"></i><i style="height:80%"></i><i class="on" style="height:100%"></i><i style="height:52%"></i><i style="height:70%"></i></div>
+            </div>
+            <p class="tut-desc"><strong>Patterns</strong> paints a portrait of you as a reader &mdash; an <strong>archetype</strong> drawn from when and how you read &mdash; with charts for your week, your hours, your cadence, favourite authors, and most-marked stories.</p>
+          </div>
+          <!-- Slide 10 -->
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Home for Progress</div>
+            <h2 class="tut-title">The Study</h2>
+            <div class="tut-visual">
+              <div class="tm-row" style="justify-content:space-around;text-align:center;">
+                <div><div class="tm-title-s">12</div><div class="tm-sub">Stories</div></div>
+                <div><div class="tm-title-s">48</div><div class="tm-sub">Highlights</div></div>
+                <div><div class="tm-title-s">20</div><div class="tm-sub">Notes</div></div>
+                <div><div class="tm-title-s">9</div><div class="tm-sub">Reflections</div></div>
+              </div>
+            </div>
+            <p class="tut-desc">Your ledger at a glance, plus living cards: an <strong>activity heatmap</strong>, the <strong>Daily Review</strong>, the <strong>Parlour Game</strong>, your <strong>Honours</strong>, and the <strong>Common Thread</strong>.</p>
+          </div>
+          <!-- Slide 11 -->
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Study &middot; Spaced Repetition</div>
+            <h2 class="tut-title">Daily Review</h2>
+            <div class="tut-visual">
+              <div class="tm-sub">The Review &middot; 1 of 5</div>
+              <div class="tm-quote" style="margin:8px 0 12px;">&ldquo;Should I feel shame for that action?&rdquo;</div>
+              <div class="tm-row" style="gap:6px;"><span class="tm-btn ghost" style="flex:1;text-align:center;">Faded</span><span class="tm-btn ghost" style="flex:1;text-align:center;">Holds</span><span class="tm-btn primary2" style="flex:1;text-align:center;">Deeper</span></div>
+            </div>
+            <p class="tut-desc">Your <strong>reflections</strong> resurface on a spaced schedule so your thinking never fades. Try to recall, reveal what you wrote, then rate it &mdash; and even <strong>add a new thought</strong> to keep it living.</p>
+          </div>
+          <!-- Slide 12 -->
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Study &middot; For Fun</div>
+            <h2 class="tut-title">The Parlour Game</h2>
+            <div class="tut-visual">
+              <div class="tm-sub">&#10022;&#10022; On fire</div>
+              <div class="tm-quote" style="margin:8px 0;">Which story is this line from?</div>
+              <div class="tm-row" style="gap:6px;flex-wrap:wrap;"><span class="tm-btn ghost">The Raven</span><span class="tm-btn primary2">The Cask</span></div>
+            </div>
+            <p class="tut-desc">A quiz built from <strong>what you&rsquo;ve actually read</strong> &mdash; passages, authors, your own margins and reflections. Build a <strong>streak</strong>, use <strong>50/50</strong>, and rack up points.</p>
+          </div>
+          <!-- Slide 13 -->
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Study &middot; Rewards</div>
+            <h2 class="tut-title">Honours &amp; ranks</h2>
+            <div class="tut-visual" style="text-align:center;">
+              <div style="font-size:1.4rem;letter-spacing:8px;color:var(--accent);">&#10086; &#10022; &#10070;</div>
+              <div class="tm-sub" style="margin-top:8px;">Archivist &middot; 120 pts</div>
+            </div>
+            <p class="tut-desc">Earn <strong>stamped seals</strong> for milestones &mdash; each worth points that carry a <strong>rank</strong>. New honours arrive with a small ceremony; open the cabinet to see them all.</p>
+          </div>
+          <!-- Slide 14 -->
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Study &middot; Serendipity</div>
+            <h2 class="tut-title">The Common Thread</h2>
+            <div class="tut-visual">
+              <div class="tm-quote">&ldquo;&hellip;a quiet <span class="tm-mark">shame</span> in looking away.&rdquo;</div>
+              <div class="tm-sub" style="text-align:center;margin:8px 0;">&mdash; the thread &middot; shame &mdash;</div>
+              <div class="tm-quote">&ldquo;They should feel that <span class="tm-mark">shame</span>&hellip;&rdquo;</div>
+            </div>
+            <p class="tut-desc">Osmosis finds two passages you marked in <strong>different stories</strong> that share an idea &mdash; surfacing the invisible threads running through your reading.</p>
+          </div>
+          <!-- Slide 15 -->
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Feels Natural</div>
+            <h2 class="tut-title">Gestures</h2>
+            <div class="tut-visual" style="text-align:center;">
+              <div class="tm-gesture">&#9660;&nbsp;&nbsp;swipe a sheet <strong>down</strong> to close it</div>
+              <div class="tm-gesture" style="margin-top:12px;">&#9654;&nbsp;&nbsp;swipe a story <strong>right</strong> to exit</div>
+            </div>
+            <p class="tut-desc">Sheets &mdash; the writing desk, the dictionary, the honours cabinet &mdash; close when you <strong>pull them down</strong>. And <strong>swipe right</strong> from the left edge to slide a story away.</p>
+          </div>
+          <!-- Slide 16 -->
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Optional</div>
+            <h2 class="tut-title">Sign in &amp; sync</h2>
+            <div class="tut-visual" style="text-align:center;">
+              <span class="tm-btn primary2" style="padding:9px 16px;">Sign in with Google</span>
+              <div class="tm-sub" style="margin-top:10px;">iPhone &#8646; laptop, always in step</div>
+            </div>
+            <p class="tut-desc">Sign in from <strong>Settings &rarr; Account</strong> to save everything to your account and <strong>sync across devices</strong>. Prefer to stay fully local? Simply don&rsquo;t sign in &mdash; nothing leaves your device.</p>
+          </div>
+          <!-- Slide 17 -->
+          <div class="tutorial-slide" style="display:none">
+            <div class="tut-eyebrow">Settings</div>
+            <h2 class="tut-title">Make it yours</h2>
+            <div class="tut-visual" style="text-align:center;">
+              <span class="tm-chip on">Light</span><span class="tm-chip">Dark</span><span class="tm-chip">Midnight</span>
+              <div class="tm-sub" style="margin-top:12px;">reading size &middot; voice &middot; export / import</div>
+            </div>
+            <p class="tut-desc">Switch themes, tune reading size and background, pick a reading voice, and <strong>export or import</strong> your whole library as a backup. Replay this tour anytime from Settings. Now &mdash; pick a story and begin.</p>
           </div>
         </div>
         <!-- Carousel Controls -->
@@ -2043,8 +2170,8 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260714b"></script>
-    <script src="script.js?v=20260714b"></script>
+    <script src="stories.js?v=20260715a"></script>
+    <script src="script.js?v=20260715a"></script>
 
     <!-- ============================================================
          Cloud sync (optional). Paste your Firebase web-app config
@@ -2061,6 +2188,6 @@
         appId: "1:202207005294:web:c9b8fc8cd1e7d674d8347f",
       };
     </script>
-    <script src="firebase-sync.js?v=20260714b"></script>
+    <script src="firebase-sync.js?v=20260715a"></script>
   </body>
 </html>

@@ -2595,6 +2595,13 @@ function setupEvents() {
   const tutNextBtn = document.getElementById("tutNextBtn");
   const tutPrevBtn = document.getElementById("tutPrevBtn");
   const slides = document.querySelectorAll(".tutorial-slide");
+  // Build the progress dots to match however many slides exist.
+  const _tutDotsWrap = document.getElementById("tutDots");
+  if (_tutDotsWrap && slides.length) {
+    _tutDotsWrap.innerHTML = Array.from(slides)
+      .map((_, i) => `<span class="tut-dot${i === 0 ? " active" : ""}"></span>`)
+      .join("");
+  }
   const dots = document.querySelectorAll(".tut-dot");
   let currentSlide = 0;
 
@@ -2629,6 +2636,30 @@ function setupEvents() {
       tutPrevBtn.addEventListener("click", () => {
         if (currentSlide > 0) showSlide(--currentSlide);
       });
+
+    // Swipe left/right to move through the tour.
+    const tutWrap = document.getElementById("tutorialSlides");
+    if (tutWrap) {
+      let _tsx = 0;
+      tutWrap.addEventListener(
+        "touchstart",
+        (e) => {
+          _tsx = e.touches[0].clientX;
+        },
+        { passive: true },
+      );
+      tutWrap.addEventListener(
+        "touchend",
+        (e) => {
+          const dx = e.changedTouches[0].clientX - _tsx;
+          if (Math.abs(dx) < 45) return;
+          if (dx < 0 && currentSlide < slides.length - 1)
+            showSlide(++currentSlide);
+          else if (dx > 0 && currentSlide > 0) showSlide(--currentSlide);
+        },
+        { passive: true },
+      );
+    }
 
     startExploringBtn.addEventListener("click", () => {
       onboardingModal.style.opacity = "0";

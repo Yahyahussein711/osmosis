@@ -3317,6 +3317,104 @@ body.multi-select-active .timeline-actions {
   color: var(--dark-text);
   line-height: 1.4;
 }
+/* ===== Guided Tour — illustrated onboarding ===== */
+#onboardingModal .modal-content { max-width: 500px; }
+.tutorial-slide { text-align: center; }
+.tut-eyebrow {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.6rem;
+  color: var(--accent);
+}
+.tut-title {
+  font-family: "Lora", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.4rem;
+  line-height: 1.18;
+  color: var(--dark-text);
+  margin: 6px 0 14px;
+}
+.tut-desc {
+  font-size: 0.9rem;
+  color: var(--subtitle-color);
+  line-height: 1.6;
+  margin-top: 16px;
+  text-align: left;
+}
+.tut-desc strong { color: var(--dark-text); font-weight: 600; }
+.tut-visual {
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--dark-text) 2.5%, var(--glass-solid));
+  padding: 16px;
+  text-align: left;
+}
+/* mini building blocks reused across slides */
+.tm-row { display: flex; gap: 10px; align-items: center; }
+.tm-cover {
+  width: 34px;
+  height: 46px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 40%, #000));
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+.tm-line { height: 7px; border-radius: 4px; background: var(--glass-border); }
+.tm-progress { height: 4px; border-radius: 3px; background: var(--glass-border); overflow: hidden; margin-top: 7px; }
+.tm-progress > i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.tm-title-s { font-family: "Lora", Georgia, serif; font-weight: 600; font-size: 0.9rem; color: var(--dark-text); line-height: 1.2; }
+.tm-sub { font-size: 0.68rem; color: var(--subtitle-color); }
+.tm-toolbar {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+.tm-tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 9px;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 0.5px;
+  font-size: 0.58rem;
+  color: var(--dark-text);
+}
+.tm-tool b { color: var(--accent); font-size: 0.9rem; line-height: 1; }
+.tm-mark { background: var(--highlight-bg); border-bottom: 2px solid var(--highlight-border); padding: 0 2px; border-radius: 1px; }
+.tm-chip {
+  display: inline-block;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.66rem;
+  color: var(--dark-text);
+  margin: 3px;
+}
+.tm-chip.on { border-color: var(--accent); color: var(--accent); }
+.tm-quote { font-family: "Lora", Georgia, serif; font-style: italic; font-size: 0.84rem; color: var(--dark-text); line-height: 1.45; }
+.tm-tabs { display: flex; gap: 16px; justify-content: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 8px; margin-bottom: 12px; }
+.tm-tab { font-family: "Lora", Georgia, serif; font-variant: small-caps; letter-spacing: 1px; font-size: 0.7rem; color: var(--subtitle-color); }
+.tm-tab.on { color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 6px; margin-bottom: -9px; }
+.tm-seal { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; flex-shrink: 0; }
+.tm-bars { display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 54px; }
+.tm-bars > i { width: 12px; background: var(--glass-border); border-radius: 3px 3px 0 0; }
+.tm-bars > i.on { background: var(--accent); }
+.tm-btn { display: inline-block; border-radius: 999px; padding: 7px 14px; font-family: "Lora", Georgia, serif; font-variant: small-caps; letter-spacing: 1px; font-size: 0.68rem; }
+.tm-btn.primary2 { background: var(--accent); color: #fff; }
+.tm-btn.ghost { border: 1px solid var(--glass-border); color: var(--dark-text); }
+.tm-gesture { display: flex; align-items: center; justify-content: center; gap: 4px; font-family: "Lora", Georgia, serif; font-variant: small-caps; letter-spacing: 1px; font-size: 0.74rem; color: var(--subtitle-color); }
+.tm-gesture strong { color: var(--accent); }
+
 .acct-help { margin-top: 14px; }
 .acct-help summary {
   font-family: "Lora", Georgia, serif;
