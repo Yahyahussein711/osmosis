@@ -7259,50 +7259,50 @@ const _DLG_PATHS = {
     name: "Understand",
     tag: "make sense of it",
     rungs: [
-      { q: ["What is this actually claiming?", "What's the core idea here?"], stems: ["It's claiming that…", "The core idea is…"] },
-      { q: ["What must be true for this to hold?", "What assumption does it rest on?"], stems: ["It assumes…", "This only works if…"] },
-      { q: ["How would you explain it to someone who disagreed?", "Put it in the plainest terms you can."], stems: ["Put simply…", "I'd tell them…"] },
-      { q: ["Now that it's clear — what follows?", "What does understanding this change?"], stems: ["So it follows that…", "This changes…"] },
+      { q: ["What is this actually claiming?", "What's the core idea here?", "If you kept only one sentence of it, which?"], stems: ["It's claiming that…", "The core idea is…", "At heart, it says…"] },
+      { q: ["What must be true for this to hold?", "What assumption does it rest on?", "What would have to be false for it to fail?"], stems: ["It assumes…", "This only works if…", "It rests on…"] },
+      { q: ["How would you explain it to someone who disagreed?", "Put it in the plainest terms you can.", "Explain it to a ten-year-old."], stems: ["Put simply…", "I'd tell them…", "In plain words…"] },
+      { q: ["Now that it's clear — what follows?", "What does understanding this change?", "What can you see now that you couldn't before?"], stems: ["So it follows that…", "This changes…", "Now I can see…"] },
     ],
   },
   feel: {
     name: "Feel",
     tag: "sit with what it stirred",
     rungs: [
-      { q: ["What did this stir in you?", "What feeling rose up here?"], stems: ["I felt…", "It stirred…"] },
-      { q: ["Why this feeling, and not another?", "Where does that feeling come from?"], stems: ["Because…", "It comes from…"] },
-      { q: ["When have you felt this before?", "What memory does it touch?"], stems: ["I've felt this when…", "It touches the memory of…"] },
-      { q: ["What is this feeling trying to tell you?", "What does it want from you?"], stems: ["It's telling me…", "It wants…"] },
+      { q: ["What did this stir in you?", "What feeling rose up here?", "Where in your body did you feel it?"], stems: ["I felt…", "It stirred…", "In my chest, I…"] },
+      { q: ["Why this feeling, and not another?", "Where does that feeling come from?", "Is it comfortable or uncomfortable — and why?"], stems: ["Because…", "It comes from…", "It's uneasy because…"] },
+      { q: ["When have you felt this before?", "What memory does it touch?", "Who does this feeling belong to?"], stems: ["I've felt this when…", "It touches the memory of…", "It belongs to…"] },
+      { q: ["What is this feeling trying to tell you?", "What does it want from you?", "If the feeling could speak, what would it ask?"], stems: ["It's telling me…", "It wants…", "It's asking me to…"] },
     ],
   },
   apply: {
     name: "Apply",
     tag: "carry it into your life",
     rungs: [
-      { q: ["Where is this true for you right now?", "What in your life does this touch?"], stems: ["Right now, this is true of…", "In my life, this touches…"] },
-      { q: ["If you believed this fully, what would change?", "What would taking it seriously look like?"], stems: ["If I believed it, I'd…", "Taking it seriously means…"] },
-      { q: ["What's the smallest step you could take?", "What could you do this week?"], stems: ["The smallest step is…", "This week, I'll…"] },
-      { q: ["What will get in the way — and how will you meet it?", "What makes this hard to do?"], stems: ["What gets in the way is…", "It's hard because…"] },
+      { q: ["Where is this true for you right now?", "What in your life does this touch?", "Whose life does this describe — yours, or someone near you?"], stems: ["Right now, this is true of…", "In my life, this touches…", "This describes…"] },
+      { q: ["If you believed this fully, what would change?", "What would taking it seriously look like?", "What would you stop doing?"], stems: ["If I believed it, I'd…", "Taking it seriously means…", "I'd stop…"] },
+      { q: ["What's the smallest step you could take?", "What could you do this week?", "What could you try before tomorrow night?"], stems: ["The smallest step is…", "This week, I'll…", "Tonight, I could…"] },
+      { q: ["What will get in the way — and how will you meet it?", "What makes this hard to do?", "Who could help you hold to it?"], stems: ["What gets in the way is…", "It's hard because…", "I could ask…"] },
     ],
   },
   question: {
     name: "Question",
     tag: "argue with it",
     rungs: [
-      { q: ["What do you doubt here?", "Where is this wrong, or too easy?"], stems: ["I doubt that…", "This is too easy because…"] },
-      { q: ["What's the strongest case against it?", "How would a sharp critic answer?"], stems: ["The case against is…", "A critic would say…"] },
-      { q: ["What does it conveniently leave out?", "Whose view is missing?"], stems: ["It leaves out…", "Missing is…"] },
-      { q: ["After arguing with it — what still stands?", "What survives your doubt?"], stems: ["What still stands is…", "What survives is…"] },
+      { q: ["What do you doubt here?", "Where is this wrong, or too easy?", "What part of you wants it to be false?"], stems: ["I doubt that…", "This is too easy because…", "I resist it because…"] },
+      { q: ["What's the strongest case against it?", "How would a sharp critic answer?", "Steelman it — what's the best version of the other side?"], stems: ["The case against is…", "A critic would say…", "At its best, the other side says…"] },
+      { q: ["What does it conveniently leave out?", "Whose view is missing?", "What exception does it ignore?"], stems: ["It leaves out…", "Missing is…", "It ignores…"] },
+      { q: ["After arguing with it — what still stands?", "What survives your doubt?", "What would you keep even if the rest were wrong?"], stems: ["What still stands is…", "What survives is…", "I'd keep…"] },
     ],
   },
   connect: {
     name: "Connect",
     tag: "link it to your world",
     rungs: [
-      { q: ["What does this connect to — another book, a moment, a person?", "What does it rhyme with in your life?"], stems: ["This connects to…", "It rhymes with…"] },
-      { q: ["What's the thread running between them?", "Why do they belong together?"], stems: ["The thread is…", "They share…"] },
-      { q: ["What does seeing them side by side reveal?", "What's clearer now that they're together?"], stems: ["Together they reveal…", "Now I see…"] },
-      { q: ["Where else might this pattern appear?", "What else would it explain?"], stems: ["It might also appear in…", "It would explain…"] },
+      { q: ["What does this connect to — another book, a moment, a person?", "What does it rhyme with in your life?", "What song, place, or face does it summon?"], stems: ["This connects to…", "It rhymes with…", "It summons…"] },
+      { q: ["What's the thread running between them?", "Why do they belong together?", "What single word sits at the centre of both?"], stems: ["The thread is…", "They share…", "The word is…"] },
+      { q: ["What does seeing them side by side reveal?", "What's clearer now that they're together?", "What tension appears when you hold them together?"], stems: ["Together they reveal…", "Now I see…", "The tension is…"] },
+      { q: ["Where else might this pattern appear?", "What else would it explain?", "What rule might sit beneath both?"], stems: ["It might also appear in…", "It would explain…", "The rule beneath is…"] },
     ],
   },
 };
@@ -7319,10 +7319,18 @@ const _DLG_DEEPEN = [
   "What are you avoiding here?",
   "And then what follows?",
   "What's the truest version of that sentence?",
+  "What's the example that proves it?",
+  "Where does that lead if you follow it all the way?",
+  "What are you protecting by putting it that way?",
 ];
 const _DLG_CAPSTONE = {
-  q: "In one line — what is this reflection really about?",
-  stems: ["In truth, it's about…", "What it comes down to is…"],
+  q: [
+    "In one line — what is this reflection really about?",
+    "If you kept one sentence from all this, what is it?",
+    "What's the truest thing you wrote here?",
+    "Name what this comes down to, in a breath.",
+  ],
+  stems: ["In truth, it's about…", "What it comes down to is…", "The one line is…"],
 };
 let _dlg = null;
 function _dlgPick(arr) {
@@ -7430,7 +7438,7 @@ function _renderDialogue(fresh) {
   const rungs = path.rungs;
   let stems;
   if (capstone) {
-    if (fresh || !_dlg.question) _dlg.question = _DLG_CAPSTONE.q;
+    if (fresh || !_dlg.question) _dlg.question = _dlgPick(_DLG_CAPSTONE.q);
     stems = _DLG_CAPSTONE.stems;
   } else if (_dlg.pressing) {
     if (fresh || !_dlg.question) _dlg.question = _dlgPick(_DLG_DEEPEN);
@@ -7586,41 +7594,41 @@ const _NOTE_LENSES = {
     name: "Unpack",
     tag: "what it means",
     rungs: [
-      { q: ["What is this passage actually saying?", "Put this line in your own words."], stems: ["This says…", "In plain terms…"] },
-      { q: ["What's beneath the surface here?", "What's implied but left unsaid?"], stems: ["Underneath, it means…", "It implies…"] },
-      { q: ["So what does it want you to see?", "What's the point of it?"], stems: ["It wants me to see…", "The point is…"] },
+      { q: ["What is this passage actually saying?", "Put this line in your own words.", "What's the claim in one breath?"], stems: ["This says…", "In plain terms…", "In one breath…"] },
+      { q: ["What's beneath the surface here?", "What's implied but left unsaid?", "What is it quietly assuming?"], stems: ["Underneath, it means…", "It implies…", "It assumes…"] },
+      { q: ["So what does it want you to see?", "What's the point of it?", "Why did the author put it this way?"], stems: ["It wants me to see…", "The point is…", "It's phrased this way to…"] },
     ],
   },
   react: {
     name: "React",
     tag: "why it stopped you",
     rungs: [
-      { q: ["Why did this stop you?", "What made you mark this line?"], stems: ["It stopped me because…", "I marked it because…"] },
-      { q: ["What does that reaction reveal about you?", "What in you does it touch?"], stems: ["It reveals…", "It touches…"] },
-      { q: ["What will you carry from it?", "What do you want to remember here?"], stems: ["I'll carry…", "I want to remember…"] },
+      { q: ["Why did this stop you?", "What made you mark this line?", "What did you feel the instant you read it?"], stems: ["It stopped me because…", "I marked it because…", "I felt…"] },
+      { q: ["What does that reaction reveal about you?", "What in you does it touch?", "What does wanting to keep this say about you?"], stems: ["It reveals…", "It touches…", "It says that I…"] },
+      { q: ["What will you carry from it?", "What do you want to remember here?", "How might you live differently for having read it?"], stems: ["I'll carry…", "I want to remember…", "I'd live…"] },
     ],
   },
   connect: {
     name: "Connect",
     tag: "what it links to",
     rungs: [
-      { q: ["What does this connect to — another line, book, or moment?", "What does it remind you of?"], stems: ["This connects to…", "It reminds me of…"] },
-      { q: ["What's the thread between them?", "Why do they belong together?"], stems: ["The thread is…", "They share…"] },
+      { q: ["What does this connect to — another line, book, or moment?", "What does it remind you of?", "What earlier passage does it echo?"], stems: ["This connects to…", "It reminds me of…", "It echoes…"] },
+      { q: ["What's the thread between them?", "Why do they belong together?", "What single idea do they both circle?"], stems: ["The thread is…", "They share…", "They both circle…"] },
     ],
   },
   question: {
     name: "Question",
     tag: "argue with it",
     rungs: [
-      { q: ["What do you resist here?", "Where might this be wrong?"], stems: ["I doubt…", "But…"] },
-      { q: ["What's the counter-case?", "What would change your mind?"], stems: ["The counter is…", "I'd change my mind if…"] },
+      { q: ["What do you resist here?", "Where might this be wrong?", "What's too neat about this?"], stems: ["I doubt…", "But…", "It's too neat because…"] },
+      { q: ["What's the counter-case?", "What would change your mind?", "Who would disagree — and why might they be right?"], stems: ["The counter is…", "I'd change my mind if…", "They'd say…"] },
     ],
   },
   name: {
     name: "Name it",
     tag: "a phrase to keep",
     rungs: [
-      { q: ["Capture this line in a single phrase.", "If this idea had a name, what is it?"], stems: ["Call it…", "In a word…"] },
+      { q: ["Capture this line in a single phrase.", "If this idea had a name, what is it?", "Give it a title, like a chapter."], stems: ["Call it…", "In a word…", "Title it…"] },
     ],
   },
 };
