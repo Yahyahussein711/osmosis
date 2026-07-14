@@ -99,6 +99,7 @@
     db = null,
     user = null,
     ready = false,
+    loadFailed = false,
     initialSyncDone = false,
     pushTimer = null;
 
@@ -211,13 +212,33 @@
       window.navigator.standalone === true
     );
   }
+  function isMobile() {
+    return (
+      /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (window.matchMedia && window.matchMedia("(pointer: coarse)").matches)
+    );
+  }
   function signIn() {
-    if (!auth) return;
+    // If the SDK isn't ready yet, say so instead of doing nothing.
+    if (!ready || !auth) {
+      if (!configured()) {
+        toast("Cloud sync isn't configured yet.");
+      } else if (loadFailed) {
+        toast("Sign-in couldn't load — check your connection, then reload.");
+      } else {
+        toast("Preparing sign-in… tap again in a second.");
+      }
+      return;
+    }
     var provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
-    // Installed PWAs block popups — use redirect there.
-    if (inStandalonePWA()) {
-      auth.signInWithRedirect(provider);
+    // Popups are unreliable on mobile and blocked in installed PWAs —
+    // use a full-page redirect there (far more reliable on iOS).
+    if (inStandalonePWA() || isMobile()) {
+      setStatus("Redirecting…");
+      auth.signInWithRedirect(provider).catch(function (e) {
+        toast("Sign-in failed: " + ((e && (e.code || e.message)) || "error"));
+      });
       return;
     }
     auth.signInWithPopup(provider).catch(function (e) {
@@ -227,7 +248,9 @@
           e.code === "auth/cancelled-popup-request" ||
           e.code === "auth/operation-not-supported-in-this-environment")
       ) {
-        auth.signInWithRedirect(provider);
+        auth.signInWithRedirect(provider).catch(function (e2) {
+          toast("Sign-in failed: " + ((e2 && (e2.code || e2.message)) || "error"));
+        });
       } else if (e && e.code !== "auth/popup-closed-by-user") {
         toast("Sign-in failed: " + (e.message || e.code));
       }
@@ -338,8 +361,10 @@
       })
       .then(function () {
         ready = true;
-        // Complete any redirect-based sign-in.
-        auth.getRedirectResult().catch(function () {});
+        // Complete any redirect-based sign-in (surface real errors).
+        auth.getRedirectResult().catch(function (e) {
+          if (e && e.code) toast("Sign-in failed: " + e.code);
+        });
         auth.onAuthStateChanged(function (u) {
           user = u || null;
           renderPanel();
@@ -351,7 +376,9 @@
       })
       .catch(function (e) {
         console.warn("Firebase failed to load", e);
+        loadFailed = true;
         setStatus("Offline");
+        toast("Sign-in couldn't load (network or config).");
       });
   }
 
