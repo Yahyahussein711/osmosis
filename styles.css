@@ -3307,6 +3307,16 @@ body.multi-select-active .timeline-actions {
   margin-top: 14px;
 }
 .acct-google svg { flex-shrink: 0; background: #fff; border-radius: 3px; padding: 1px; }
+.acct-error {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, #b3261e 45%, var(--glass-border));
+  background: color-mix(in srgb, #b3261e 8%, transparent);
+  border-radius: 6px;
+  font-size: var(--fs-sm);
+  color: var(--dark-text);
+  line-height: 1.4;
+}
 .acct-help { margin-top: 14px; }
 .acct-help summary {
   font-family: "Lora", Georgia, serif;

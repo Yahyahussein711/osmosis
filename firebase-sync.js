@@ -242,17 +242,22 @@
       return;
     }
     auth.signInWithPopup(provider).catch(function (e) {
+      var code = (e && e.code) || "";
+      // A popup that flashes and closes (blocked, closed, or the opener link
+      // was severed) → fall back to a full-page redirect, which is robust.
       if (
-        e &&
-        (e.code === "auth/popup-blocked" ||
-          e.code === "auth/cancelled-popup-request" ||
-          e.code === "auth/operation-not-supported-in-this-environment")
+        code === "auth/popup-blocked" ||
+        code === "auth/cancelled-popup-request" ||
+        code === "auth/operation-not-supported-in-this-environment" ||
+        code === "auth/popup-closed-by-user" ||
+        code === "auth/internal-error"
       ) {
+        setStatus("Redirecting…");
         auth.signInWithRedirect(provider).catch(function (e2) {
-          toast("Sign-in failed: " + ((e2 && (e2.code || e2.message)) || "error"));
+          setError((e2 && (e2.code || e2.message)) || "sign-in error");
         });
-      } else if (e && e.code !== "auth/popup-closed-by-user") {
-        toast("Sign-in failed: " + (e.message || e.code));
+      } else {
+        setError(code || (e && e.message) || "sign-in error");
       }
     });
   }
@@ -272,10 +277,16 @@
 
   // ---- account panel UI --------------------------------------------
   var lastStatus = "";
+  var lastError = "";
   function setStatus(s) {
     lastStatus = s;
     var el = document.getElementById("acctStatus");
     if (el) el.textContent = s;
+  }
+  function setError(msg) {
+    lastError = msg || "";
+    if (msg) toast("Sign-in failed: " + msg);
+    renderPanel(); // keep it on screen so it can't flash by
   }
   function esc(x) {
     return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) {
@@ -334,6 +345,16 @@
         '<div class="acct-name">Not signed in</div>' +
         '<div class="acct-sub">Sign in to save everything to your account and sync across devices.</div>' +
         "</div></div>" +
+        (lastError
+          ? '<div class="acct-error">⚠ ' +
+            esc(lastError) +
+            (lastError.indexOf("unauthorized-domain") >= 0
+              ? " — add this site to Firebase → Authentication → Settings → Authorized domains."
+              : lastError.indexOf("operation-not-allowed") >= 0
+                ? " — enable Google in Firebase → Authentication → Sign-in method."
+                : "") +
+            "</div>"
+          : "") +
         '<button class="primary acct-google" onclick="osmosisSignIn()">' +
         '<svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.6 20-21 0-1.2-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 16 4 9.1 8.6 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.2 36 26.7 37 24 37c-5.3 0-9.7-2.6-11.3-7l-6.5 5C9 41.3 16 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.3 5.3C40.9 36.5 44 30.9 44 24c0-1.2-.1-2.3-.4-3.5z"/></svg>' +
         "Sign in with Google</button>";
@@ -363,7 +384,7 @@
         ready = true;
         // Complete any redirect-based sign-in (surface real errors).
         auth.getRedirectResult().catch(function (e) {
-          if (e && e.code) toast("Sign-in failed: " + e.code);
+          if (e && (e.code || e.message)) setError(e.code || e.message);
         });
         auth.onAuthStateChanged(function (u) {
           user = u || null;
