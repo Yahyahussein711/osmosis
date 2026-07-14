@@ -2622,10 +2622,9 @@ function setupEvents() {
   }
 
   if (onboardingModal && startExploringBtn) {
-    if (localStorage.getItem("osmosis_intro_dismissed") !== "1") {
-      onboardingModal.classList.add("active");
-      showSlide(0);
-    }
+    // First-run onboarding is now the interactive spotlight tour (coach.js).
+    // The slide modal stays available only via an explicit action.
+    showSlide(0);
 
     if (tutNextBtn)
       tutNextBtn.addEventListener("click", () => {
@@ -2689,12 +2688,12 @@ function setupEvents() {
       ];
       tips.forEach((t) => localStorage.removeItem(t));
 
-      currentSlide = 0;
-      showSlide(0);
-      onboardingModal.classList.add("active");
-
-      showProfile();
-      showToast("Tutorial & App Tips restored!");
+      // Launch the interactive spotlight tour (starts on the Library).
+      if (typeof goToExploreView === "function") goToExploreView();
+      if (typeof window.osmosisStartTour === "function") {
+        setTimeout(() => window.osmosisStartTour(), 250);
+      }
+      showToast("Tour restarted — follow the highlights!");
     });
   }
 
@@ -8910,6 +8909,7 @@ function _artView() {
   return document.getElementById("articleView");
 }
 function _canEdgeSwipe() {
+  if (document.body.classList.contains("coach-on")) return false;
   if (document.body.classList.contains("drawer-active")) return false;
   const def = document.getElementById("defineOverlay");
   if (def && def.style.display === "flex") return false;

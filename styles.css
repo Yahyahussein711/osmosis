@@ -3317,6 +3317,108 @@ body.multi-select-active .timeline-actions {
   color: var(--dark-text);
   line-height: 1.4;
 }
+/* ===== Coachmarks — interactive spotlight tour ===== */
+.coach-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: none;
+}
+.coach-overlay.coach-centered { background: rgba(0, 0, 0, 0.62); }
+.coach-spot {
+  position: fixed;
+  border-radius: 12px;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  transition:
+    left 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: coachPulse 2s ease-in-out infinite;
+}
+@keyframes coachPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 9999px rgba(0, 0, 0, 0.62),
+      0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 9999px rgba(0, 0, 0, 0.62),
+      0 0 0 8px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+}
+.coach-tip {
+  position: fixed;
+  width: min(320px, calc(100vw - 24px));
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.34);
+  padding: 16px 18px;
+  z-index: 20002;
+  pointer-events: auto;
+}
+.coach-eyebrow {
+  font-family: "Lora", Georgia, serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 0.58rem;
+  color: var(--accent);
+}
+.coach-title {
+  font-family: "Lora", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.12rem;
+  line-height: 1.2;
+  color: var(--dark-text);
+  margin: 5px 0 8px;
+}
+.coach-text { font-size: 0.86rem; color: var(--subtitle-color); line-height: 1.5; }
+.coach-text b { color: var(--dark-text); font-weight: 600; }
+.coach-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+}
+.coach-skip {
+  background: none;
+  border: none;
+  color: var(--subtitle-color);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 4px 2px;
+  font-family: inherit;
+}
+.coach-dots { display: flex; gap: 5px; }
+.coach-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--glass-border); }
+.coach-dot.on { background: var(--accent); }
+.coach-nav { display: flex; gap: 6px; align-items: center; }
+.coach-back {
+  background: none;
+  border: none;
+  color: var(--subtitle-color);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 6px 8px;
+  font-family: inherit;
+}
+.coach-next {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+}
+
 /* ===== Guided Tour — illustrated onboarding ===== */
 #onboardingModal .modal-content { max-width: 500px; }
 .tutorial-slide { text-align: center; }
