@@ -4,6 +4,15 @@
   "description": "Deep Knowledge Platform",
   "start_url": "./index.html",
   "display": "standalone",
+  "share_target": {
+    "action": "./index.html",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "background_color": "#FAF8F0",
   "theme_color": "#1A1A1A",
   "icons": [

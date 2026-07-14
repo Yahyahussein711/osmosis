@@ -3317,6 +3317,45 @@ body.multi-select-active .timeline-actions {
   color: var(--dark-text);
   line-height: 1.4;
 }
+/* ===== Import from a link ===== */
+.import-box {
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--glass-solid));
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.import-label {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.5px;
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.import-row { display: flex; gap: 8px; }
+#importUrl {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--glass-solid);
+  color: var(--dark-text);
+  font-size: 16px; /* stops iOS from zooming the page on focus */
+  font-family: inherit;
+  outline: none;
+}
+#importUrl:focus { border-color: var(--accent); }
+#importUrlBtn { flex-shrink: 0; white-space: nowrap; }
+.import-hint {
+  font-size: var(--fs-sm);
+  color: var(--subtitle-color);
+  line-height: 1.45;
+  margin-top: 8px;
+}
+.import-hint.import-err { color: #b3261e; }
+
 /* ===== Coachmarks — interactive spotlight tour ===== */
 .coach-overlay {
   position: fixed;
