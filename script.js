@@ -8872,37 +8872,145 @@ document.addEventListener("keydown", (e) => {
 let touchStartX = 0;
 let touchStartY = 0;
 
-document.addEventListener("touchstart", (e) => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-}, { passive: true });
+// ---- Interactive edge-swipe: the story slides away under your finger ----
+let _edge = null; // active edge-swipe state, or null
 
-document.addEventListener("touchend", (e) => {
-  const touchEndX = e.changedTouches[0].clientX;
-  const touchEndY = e.changedTouches[0].clientY;
+function _artView() {
+  return document.getElementById("articleView");
+}
+function _canEdgeSwipe() {
+  if (document.body.classList.contains("drawer-active")) return false;
+  const def = document.getElementById("defineOverlay");
+  if (def && def.style.display === "flex") return false;
+  const jd = document.getElementById("journeyCardDetailView");
+  if (jd && jd.style.display !== "none") return false;
+  const v = _artView();
+  return v && v.classList.contains("active");
+}
 
-  const isLeftSide = touchStartX < 60;
-  const isRightSwipe = touchEndX - touchStartX > 50;
-  const isNotVerticalScroll = Math.abs(touchEndY - touchStartY) < Math.abs(touchEndX - touchStartX);
-
-  if (isLeftSide && isRightSwipe && isNotVerticalScroll) {
-    // Try closing journey detail first
-    const detailView = document.getElementById("journeyCardDetailView");
-    if (detailView && detailView.style.display !== "none") {
-      closeJourneyDetail();
-      return;
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    _edge = null;
+    // Start only from the very left edge, so mid-content gestures/selection
+    // and vertical scrolling are never hijacked.
+    if (touchStartX <= 32 && _canEdgeSwipe()) {
+      _edge = {
+        startX: touchStartX,
+        startY: touchStartY,
+        dx: 0,
+        dy: 0,
+        decided: false,
+        dragging: false,
+      };
     }
+  },
+  { passive: true },
+);
 
-    // Try going back from article view
-    const articleView = document.getElementById("articleView");
-    if (articleView && articleView.classList.contains("active")) {
-      const backBtn = document.getElementById("backToPrevious");
-      if (backBtn) {
-        backBtn.click();
+document.addEventListener(
+  "touchmove",
+  (e) => {
+    if (!_edge) return;
+    _edge.dx = e.touches[0].clientX - _edge.startX;
+    _edge.dy = e.touches[0].clientY - _edge.startY;
+    if (!_edge.decided) {
+      if (Math.abs(_edge.dx) > 8 || Math.abs(_edge.dy) > 8) {
+        _edge.decided = true;
+        // Engage only for a clearly rightward, horizontal drag.
+        _edge.dragging =
+          _edge.dx > 0 && Math.abs(_edge.dx) > Math.abs(_edge.dy);
+        if (_edge.dragging) {
+          const v = _artView();
+          if (v) {
+            v.style.transition = "none";
+            v.style.willChange = "transform";
+            v.style.boxShadow = "-16px 0 46px rgba(0,0,0,0.28)";
+          }
+        } else {
+          _edge = null; // vertical scroll or leftward — let it be
+          return;
+        }
+      } else {
+        return;
       }
     }
+    if (_edge.dragging) {
+      if (e.cancelable) e.preventDefault();
+      const v = _artView();
+      const dx = Math.max(0, _edge.dx);
+      if (v) v.style.transform = `translateX(${dx}px)`;
+    }
+  },
+  { passive: false },
+);
+
+function _endEdgeSwipe() {
+  if (!_edge || !_edge.dragging) {
+    _edge = null;
+    return;
   }
-}, { passive: true });
+  const v = _artView();
+  const w = window.innerWidth || 400;
+  const dx = Math.max(0, _edge.dx);
+  _edge = null;
+  if (!v) return;
+  if (dx > w * 0.4) {
+    // Past the threshold: finish sliding it off, then go back.
+    v.style.transition = "transform 0.24s cubic-bezier(0.4,0,0.2,1)";
+    v.style.transform = `translateX(${w}px)`;
+    setTimeout(() => {
+      const backBtn = document.getElementById("backToPrevious");
+      if (backBtn) backBtn.click(); // hides the view (display:none)
+      v.style.transition = "";
+      v.style.transform = "";
+      v.style.boxShadow = "";
+      v.style.willChange = "";
+    }, 235);
+  } else {
+    // Not far enough: spring it smoothly back into place.
+    v.style.transition = "transform 0.32s cubic-bezier(0.2,0.9,0.3,1)";
+    v.style.transform = "";
+    setTimeout(() => {
+      v.style.transition = "";
+      v.style.boxShadow = "";
+      v.style.willChange = "";
+    }, 320);
+  }
+}
+
+document.addEventListener(
+  "touchend",
+  (e) => {
+    if (_edge && _edge.dragging) {
+      _endEdgeSwipe();
+      return;
+    }
+    _edge = null;
+
+    // Fallback (non-interactive): a quick right-swipe from the edge closes
+    // the journey detail overlay.
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const isLeftSide = touchStartX < 60;
+    const isRightSwipe = touchEndX - touchStartX > 50;
+    const isNotVerticalScroll =
+      Math.abs(touchEndY - touchStartY) < Math.abs(touchEndX - touchStartX);
+    if (isLeftSide && isRightSwipe && isNotVerticalScroll) {
+      const detailView = document.getElementById("journeyCardDetailView");
+      if (detailView && detailView.style.display !== "none") {
+        closeJourneyDetail();
+      }
+    }
+  },
+  { passive: true },
+);
+document.addEventListener("touchcancel", () => {
+  if (_edge && _edge.dragging) _endEdgeSwipe();
+  else _edge = null;
+});
 
 function renderPrincipleLibraryView() {
   const container = document.getElementById("principleDetail");
