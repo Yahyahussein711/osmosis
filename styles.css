@@ -3396,6 +3396,13 @@ body.multi-select-active .timeline-actions {
 .coach-dots { display: flex; gap: 5px; }
 .coach-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--glass-border); }
 .coach-dot.on { background: var(--accent); }
+.coach-count {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.68rem;
+  color: var(--subtitle-color);
+}
 .coach-nav { display: flex; gap: 6px; align-items: center; }
 .coach-back {
   background: none;

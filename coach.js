@@ -1,18 +1,14 @@
 /* ============================================================
-   Osmosis — Coachmarks: an interactive, game-style spotlight tour.
-   Dims the screen, cuts a hole over a real element, and shows a
-   small card explaining it. Tap anywhere (or Next) to advance.
-   ------------------------------------------------------------
-   • Home tour   → runs once on first load, over the nav bar.
-   • Reading tour → runs the first time you open a story, over the
-     real Focus / Notes / Back controls.
-   Replay both from Settings.
+   Osmosis — Coachmarks: an interactive, game-style spotlight tour
+   that walks through LITERALLY every page and tool.
+   Dims the screen, cuts a hole over a real element, explains it,
+   and can navigate between pages / open the workstation itself.
+   Tap the dim (or Next) to advance; Skip ends it and won't nag.
    ============================================================ */
 (function () {
   "use strict";
 
-  var DONE_HOME = "osmosis_coach_home_done";
-  var DONE_READ = "osmosis_coach_reading_done";
+  var DONE = "osmosis_coach_done";
 
   var overlay, spot, tip;
   var steps = [],
@@ -20,7 +16,8 @@
     active = false,
     onDone = null,
     curTarget = null,
-    curStep = null;
+    curStep = null,
+    token = 0;
 
   function esc(x) {
     return String(x == null ? "" : x).replace(/[&<>"]/g, function (c) {
@@ -30,6 +27,32 @@
   function q(sel) {
     if (!sel) return null;
     return typeof sel === "function" ? sel() : document.querySelector(sel);
+  }
+  function visible(el) {
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+  function waitFor(sel, timeout) {
+    return new Promise(function (res) {
+      if (!sel) {
+        res(null);
+        return;
+      }
+      var t0 = Date.now();
+      (function poll() {
+        var el = q(sel);
+        if (el && visible(el)) {
+          res(el);
+          return;
+        }
+        if (Date.now() - t0 > timeout) {
+          res(el && visible(el) ? el : null);
+          return;
+        }
+        setTimeout(poll, 70);
+      })();
+    });
   }
 
   function build() {
@@ -43,7 +66,6 @@
     overlay.appendChild(spot);
     overlay.appendChild(tip);
     document.body.appendChild(overlay);
-    // Tap the dimmed area to advance; taps on the card do their own thing.
     overlay.addEventListener("click", function (e) {
       if (e.target === overlay || e.target === spot) next();
     });
@@ -68,10 +90,20 @@
   function end() {
     if (!active) return;
     active = false;
+    token++;
     curTarget = null;
     curStep = null;
     if (overlay) overlay.style.display = "none";
     document.body.classList.remove("coach-on");
+    // Clean up anything the tour opened.
+    if (
+      document.body.classList.contains("drawer-active") &&
+      typeof window.closeNotesDrawer === "function"
+    ) {
+      try {
+        window.closeNotesDrawer();
+      } catch (e) {}
+    }
     var d = onDone;
     onDone = null;
     if (d) d();
@@ -97,31 +129,55 @@
       end();
       return;
     }
-    var t = s.target ? q(s.target) : null;
-    if (s.target && !t) {
-      // Element isn't here — skip rather than get stuck.
-      next();
-      return;
-    }
-    curTarget = t;
-    curStep = s;
-    if (t && t.scrollIntoView) {
-      try {
-        t.scrollIntoView({ block: "center", inline: "nearest" });
-      } catch (e) {}
-    }
-    renderTip(s);
-    requestAnimationFrame(function () {
-      requestAnimationFrame(position);
-    });
+    var my = ++token;
+    // While we transition, just dim (drop the stale spotlight/card).
+    overlay.classList.add("coach-centered");
+    spot.style.display = "none";
+    tip.style.visibility = "hidden";
+    Promise.resolve()
+      .then(function () {
+        return s.pre ? s.pre() : null;
+      })
+      .then(function () {
+        // small settle so a freshly-navigated view can lay out
+        return new Promise(function (r) {
+          setTimeout(r, s.pre ? 260 : 0);
+        });
+      })
+      .then(function () {
+        if (my !== token) return; // superseded (user advanced/skipped)
+        return waitFor(s.target, s.pre ? 2000 : 1200);
+      })
+      .then(function (t) {
+        if (my !== token) return;
+        if (s.target && !t) {
+          next();
+          return;
+        } // never appeared → skip
+        curTarget = t;
+        curStep = s;
+        if (t) {
+          try {
+            t.scrollIntoView({ block: "center", inline: "nearest" });
+          } catch (e) {}
+        }
+        renderTip(s);
+        tip.style.visibility = "visible";
+        requestAnimationFrame(function () {
+          requestAnimationFrame(position);
+        });
+      });
   }
 
-  function dotsHtml(total, i) {
-    var out = "";
+  function progressHtml(total, i) {
+    if (total > 8) {
+      return '<div class="coach-count">' + (i + 1) + " / " + total + "</div>";
+    }
+    var out = '<div class="coach-dots">';
     for (var k = 0; k < total; k++) {
       out += '<span class="coach-dot' + (k === i ? " on" : "") + '"></span>';
     }
-    return out;
+    return out + "</div>";
   }
 
   function renderTip(s) {
@@ -138,10 +194,8 @@
       (s.text || "") +
       "</div>" +
       '<div class="coach-foot">' +
-      '<button class="coach-skip" type="button">Skip</button>' +
-      '<div class="coach-dots">' +
-      dotsHtml(total, idx) +
-      "</div>" +
+      '<button class="coach-skip" type="button">Skip tour</button>' +
+      progressHtml(total, idx) +
       '<div class="coach-nav">' +
       (idx > 0 ? '<button class="coach-back" type="button">Back</button>' : "") +
       '<button class="coach-next" type="button">' +
@@ -167,7 +221,7 @@
 
   function position() {
     if (!active) return;
-    if (curTarget) {
+    if (curTarget && visible(curTarget)) {
       var r = curTarget.getBoundingClientRect();
       var pad = 8;
       overlay.classList.remove("coach-centered");
@@ -178,7 +232,6 @@
       spot.style.height = r.height + pad * 2 + "px";
       placeTip(r);
     } else {
-      // A step with no target: center the card over a plain dim.
       overlay.classList.add("coach-centered");
       spot.style.display = "none";
       tip.style.left = "50%";
@@ -192,152 +245,240 @@
     var vw = window.innerWidth,
       vh = window.innerHeight;
     var tw = tip.offsetWidth || 300;
-    var th = tip.offsetHeight || 160;
+    var th = tip.offsetHeight || 170;
     var top;
-    if (r.bottom + 14 + th < vh - 10) {
-      top = r.bottom + 14;
-    } else if (r.top - 14 - th > 10) {
-      top = r.top - 14 - th;
-    } else {
-      top = Math.max(10, vh - th - 10);
-    }
+    if (r.bottom + 14 + th < vh - 10) top = r.bottom + 14;
+    else if (r.top - 14 - th > 10) top = r.top - 14 - th;
+    else top = Math.max(10, vh - th - 10);
     var left = r.left + r.width / 2 - tw / 2;
     left = Math.max(12, Math.min(left, vw - tw - 12));
     tip.style.left = left + "px";
     tip.style.top = top + "px";
   }
 
-  // ---- Tours --------------------------------------------------------
-  var HOME = [
+  // ---- navigation helpers used by steps ----------------------------
+  function clickNav(id) {
+    return function () {
+      var b = document.getElementById(id);
+      if (b) b.click();
+    };
+  }
+  function goLibrary() {
+    if (typeof window.goToExploreView === "function") window.goToExploreView();
+    else clickNav("navHome")();
+  }
+  function clickLens(name) {
+    return function () {
+      var b = document.querySelector('.chron-lens[data-lens="' + name + '"]');
+      if (b) b.click();
+    };
+  }
+  function firstCard() {
+    var g = document.getElementById("articlesGrid");
+    if (!g) return null;
+    var kids = g.children;
+    for (var i = 0; i < kids.length; i++) {
+      if (kids[i].id && kids[i].id.indexOf("tip_") === 0) continue;
+      if (visible(kids[i])) return kids[i];
+    }
+    return null;
+  }
+  function openStory() {
+    var av = document.getElementById("articleView");
+    if (av && av.classList.contains("active")) return;
+    try {
+      var td = window.topicsData;
+      for (var d in td) {
+        var subs = td[d].subtopics;
+        for (var su in subs) {
+          var arts = subs[su].articles;
+          for (var a in arts) {
+            if (typeof window.navigateToArticle === "function") {
+              window.navigateToArticle(d, su, a);
+              return;
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+  function openWSReflection() {
+    if (typeof window.openNotesDrawer === "function") window.openNotesDrawer(0);
+  }
+  function switchWSNotes() {
+    var b = document.querySelector(
+      '#mainCarouselTabs .drawer-tab[data-step="1"]',
+    );
+    if (b) b.click();
+  }
+  function finishTour() {
+    if (typeof window.closeNotesDrawer === "function") {
+      try {
+        window.closeNotesDrawer();
+      } catch (e) {}
+    }
+    goLibrary();
+  }
+
+  // ---- the full tour ------------------------------------------------
+  var TOUR = [
     {
+      pre: goLibrary,
       target: "#navHome",
       eyebrow: "The Library",
       title: "Your shelf",
-      text: "Every story lives here. This is home base — tap a story to start reading.",
+      text: "Home base. Every story lives here — tap one to read it.",
     },
     {
-      target: "#navTimeline",
-      eyebrow: "The Chronicle",
-      title: "Everything you've marked",
-      text: "Your whole reading life — as a <b>journal</b>, <b>by story</b>, and as <b>patterns</b> about you.",
+      target: firstCard,
+      eyebrow: "The Library",
+      title: "Story cards",
+      text: "Each card shows its read time, your <b>progress</b>, and how many notes you've made. Finished ones dim so the unread stand out.",
     },
     {
-      target: "#navDashboard",
-      eyebrow: "The Study",
-      title: "Progress & review",
-      text: "Your stats, the <b>Daily Review</b>, the <b>Parlour Game</b>, your honours, and the Common Thread.",
-    },
-    {
+      pre: clickNav("navGenerator"),
       target: "#navGenerator",
       eyebrow: "Create",
       title: "Write your own",
-      text: "Add your own stories to read and mark up, right alongside the rest.",
+      text: "Add your own stories — a title, a hook, and content. They sit right alongside the rest, fully markable.",
     },
     {
-      target: "#navMenuBtn",
+      pre: clickNav("navTimeline"),
+      target: "#navTimeline",
+      eyebrow: "The Chronicle",
+      title: "Your reading life",
+      text: "Everything you've ever marked — seen through three lenses.",
+    },
+    {
+      pre: clickLens("journal"),
+      target: '.chron-lens[data-lens="journal"]',
+      eyebrow: "Chronicle · Journal",
+      title: "The timeline",
+      text: "A dated stream of every highlight, note, reflection and bookmark. Search it, favourite entries, and scrub through time.",
+    },
+    {
+      pre: clickLens("stories"),
+      target: '.chron-lens[data-lens="stories"]',
+      eyebrow: "Chronicle · By Story",
+      title: "Story dossiers",
+      text: "Everything you did in each story, gathered into an expandable dossier grouped by type — with a tap back to any mark.",
+    },
+    {
+      pre: clickLens("patterns"),
+      target: '.chron-lens[data-lens="patterns"]',
+      eyebrow: "Chronicle · Patterns",
+      title: "Your reading character",
+      text: "A portrait of you as a reader — an <b>archetype</b>, plus charts for your week, your hours, your cadence, authors and more.",
+    },
+    {
+      pre: clickNav("navDashboard"),
+      target: ".study-review",
+      eyebrow: "The Study · Daily Review",
+      title: "Spaced repetition",
+      text: "Your reflections resurface on a widening schedule so they never fade. Recall, reveal what you wrote, then rate how it lands.",
+    },
+    {
+      target: "#parlourCard",
+      eyebrow: "The Study · For Fun",
+      title: "The Parlour Game",
+      text: "A quiz built from what you've <b>actually read</b> — passages, authors, your own margins. Build a streak, use 50/50.",
+    },
+    {
+      target: "#honoursCard",
+      eyebrow: "The Study · Rewards",
+      title: "Honours & ranks",
+      text: "Earn stamped seals for milestones, each worth points that carry a rank. Tap to open the whole cabinet.",
+    },
+    {
+      target: "#marginsCard",
+      eyebrow: "The Study · Serendipity",
+      title: "The Common Thread",
+      text: "Two passages you marked in <b>different stories</b> that share an idea — the invisible threads through your reading.",
+    },
+    {
+      pre: clickNav("navMenuBtn"),
+      target: ".settings-masthead",
       eyebrow: "Settings",
       title: "Make it yours",
-      text: "Themes, reading size, <b>account sync</b>, backup — and you can replay this tour here anytime.",
+      text: "Switch themes, tune reading size and voice, and export or import your whole library as a backup.",
     },
     {
-      target: null,
-      eyebrow: "You're set",
-      title: "Open a story",
-      text: "Tap any story in the Library and I'll point out the reading tools as you go.",
+      target: "#accountGroup",
+      eyebrow: "Settings · Account",
+      title: "Sign in & sync",
+      text: "Sign in with Google to save everything to your account and <b>sync across devices</b>. Or stay fully local — your call.",
     },
-  ];
-
-  var READ = [
     {
+      pre: openStory,
       target: "#articleContent",
       eyebrow: "Read & Capture",
       title: "Select text to mark it",
-      text: "Select any passage to <b>highlight</b> it, attach a <b>note</b>, drop a <b>bookmark</b>, or <b>define</b> a word.",
+      text: "While reading, select any passage to <b>highlight</b> it, add a <b>note</b>, drop a <b>bookmark</b>, or <b>define</b> a word.",
     },
     {
       target: "#startDeepWorkBtn",
-      eyebrow: "Focus",
+      eyebrow: "Reading · Focus",
       title: "Deep Work",
-      text: "Start a distraction-free session — the page clears, a timer runs, and your desk time is logged.",
+      text: "Start a distraction-free session — the page clears, a timer runs, and your time at the desk is logged.",
     },
     {
       target: "#topNotesBtn",
-      eyebrow: "The Workstation",
-      title: "Notes & reflections",
-      text: "Open your writing desk to manage notes and write <b>guided reflections</b>. Swipe it down to close.",
+      eyebrow: "Reading · Workstation",
+      title: "Your writing desk",
+      text: "This opens the workstation — where you manage notes and write reflections. Let's open it.",
     },
     {
-      target: "#backToPrevious",
-      eyebrow: "Done reading?",
-      title: "Head back",
-      text: "Tap Back — or <b>swipe right</b> from the left edge — to slide the story away and return to the Library.",
+      pre: openWSReflection,
+      target: "#reflectLeft",
+      eyebrow: "The Workstation",
+      title: "Reflections",
+      text: "Write your own synthesis of a story in your own words. It's saved and later resurfaced in Daily Review.",
+    },
+    {
+      target: "#socraticBtn",
+      eyebrow: "The Workstation · Dialogue",
+      title: "✦ Guide me",
+      text: "Facing a blank page? Pick a lens, answer guided questions with tap-in starters, then <b>press further</b> to go deeper.",
+    },
+    {
+      pre: switchWSNotes,
+      target: "#noteGuideBtn",
+      eyebrow: "The Workstation · Notes",
+      title: "Guided notes too",
+      text: "Notes can be guided the same way — anchored to the exact passage you selected. Swipe the sheet down to close it.",
+    },
+    {
+      pre: finishTour,
+      target: null,
+      eyebrow: "Gestures · That's everything",
+      title: "You know it all now",
+      text: "Pull any sheet <b>down</b> to close it, and swipe a story <b>right</b> from the left edge to exit. Now — pick a story and begin.",
     },
   ];
 
-  function startHomeTour() {
-    start(HOME, function () {
+  function startTour() {
+    start(TOUR, function () {
       try {
-        localStorage.setItem(DONE_HOME, "1");
+        localStorage.setItem(DONE, "1");
       } catch (e) {}
     });
   }
-  var readingArmed = false;
-  function maybeReadingTour() {
-    if (active) return;
-    var done = false;
-    try {
-      done = localStorage.getItem(DONE_READ) === "1";
-    } catch (e) {}
-    if (done || readingArmed) return;
-    readingArmed = true;
-    setTimeout(function () {
-      var av = document.getElementById("articleView");
-      if (!av || !av.classList.contains("active")) {
-        readingArmed = false;
-        return;
-      }
-      start(READ, function () {
-        try {
-          localStorage.setItem(DONE_READ, "1");
-        } catch (e) {}
-      });
-    }, 650);
-  }
 
-  // Replay entry point (from Settings): reset and run from the top.
   window.osmosisStartTour = function () {
     try {
-      localStorage.removeItem(DONE_HOME);
-      localStorage.removeItem(DONE_READ);
+      localStorage.removeItem(DONE);
     } catch (e) {}
-    readingArmed = false;
     if (active) end();
-    startHomeTour();
+    setTimeout(startTour, 60);
   };
 
-  // ---- boot & triggers ---------------------------------------------
   function boot() {
-    // Watch for the reading view becoming active → fire the reading tour once.
-    var av = document.getElementById("articleView");
-    if (av && window.MutationObserver) {
-      new MutationObserver(function () {
-        if (av.classList.contains("active")) maybeReadingTour();
-      }).observe(av, { attributes: true, attributeFilter: ["class"] });
-      if (av.classList.contains("active")) maybeReadingTour();
-    }
-
-    // First-run home tour (only when we're actually on the Library, not
-    // resumed straight into a story).
-    var homeDone = true;
+    var done = true;
     try {
-      homeDone = localStorage.getItem(DONE_HOME) === "1";
+      done = localStorage.getItem(DONE) === "1";
     } catch (e) {}
-    if (!homeDone) {
-      setTimeout(function () {
-        var art = document.getElementById("articleView");
-        if (art && art.classList.contains("active")) return; // reading tour will run
-        startHomeTour();
-      }, 800);
+    if (!done) {
+      setTimeout(startTour, 900);
     }
   }
 
