@@ -4,9 +4,12 @@
    the Create form so it becomes a fully markable story. Also
    handles ?url=/?text= (PWA share target / iOS Shortcut).
    ------------------------------------------------------------
-   A static site can't fetch arbitrary pages (CORS), so we use
-   Jina Reader (r.jina.ai) — a CORS-friendly readability service.
-   If it fails, the user pastes the text into the body (always works).
+   Coverage: tries Jina Reader (clean markdown, CORS-friendly);
+   if that can't read the site, falls back to fetching the raw
+   HTML through a CORS proxy and extracting the main article
+   heuristically. Both paths run through a "tidy" cleaner that
+   strips images, unwraps links, and drops nav/boilerplate.
+   If everything fails, the user pastes the text (always works).
    ============================================================ */
 (function () {
   "use strict";
@@ -37,13 +40,87 @@
     u = (u || "").trim();
     if (!u) return "";
     if (!/^https?:\/\//i.test(u)) {
-      // bare domain like "example.com/foo" → assume https
       if (!/\s/.test(u) && /\.[a-z]{2,}/i.test(u)) u = "https://" + u;
     }
     return u;
   }
 
-  // Parse Jina Reader's response: a header block then "Markdown Content:".
+  function fetchText(url, opts) {
+    opts = opts || {};
+    var ctrl =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+    var timer = ctrl
+      ? setTimeout(function () {
+          ctrl.abort();
+        }, opts.timeout || 20000)
+      : null;
+    return fetch(url, {
+      headers: opts.headers || {},
+      signal: ctrl ? ctrl.signal : undefined,
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.text();
+      })
+      .finally(function () {
+        if (timer) clearTimeout(timer);
+      });
+  }
+
+  // ---- cleaning ----------------------------------------------------
+  var JUNK =
+    /(subscribe|sign\s?up|newsletter|advertisement|sponsored|cookie|accept all|related\s+(stories|articles|posts|reading)|read more|share (this|on)|follow us|most popular|trending now|©|all rights reserved|terms of (service|use)|privacy policy|back to top|skip to (content|main)|^menu$|log\s?in|sign\s?in|create an account|comments? \(\d|view comments|leave a (comment|reply)|watch:|listen:|image:|photograph:|getty images|reuters|associated press)/i;
+
+  function tidy(md) {
+    if (!md) return "";
+    var t = md.replace(/\r\n?/g, "\n");
+    // markdown images → gone
+    t = t.replace(/!\[[^\]]*\]\([^)]*\)/g, "");
+    // reference definitions:  [1]: http://…
+    t = t.replace(/^\s*\[[^\]]+\]:\s*\S+.*$/gm, "");
+    // inline links [text](url) → text
+    t = t.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
+    // bare autolinks <http…>
+    t = t.replace(/<https?:\/\/[^>\s]+>/g, "");
+    // lines that are only a URL
+    t = t.replace(/^\s*https?:\/\/\S+\s*$/gm, "");
+    // stray markdown image/link leftovers like empty [] ()
+    t = t.replace(/\[\s*\]\(\s*\)/g, "");
+    // drop short boilerplate / navigation lines
+    t = t
+      .split("\n")
+      .filter(function (line) {
+        var s = line.trim();
+        if (!s) return true;
+        if (s.length < 80 && JUNK.test(s)) return false;
+        // lines that are mostly symbols / separators of navigation dots
+        if (/^[\s•·|>—–-]{0,4}$/.test(s)) return true; // keep simple rules
+        return true;
+      })
+      .join("\n");
+    // collapse runs of blank lines
+    t = t.replace(/\n{3,}/g, "\n\n");
+    return t.trim();
+  }
+
+  function makeHook(content) {
+    var paras = (content || "").split(/\n{2,}/);
+    for (var i = 0; i < paras.length; i++) {
+      var s = paras[i].trim();
+      if (!s) continue;
+      if (s[0] === "#" || s[0] === "!" || s[0] === "[" || s[0] === ">")
+        continue;
+      s = s
+        .replace(/[#*_`>\[\]]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (s.length < 15) continue;
+      return s.length > 160 ? s.slice(0, 157) + "…" : s;
+    }
+    return "";
+  }
+
+  // ---- source 1: Jina Reader (clean markdown) ----------------------
   function parseReader(text, url) {
     var title = "";
     var tm = text.match(/^Title:\s*(.+)$/m);
@@ -51,32 +128,100 @@
     var body = text;
     var marker = "Markdown Content:";
     var i = text.indexOf(marker);
-    if (i >= 0) body = text.slice(i + marker.length).trim();
-    // drop a leading duplicate H1 that just repeats the title
-    body = body.replace(/^#\s+.*\n+/, function (m) {
-      return title && m.toLowerCase().indexOf(title.toLowerCase()) >= 0 ? "" : m;
+    if (i >= 0) body = text.slice(i + marker.length);
+    body = tidy(body);
+    // drop a leading H1 that just repeats the title
+    body = body.replace(/^#\s+(.*)\n+/, function (m, h1) {
+      return title && h1.trim().toLowerCase() === title.toLowerCase() ? "" : m;
     });
-    // hook = first real paragraph
-    var hook = "";
-    var paras = body.split(/\n{2,}/);
-    for (var p = 0; p < paras.length; p++) {
-      var s = paras[p].trim();
-      if (!s) continue;
-      if (s[0] === "#" || s[0] === "!" || s[0] === "[" || s[0] === ">") continue;
-      hook = s.replace(/[#*_`>\[\]]/g, "").replace(/\s+/g, " ").trim();
-      break;
-    }
-    if (hook.length > 160) hook = hook.slice(0, 157) + "…";
-    if (!title) {
-      try {
-        title = new URL(url).hostname.replace(/^www\./, "");
-      } catch (e) {
-        title = "Imported article";
-      }
-    }
-    return { title: title, hook: hook, content: body, url: url };
+    if (!title) title = titleFromUrl(url);
+    return { title: title, hook: makeHook(body), content: body, url: url };
   }
 
+  function importViaReader(url) {
+    return fetchText("https://r.jina.ai/" + url, {
+      headers: { Accept: "text/plain", "X-Return-Format": "markdown" },
+      timeout: 22000,
+    }).then(function (text) {
+      return parseReader(text || "", url);
+    });
+  }
+
+  // ---- source 2: raw HTML via proxy + heuristic extraction ---------
+  function titleFromUrl(url) {
+    try {
+      return new URL(url).hostname.replace(/^www\./, "");
+    } catch (e) {
+      return "Imported article";
+    }
+  }
+  function extractFromHtml(html, url) {
+    var doc = new DOMParser().parseFromString(html, "text/html");
+    doc
+      .querySelectorAll(
+        "script,style,noscript,nav,header,footer,aside,form,iframe,svg,button,figure,figcaption,[role=navigation],[role=banner],[role=complementary],[aria-hidden=true],.ad,.ads,.advert,.share,.social,.newsletter,.related,.comments,.comment,.nav,.menu,.sidebar,.promo,.subscribe",
+      )
+      .forEach(function (n) {
+        try {
+          n.remove();
+        } catch (e) {}
+      });
+    var title =
+      (doc.querySelector("meta[property='og:title']") || {}).content ||
+      (doc.querySelector("title") || {}).textContent ||
+      "";
+    function score(el) {
+      var len = 0;
+      el.querySelectorAll("p").forEach(function (p) {
+        len += (p.textContent || "").trim().length;
+      });
+      return len;
+    }
+    var cands = doc.querySelectorAll(
+      "article, main, [role=main], .post, .article, .entry-content, .post-content, .article-content, .article-body, #content, .content, .story-body",
+    );
+    var best = null,
+      bestScore = 0;
+    (cands.length ? cands : [doc.body]).forEach(function (el) {
+      var s = score(el);
+      if (s > bestScore) {
+        bestScore = s;
+        best = el;
+      }
+    });
+    if (!best || (bestScore < 400 && score(doc.body) > bestScore))
+      best = doc.body;
+    return { title: (title || "").trim(), node: best };
+  }
+  function nodeToText(root) {
+    if (!root) return "";
+    var out = [];
+    root
+      .querySelectorAll("h1,h2,h3,h4,p,li,blockquote,pre")
+      .forEach(function (el) {
+        var t = (el.textContent || "").replace(/\s+/g, " ").trim();
+        if (!t) return;
+        var tag = el.tagName.toLowerCase();
+        if (tag[0] === "h") out.push("## " + t);
+        else if (tag === "li") out.push("- " + t);
+        else if (tag === "blockquote") out.push("> " + t);
+        else out.push(t);
+      });
+    return out.join("\n\n");
+  }
+  function importViaProxy(url) {
+    return fetchText(
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(url),
+      { timeout: 22000 },
+    ).then(function (html) {
+      var ex = extractFromHtml(html || "", url);
+      var content = tidy(nodeToText(ex.node));
+      var title = ex.title || titleFromUrl(url);
+      return { title: title, hook: makeHook(content), content: content, url: url };
+    });
+  }
+
+  // ---- fill the Create form ----------------------------------------
   function fillForm(a) {
     var setVal = function (id, v) {
       var el = $(id);
@@ -85,7 +230,6 @@
     setVal("genTitle", (a.title || "").slice(0, 200));
     setVal("genHook", a.hook || "");
     var content = a.content || "";
-    // keep the source at the foot so you always know where it came from
     if (a.url) content += "\n\n— Source: " + a.url;
     if (content.length > 50000) content = content.slice(0, 49980) + "\n\n…";
     setVal("genContent", content);
@@ -108,25 +252,39 @@
     }
     setBusy(true);
     setHint("Fetching & cleaning the article…");
-    // Jina Reader returns clean markdown of the page, CORS-enabled.
-    fetch("https://r.jina.ai/" + url, {
-      headers: { Accept: "text/plain", "X-Return-Format": "markdown" },
-    })
-      .then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.text();
+    var len = function (a) {
+      return a && a.content ? a.content.length : 0;
+    };
+    importViaReader(url)
+      .catch(function () {
+        return null;
       })
-      .then(function (text) {
-        if (!text || text.trim().length < 40) throw new Error("empty");
-        var article = parseReader(text, url);
-        fillForm(article);
-        setHint("Imported — review the fields below, then Save Story.");
+      .then(function (a) {
+        // Good enough already? Use it. Otherwise try the other source and
+        // keep whichever pulled more real text.
+        if (len(a) >= 400) return a;
+        setHint("Reading the page more thoroughly…");
+        return importViaProxy(url)
+          .then(function (b) {
+            if (!a) return b;
+            return len(b) > len(a) ? b : a;
+          })
+          .catch(function () {
+            return a;
+          });
+      })
+      .then(function (best) {
+        if (len(best) < 40) throw new Error("empty");
+        fillForm(best);
+        setHint(
+          "Imported — review the fields below, then Save Story. Still messy? Tap “Tidy the text”.",
+        );
         toast("Article imported ✓");
       })
       .catch(function (e) {
         console.warn("import failed", e);
         setHint(
-          "Couldn't fetch that link (it may block readers, or you're offline). Open the page, copy the text, and paste it into the body below.",
+          "Couldn't read that link (it may block readers, need a login, or be JavaScript-only). Open the page, copy the article text, paste it into the body below, then tap “Tidy the text”.",
           true,
         );
       })
@@ -136,6 +294,29 @@
   }
   window.osmosisImportUrl = importUrl;
 
+  // Clean whatever is currently in the body (imported OR pasted by hand).
+  function tidyBody() {
+    var c = $("genContent");
+    if (!c) return;
+    var val = c.value || "";
+    if (!val.trim()) {
+      setHint("Nothing to tidy yet — import a link or paste some text first.");
+      return;
+    }
+    // preserve a trailing source line
+    var src = "";
+    var m = val.match(/\n+—\s*Source:\s*\S+\s*$/);
+    if (m) {
+      src = m[0];
+      val = val.slice(0, m.index);
+    }
+    c.value = tidy(val) + src;
+    c.dispatchEvent(new Event("input", { bubbles: true }));
+    setHint("Tidied ✓ — review and Save Story.");
+    toast("Text tidied ✓");
+  }
+  window.osmosisTidyBody = tidyBody;
+
   // ---- shared link (?url= / ?text=) → import automatically ----------
   function handleShared() {
     var url = "";
@@ -144,12 +325,11 @@
       url = p.get("url") || "";
       var txt = p.get("text") || "";
       if (!url && txt) {
-        var m = txt.match(/https?:\/\/\S+/);
-        if (m) url = m[0];
+        var mm = txt.match(/https?:\/\/\S+/);
+        if (mm) url = mm[0];
       }
     } catch (e) {}
     if (!url) return;
-    // Clear the query so a refresh doesn't re-import.
     try {
       history.replaceState(null, "", location.pathname);
     } catch (e) {}
@@ -176,6 +356,8 @@
           importUrl(box.value);
         }
       });
+    var tb = $("tidyBtn");
+    if (tb) tb.addEventListener("click", tidyBody);
     handleShared();
   }
 

@@ -3355,6 +3355,20 @@ body.multi-select-active .timeline-actions {
   margin-top: 8px;
 }
 .import-hint.import-err { color: #b3261e; }
+.import-tidy {
+  margin-top: 10px;
+  background: none;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.72rem;
+  color: var(--accent);
+  cursor: pointer;
+}
+.import-tidy:active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 
 /* ===== Coachmarks — interactive spotlight tour ===== */
 .coach-overlay {
