@@ -3317,6 +3317,133 @@ body.multi-select-active .timeline-actions {
   color: var(--dark-text);
   line-height: 1.4;
 }
+/* ===== The Return — a story resurfacing after months ===== */
+.rt-lede {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.02rem;
+  color: var(--dark-text);
+  line-height: 1.35;
+  margin-top: 4px;
+}
+.rt-lede em { color: var(--accent); font-style: italic; }
+.rt-sub {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1.2px;
+  font-size: 0.68rem;
+  color: var(--subtitle-color);
+  margin: 10px 0 6px;
+}
+.rt-quote {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  font-family: "Lora", Georgia, serif;
+  font-style: italic;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--dark-text);
+}
+.rt-prompt {
+  font-family: "Lora", Georgia, serif;
+  font-size: 0.86rem;
+  color: var(--subtitle-color);
+  margin-top: 12px;
+}
+.rt-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+.rt-open { border: none; cursor: pointer; }
+
+/* ===== Shared floating controls (auto-scroll play, chronicle jumps) =====
+   Same language as the define / selection pops: paper, hairline, rust. */
+.float-dock {
+  position: fixed;
+  right: 14px;
+  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+.float-btn {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-solid);
+  color: var(--accent);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.float-btn:active {
+  background: color-mix(in srgb, var(--accent) 12%, var(--glass-solid));
+  transform: scale(0.94);
+}
+.float-btn.on {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+/* the speed pill only appears while auto-scroll is running */
+.as-speedpop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
+}
+.as-speed { width: 104px; accent-color: var(--accent); }
+.as-rate {
+  min-width: 1.1em;
+  text-align: center;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  font-size: 0.76rem;
+  color: var(--accent);
+}
+
+/* ===== Create: remembered authors & genres ===== */
+.mem-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mem-chip {
+  border: 1px solid var(--glass-border);
+  background: none;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 0.8px;
+  font-size: 0.68rem;
+  color: var(--subtitle-color);
+  cursor: pointer;
+  box-shadow: none;
+}
+.mem-chip:active { border-color: var(--accent); color: var(--accent); }
+
+/* ===== Note timestamps ===== */
+.annotation-stamp {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 1px;
+  font-size: 0.62rem;
+  color: var(--subtitle-color);
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
 /* ===== Import from a link ===== */
 .import-box {
   border: 1px solid var(--glass-border);
@@ -4952,7 +5079,8 @@ html[data-skin="editorial"] {
 }
 
 [data-skin="editorial"] #articleView .article-content {
-  font-family: "Lora", Georgia, "Times New Roman", serif;
+  /* Honour the reader's font choice; Lora is only the default. */
+  font-family: var(--article-font-family, "Lora", Georgia, "Times New Roman", serif);
 }
 [data-skin="editorial"] #articleView .article-content p {
   text-align: justify;
@@ -4962,7 +5090,7 @@ html[data-skin="editorial"] {
 /* Drop cap on the opening paragraph. */
 [data-skin="editorial"] #articleView .article-content > p:first-of-type::first-letter {
   float: left;
-  font-family: "Lora", Georgia, serif;
+  font-family: var(--article-font-family, "Lora", Georgia, serif);
   font-weight: 600;
   font-size: 3.4em;
   line-height: 0.78;

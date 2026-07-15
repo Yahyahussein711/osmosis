@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260715f" />
+    <link rel="stylesheet" href="styles.css?v=20260715g" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -445,6 +445,24 @@
           </div>
         </div>
 
+        <!-- Auto-scroll: a small floating play button; speed appears while running -->
+        <div id="autoScrollDock" class="float-dock" style="display: none">
+          <div id="asSpeedPop" class="as-speedpop" style="display: none">
+            <input
+              type="range"
+              id="asSpeed"
+              class="as-speed"
+              min="1"
+              max="10"
+              step="1"
+              value="3"
+              aria-label="Auto-scroll speed"
+            />
+            <span class="as-rate" id="asRate">3</span>
+          </div>
+          <button id="asToggle" class="float-btn" type="button" aria-label="Auto-scroll">▶</button>
+        </div>
+
         <div
           id="deepWorkHeader"
           style="
@@ -690,6 +708,12 @@
         </div>
 
         <div id="journeyTimeline" class="chron-body"></div>
+
+        <!-- Jump to the very top / very bottom of a long chronicle -->
+        <div id="chronJump" class="float-dock" style="display: none">
+          <button id="chronUp" class="float-btn" type="button" aria-label="Jump to top">↑</button>
+          <button id="chronDown" class="float-btn" type="button" aria-label="Jump to bottom">↓</button>
+        </div>
       </div>
 
       <div id="generatorView" class="view">
@@ -769,17 +793,23 @@
                 <input
                   type="text"
                   id="genAuthor"
+                  list="genAuthorMemory"
+                  autocomplete="off"
                   placeholder="e.g. Marcus Aurelius"
                 />
+                <datalist id="genAuthorMemory"></datalist>
+                <div class="mem-chips" id="genAuthorChips"></div>
               </div>
               <div class="side-field">
                 <span class="side-field-name">Genres</span>
                 <input
                   type="text"
                   id="genGenres"
+                  autocomplete="off"
                   placeholder="Philosophy, Essay, Stoicism"
                 />
                 <span class="side-field-hint">Separate with commas</span>
+                <div class="mem-chips" id="genGenreChips"></div>
               </div>
               <div class="side-field">
                 <span class="side-field-name">Cover Photo</span>
@@ -898,6 +928,18 @@
 
             <div class="settings-group">
               <div class="settings-group-label">Reading</div>
+              <div class="setting-row">
+                <div class="setting-info">
+                  <div class="setting-name">Keep Screen Awake</div>
+                  <div class="setting-desc">
+                    Stops your phone sleeping while you're reading a story
+                  </div>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="keepAwakeToggle" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
               <div class="reading-preview-box">
                 <h3
                   style="
@@ -1755,6 +1797,9 @@
               <textarea
                 id="reflectionInput"
                 class="reflection-input ws-paper-input"
+                spellcheck="true"
+                autocorrect="on"
+                autocapitalize="sentences"
                 placeholder="Synthesize this story in your own words…"
               ></textarea>
               <div class="ws-toolbar">
@@ -1802,6 +1847,9 @@
                 id="annotationInput"
                 class="reflection-input ws-paper-input"
                 style="min-height: 90px"
+                spellcheck="true"
+                autocorrect="on"
+                autocapitalize="sentences"
                 placeholder="Add a note…"
               ></textarea>
               <div class="ws-toolbar">
@@ -2195,8 +2243,8 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260715f"></script>
-    <script src="script.js?v=20260715f"></script>
+    <script src="stories.js?v=20260715g"></script>
+    <script src="script.js?v=20260715g"></script>
 
     <!-- ============================================================
          Cloud sync (optional). Paste your Firebase web-app config
@@ -2213,8 +2261,9 @@
         appId: "1:202207005294:web:c9b8fc8cd1e7d674d8347f",
       };
     </script>
-    <script src="firebase-sync.js?v=20260715f"></script>
-    <script src="coach.js?v=20260715f"></script>
-    <script src="import.js?v=20260715f"></script>
+    <script src="firebase-sync.js?v=20260715g"></script>
+    <script src="coach.js?v=20260715g"></script>
+    <script src="import.js?v=20260715g"></script>
+    <script src="reading.js?v=20260715g"></script>
   </body>
 </html>

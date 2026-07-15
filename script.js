@@ -148,6 +148,8 @@ function renderDashboardCards() {
       <div class="study-activity"><div id="habitHeatmap" class="heatmap-grid"></div></div>
     </section>
 
+    <div class="study-feature rt-card" id="returnCard"></div>
+
     <div class="study-feature mg-card" id="marginsCard"></div>
 
     <div class="study-actions">
@@ -157,10 +159,97 @@ function renderDashboardCards() {
   `;
 
   renderHeatmap();
+  renderReturnCard();
   renderMarginsCard();
   renderParlourCard();
   renderHonoursCard();
 }
+
+// ---- The Return: a story you finished months ago, come back around ----
+const _RETURN_AFTER_DAYS = 90; // a story has to have rested this long
+function _returnCandidates() {
+  const now = Date.now();
+  const out = [];
+  const seen = {};
+  (userLearningJourney.timeline || []).forEach((t) => {
+    if (!isType(t.type, "Read") || !t.article) return;
+    const when = new Date(t.date).getTime();
+    if (!when || now - when < _RETURN_AFTER_DAYS * 86400000) return;
+    const key = (t.domain || "") + "|" + t.article;
+    // keep the most recent reading of each story
+    if (seen[key] && seen[key].when >= when) return;
+    seen[key] = { when };
+    const entry = { domain: t.domain, article: t.article, when };
+    const at = out.findIndex((x) => (x.domain || "") + "|" + x.article === key);
+    if (at >= 0) out[at] = entry;
+    else out.push(entry);
+  });
+  // What did you write then? Prefer a reflection, else a note/highlight.
+  out.forEach((s) => {
+    const marks = (userLearningJourney.timeline || []).filter(
+      (t) =>
+        t.article === s.article &&
+        t.domain === s.domain &&
+        (isType(t.type, "Reflection") ||
+          isType(t.type, "Note") ||
+          isType(t.type, "Highlight")) &&
+        t.text,
+    );
+    const pick =
+      marks.find((m) => isType(m.type, "Reflection")) ||
+      marks.find((m) => isType(m.type, "Note")) ||
+      marks[0];
+    s.wrote = pick ? _chronParse(pick) : null;
+    s.wroteType = pick ? pick.type : "";
+  });
+  return out.filter((s) => s.wrote).sort((a, b) => a.when - b.when);
+}
+let _returnIdx = null;
+function renderReturnCard(step) {
+  const el = document.getElementById("returnCard");
+  if (!el) return;
+  const list = _returnCandidates();
+  if (!list.length) {
+    el.style.display = "none";
+    return;
+  }
+  el.style.display = "";
+  if (_returnIdx === null)
+    _returnIdx = Math.floor(Date.now() / 86400000) % list.length;
+  if (step) _returnIdx = (_returnIdx + 1) % list.length;
+  const s = list[_returnIdx % list.length];
+
+  const d = new Date(s.when);
+  const monthName = d.toLocaleDateString(undefined, { month: "long" });
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  const whenTxt = sameYear ? monthName : monthName + " " + d.getFullYear();
+  const words = s.wrote.note || s.wrote.quote || "";
+  const label =
+    s.wroteType === "Reflection"
+      ? "what you wrote then"
+      : s.wroteType === "Note"
+        ? "your note from then"
+        : "what you marked then";
+
+  el.innerHTML = `
+    <div class="study-feature-label">The Return</div>
+    <div class="rt-lede">You read <em>${_chronEsc(s.article)}</em> in ${_chronEsc(whenTxt)}.</div>
+    <div class="rt-sub">Here's ${label}:</div>
+    <blockquote class="rt-quote">“${_chronEsc(_chronTrim(words, 190))}”</blockquote>
+    <div class="rt-prompt">Read it again — then write what you see now.</div>
+    <div class="rt-actions">
+      <button class="tm-btn primary2 rt-open" type="button">Read it again →</button>
+      <button class="text-btn" type="button" onclick="event.stopPropagation(); renderReturnCard(true)">Another ↻</button>
+    </div>`;
+  const open = el.querySelector(".rt-open");
+  if (open)
+    open.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (typeof jumpToArticleByDomainAndName === "function")
+        jumpToArticleByDomainAndName(s.domain || "", s.article || "", null);
+    });
+}
+window.renderReturnCard = renderReturnCard;
 // ---- From your margins: your own words, resurfaced ----
 function _marginItems() {
   return (userLearningJourney.timeline || []).filter(
@@ -5007,6 +5096,11 @@ function updateActiveNav(buttonId) {
 
 function switchView(viewName, skipScroll = false) {
   document.body.classList.remove("drawer-active");
+  // Overlays (the writing drawer, dashboard detail, the photo lightbox) lock
+  // scrolling while open. Switching views means none of them are showing, so
+  // always release the lock — otherwise it leaks and the page can't scroll.
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
   document
     .querySelectorAll(".top-app-bar, main.container, .bottom-nav")
     .forEach((el) => {
@@ -6625,6 +6719,7 @@ function saveNewAnnotation(noteText) {
     const index = annotations.findIndex((a) => a.id === editingAnnotationId);
     if (index > -1) {
       annotations[index].note = noteText || "Highlighted";
+      annotations[index].editedAt = new Date().toISOString();
       saveAnnotations(annotations);
 
       // Keep the timeline in sync: a highlight that gains note text becomes a
@@ -6670,7 +6765,13 @@ function saveNewAnnotation(noteText) {
   const annotations = getAnnotations();
   const selection = window.getSelection();
 
-  // TOGGLE OFF: Check if the user's selection overlaps with an existing highlight
+  // Is this a real note, or a bare highlight / bookmark tap?
+  const noteBody = (noteText || "").trim();
+  const isBookmarkSave = noteBody === "Bookmarked";
+  const hasNote = !!noteBody && noteBody !== "Highlighted" && !isBookmarkSave;
+
+  // Find an existing annotation for this selection — either the mark the
+  // caret sits in, or an exact text match.
   let targetMark = null;
   if (selection.rangeCount > 0) {
     let node = selection.anchorNode;
@@ -6678,56 +6779,64 @@ function saveNewAnnotation(noteText) {
     if (node && node.closest)
       targetMark = node.closest("mark.highlighted-text, span.inline-bookmark");
   }
-
+  let existingIndex = -1;
   if (targetMark) {
     const markText = targetMark.textContent.trim().toLowerCase();
-    const existingIndex = annotations.findIndex(
+    existingIndex = annotations.findIndex(
       (a) => a.text.trim().toLowerCase() === markText,
     );
-    if (existingIndex !== -1) {
-      const isBookmark =
-        annotations[existingIndex].note === "Bookmarked" ||
-        annotations[existingIndex].note === "Bookmarked";
+  }
+  if (existingIndex === -1) {
+    existingIndex = annotations.findIndex(
+      (a) => a.text.trim().toLowerCase() === selectedText.trim().toLowerCase(),
+    );
+  }
 
-      const annToDelete = annotations[existingIndex];
-      userLearningJourney.timeline = userLearningJourney.timeline.filter(
-        (t) => {
-          const isMatch =
-            (t.type === "Highlight" || t.type === "Bookmark") &&
-            t.domain === currentState.category &&
-            t.article === currentState.article &&
-            t.text &&
-            t.text.includes(annToDelete.text);
-          return !isMatch;
-        },
-      );
-      saveJourneyData();
-
-      annotations.splice(existingIndex, 1);
+  if (existingIndex !== -1) {
+    // Writing a note on already-marked text ATTACHES the note. It must never
+    // toggle the highlight away (that used to delete the passage entirely).
+    if (hasNote) {
+      const ann = annotations[existingIndex];
+      ann.note = noteBody;
+      ann.editedAt = new Date().toISOString();
       saveAnnotations(annotations);
+
+      const newText = `${noteBody}\n\n"${ann.text}"`;
+      const entry = userLearningJourney.timeline.find(
+        (t) =>
+          (t.type === "Highlight" || t.type === "Note") &&
+          t.domain === currentState.category &&
+          t.article === currentState.article &&
+          t.text &&
+          t.text.includes(ann.text),
+      );
+      if (entry) {
+        entry.type = "Note";
+        entry.text = newText;
+        saveJourneyData();
+      } else {
+        trackEngagement("note", newText);
+      }
+
+      const inp = document.getElementById("annotationInput");
+      if (inp) inp.value = "";
       activeSelection = "";
       lastSelectionSnapshot = { text: "", pIndex: -1, occurrence: 0 };
       window.getSelection().removeAllRanges();
       renderArticleContent();
       loadAnnotations();
-      showToast(isBookmark ? "Bookmark removed." : "Highlight removed.");
+      showToast("Note saved!");
       return;
     }
-  }
 
-  // TOGGLE OFF: Check if the exact selected text is already an annotation
-  const exactIndex = annotations.findIndex(
-    (a) => a.text.trim().toLowerCase() === selectedText.trim().toLowerCase(),
-  );
-  if (exactIndex !== -1) {
-    const isBookmark =
-      annotations[exactIndex].note === "Bookmarked" ||
-      annotations[exactIndex].note === "Bookmarked";
-
-    const annToDelete = annotations[exactIndex];
+    // No note text → tapping Highlight/Bookmark again removes the mark.
+    const annToDelete = annotations[existingIndex];
+    const isBookmark = annToDelete.note === "Bookmarked";
     userLearningJourney.timeline = userLearningJourney.timeline.filter((t) => {
       const isMatch =
-        (t.type === "Highlight" || t.type === "Bookmark") &&
+        (t.type === "Highlight" ||
+          t.type === "Bookmark" ||
+          t.type === "Note") &&
         t.domain === currentState.category &&
         t.article === currentState.article &&
         t.text &&
@@ -6736,7 +6845,7 @@ function saveNewAnnotation(noteText) {
     });
     saveJourneyData();
 
-    annotations.splice(exactIndex, 1);
+    annotations.splice(existingIndex, 1);
     saveAnnotations(annotations);
     activeSelection = "";
     lastSelectionSnapshot = { text: "", pIndex: -1, occurrence: 0 };
@@ -6848,6 +6957,25 @@ function saveNewAnnotation(noteText) {
   showToast(toastMessage);
 }
 
+// A short, human stamp for when a note was written or last edited.
+function _annStamp(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const time = d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return "today at " + time;
+  const y = new Date(now);
+  y.setDate(now.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return "yesterday at " + time;
+  const opts = { month: "short", day: "numeric" };
+  if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+  return d.toLocaleDateString(undefined, opts) + " at " + time;
+}
+
 function loadAnnotations() {
   const list = document.getElementById("annotationsList");
   if (!list) return;
@@ -6894,11 +7022,20 @@ function loadAnnotations() {
       noteDisplay = `<span style="display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-weight:600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg> Bookmarked</span>`;
     }
 
+    // An edited note carries the time it was last rewritten, so a thought
+    // revised at the end of a story reads differently from the first pass.
+    const stampTxt = ann.editedAt
+      ? "Edited " + _annStamp(ann.editedAt)
+      : ann.created
+        ? "Written " + _annStamp(ann.created)
+        : "";
+
     const item = document.createElement("div");
     item.className = "annotation-item";
     item.innerHTML = `
             ${ann.text ? `<div class="annotation-quote" style="cursor: pointer; opacity: 0.9;">"${ann.text}"</div>` : ""}
             <div class="annotation-note" style="cursor: pointer; opacity: 0.9;">${noteDisplay}</div>
+            ${stampTxt ? `<div class="annotation-stamp">${stampTxt}</div>` : ""}
             <div class="annotation-actions" style="display: flex; gap: 8px; align-items: center;">
                 <button class="text-btn sage-btn">Scroll to</button>
                 <button class="text-btn sage-btn" data-annotation-id="${ann.id}">•••</button>
@@ -6918,7 +7055,7 @@ function loadAnnotations() {
     if (quoteDiv) quoteDiv.onclick = () => goToAnnotationInArticle(ann.id);
     if (noteDiv) noteDiv.onclick = () => goToAnnotationInArticle(ann.id);
 
-    setupMultiSelect(item, ann.id, "annotation");
+    // (No hold-to-delete here — the ••• menu handles removal.)
     list.appendChild(item);
   });
   updateArticleResonance();
@@ -7497,7 +7634,7 @@ function _renderDialogue(fresh) {
     ${woven}
     <div class="dlg-q${capstone ? " dlg-q-cap" : ""}">${_chronEsc(_dlg.question)}</div>
     <div class="dlg-stems">${stems.map((st) => `<button class="dlg-stem" type="button">${_chronEsc(st)}</button>`).join("")}</div>
-    <textarea class="dlg-input" id="dlgInput" placeholder="Begin here…"></textarea>
+    <textarea class="dlg-input" id="dlgInput" spellcheck="true" autocorrect="on" autocapitalize="sentences" placeholder="Begin here…"></textarea>
     <div class="dlg-actions">
       <button class="dlg-free" type="button" id="dlgFree">write freely instead</button>
       <div class="dlg-actions-right">
@@ -7800,7 +7937,7 @@ function _renderNoteDialogue(fresh) {
     ${woven}
     <div class="dlg-q">${_chronEsc(_ndlg.question)}</div>
     <div class="dlg-stems">${stems.map((st) => `<button class="dlg-stem" type="button">${_chronEsc(st)}</button>`).join("")}</div>
-    <textarea class="dlg-input" id="ndlgInput" placeholder="Begin here…"></textarea>
+    <textarea class="dlg-input" id="ndlgInput" spellcheck="true" autocorrect="on" autocapitalize="sentences" placeholder="Begin here…"></textarea>
     <div class="dlg-actions">
       <button class="dlg-free" type="button" id="ndlgFree">write freely instead</button>
       <div class="dlg-actions-right">
@@ -7953,7 +8090,7 @@ function loadReflections() {
       showReflectionContextMenu(e, ref.id);
     };
 
-    setupMultiSelect(entry, ref.id, "reflection");
+    // (No hold-to-delete here — the ••• menu handles removal.)
     container.appendChild(entry);
   });
 
@@ -14879,3 +15016,93 @@ async function scheduleBackgroundReminder(timeStr) {
     localStorage.setItem("osmosis_skin", "editorial");
   } catch (e) {}
 })();
+
+
+// ============================================================
+// CREATE — memory for authors & genres you've already used.
+// (iOS ignores <datalist>, so tappable chips are the real UI.)
+// ============================================================
+function _createMemoryLists() {
+  const authors = new Set();
+  const genres = new Set();
+  try {
+    const td = window.topicsData || {};
+    Object.keys(td).forEach((d) => {
+      const subs = (td[d] && td[d].subtopics) || {};
+      Object.keys(subs).forEach((su) => {
+        const arts = (subs[su] && subs[su].articles) || {};
+        Object.keys(arts).forEach((a) => {
+          const art = arts[a] || {};
+          if (art.author && String(art.author).trim())
+            authors.add(String(art.author).trim());
+          (art.genres || []).forEach((g) => {
+            if (g && String(g).trim()) genres.add(String(g).trim());
+          });
+        });
+      });
+    });
+  } catch (e) {}
+  const byName = (a, b) => a.localeCompare(b);
+  return { authors: [...authors].sort(byName), genres: [...genres].sort(byName) };
+}
+
+function refreshCreateMemory() {
+  const { authors, genres } = _createMemoryLists();
+
+  const dl = document.getElementById("genAuthorMemory");
+  if (dl)
+    dl.innerHTML = authors
+      .map((a) => `<option value="${_chronAttr(a)}"></option>`)
+      .join("");
+
+  const aChips = document.getElementById("genAuthorChips");
+  if (aChips) {
+    aChips.innerHTML = authors
+      .slice(0, 8)
+      .map((a) => `<button type="button" class="mem-chip">${_chronEsc(a)}</button>`)
+      .join("");
+    aChips.querySelectorAll(".mem-chip").forEach((b) =>
+      b.addEventListener("click", () => {
+        const inp = document.getElementById("genAuthor");
+        if (!inp) return;
+        inp.value = b.textContent;
+        inp.dispatchEvent(new Event("input", { bubbles: true }));
+      }),
+    );
+  }
+
+  const gChips = document.getElementById("genGenreChips");
+  if (gChips) {
+    gChips.innerHTML = genres
+      .slice(0, 10)
+      .map((g) => `<button type="button" class="mem-chip">${_chronEsc(g)}</button>`)
+      .join("");
+    gChips.querySelectorAll(".mem-chip").forEach((b) =>
+      b.addEventListener("click", () => {
+        const inp = document.getElementById("genGenres");
+        if (!inp) return;
+        const parts = inp.value
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean);
+        const g = b.textContent;
+        const at = parts.indexOf(g);
+        if (at >= 0) parts.splice(at, 1); // tap again to remove
+        else parts.push(g);
+        inp.value = parts.join(", ");
+        inp.dispatchEvent(new Event("input", { bubbles: true }));
+      }),
+    );
+  }
+}
+window.refreshCreateMemory = refreshCreateMemory;
+
+document.addEventListener("DOMContentLoaded", () => {
+  const nav = document.getElementById("navGenerator");
+  if (nav) nav.addEventListener("click", () => setTimeout(refreshCreateMemory, 60));
+  const au = document.getElementById("genAuthor");
+  if (au) au.addEventListener("focus", refreshCreateMemory);
+  const ge = document.getElementById("genGenres");
+  if (ge) ge.addEventListener("focus", refreshCreateMemory);
+  setTimeout(refreshCreateMemory, 400);
+});
