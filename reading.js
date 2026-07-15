@@ -153,12 +153,33 @@
     if (!d) return;
     if (!on) pause();
     d.style.display = on ? "flex" : "none";
+    if (on) wake();
+  }
+
+  // The control shouldn't sit on the page while you read: it fades out after
+  // a beat and comes back on any touch, tap or scroll.
+  var hideT = null;
+  function wake() {
+    var d = $("autoScrollDock");
+    if (!d || d.style.display === "none") return;
+    d.classList.remove("faded");
+    clearTimeout(hideT);
+    hideT = setTimeout(function () {
+      d.classList.add("faded");
+    }, 1200);
   }
   window.osmosisAutoScrollToggle = toggle;
 
   function wire() {
     var t = $("asToggle");
-    if (t) t.addEventListener("click", toggle);
+    if (t)
+      t.addEventListener("click", function () {
+        toggle();
+        wake();
+      });
+    // Only a deliberate tap brings it back — scrolling never does, so it
+    // never flickers while you're actually reading.
+    document.addEventListener("click", wake, { passive: true });
     var s = $("asSpeed");
     if (s) {
       s.value = speed();

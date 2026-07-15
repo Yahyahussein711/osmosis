@@ -9059,9 +9059,13 @@ function _canEdgeSwipe() {
 document.addEventListener(
   "touchstart",
   (e) => {
+    if (!e.touches || !e.touches[0]) return;
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
     _edge = null;
+    // The floating controls sit on the left edge — never treat a touch on
+    // them as a swipe-to-exit.
+    if (e.target && e.target.closest && e.target.closest(".float-dock")) return;
     // Start only from the very left edge, so mid-content gestures/selection
     // and vertical scrolling are never hijacked.
     if (touchStartX <= 32 && _canEdgeSwipe()) {

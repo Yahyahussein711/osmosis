@@ -3364,13 +3364,19 @@ body.multi-select-active .timeline-actions {
    Same language as the define / selection pops: paper, hairline, rust. */
 .float-dock {
   position: fixed;
-  right: 14px;
+  left: 14px;
   bottom: calc(78px + env(safe-area-inset-bottom, 0px));
   z-index: 80;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
+  transition: opacity 0.18s ease;
+}
+/* out of the way while you read; any touch brings it back */
+.float-dock.faded {
+  opacity: 0;
+  pointer-events: none;
 }
 .float-btn {
   width: 42px;
