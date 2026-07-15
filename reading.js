@@ -159,6 +159,17 @@
   function wire() {
     var t = $("asToggle");
     if (t) t.addEventListener("click", toggle);
+    var stop = $("asStop");
+    if (stop) stop.addEventListener("click", pause);
+
+    // While drifting, a tap anywhere on the story stops it — you never have
+    // to scroll back up to find a button.
+    var content = $("articleContent");
+    if (content)
+      content.addEventListener("click", function () {
+        if (playing) pause();
+      });
+
     var s = $("asSpeed");
     if (s) {
       s.value = speed();
