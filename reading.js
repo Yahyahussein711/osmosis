@@ -119,11 +119,17 @@
     }
     raf = requestAnimationFrame(tick);
   }
+  var GLYPH_DRIFT =
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 6 12 11 17 6"></polyline><polyline points="7 13 12 18 17 13"></polyline></svg>';
+  var GLYPH_STOP =
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="9" y1="6" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="18"></line></svg>';
+
   function paint() {
     var b = $("asToggle");
     if (b) {
-      b.textContent = playing ? "❚❚" : "▶";
+      b.innerHTML = playing ? GLYPH_STOP : GLYPH_DRIFT;
       b.classList.toggle("on", playing);
+      b.setAttribute("aria-label", playing ? "Stop auto-scroll" : "Auto-scroll");
     }
     var pop = $("asSpeedPop");
     if (pop) pop.style.display = playing ? "flex" : "none";
@@ -148,38 +154,11 @@
     if (playing) pause();
     else play();
   }
-  function showDock(on) {
-    var d = $("autoScrollDock");
-    if (!d) return;
-    if (!on) pause();
-    d.style.display = on ? "flex" : "none";
-    if (on) wake();
-  }
-
-  // The control shouldn't sit on the page while you read: it fades out after
-  // a beat and comes back on any touch, tap or scroll.
-  var hideT = null;
-  function wake() {
-    var d = $("autoScrollDock");
-    if (!d || d.style.display === "none") return;
-    d.classList.remove("faded");
-    clearTimeout(hideT);
-    hideT = setTimeout(function () {
-      d.classList.add("faded");
-    }, 1200);
-  }
   window.osmosisAutoScrollToggle = toggle;
 
   function wire() {
     var t = $("asToggle");
-    if (t)
-      t.addEventListener("click", function () {
-        toggle();
-        wake();
-      });
-    // Only a deliberate tap brings it back — scrolling never does, so it
-    // never flickers while you're actually reading.
-    document.addEventListener("click", wake, { passive: true });
+    if (t) t.addEventListener("click", toggle);
     var s = $("asSpeed");
     if (s) {
       s.value = speed();
@@ -189,7 +168,6 @@
     }
     setSpeed(speed());
     paint();
-    showDock(artActive());
 
     var k = $("keepAwakeToggle");
     if (k) {
@@ -202,12 +180,11 @@
       });
     }
 
-    // The play button lives with the story: it appears in the reading view
-    // and leaving the story stops everything.
+    // Leaving the story stops the drift.
     var av = $("articleView");
     if (av && window.MutationObserver) {
       new MutationObserver(function () {
-        showDock(av.classList.contains("active"));
+        if (!av.classList.contains("active")) pause();
         syncWake();
       }).observe(av, { attributes: true, attributeFilter: ["class"] });
     }
