@@ -3750,16 +3750,6 @@ function setupEvents() {
     if (floatingMenu) floatingMenu.classList.remove("active");
   }
 
-  function handleScrollAction(e) {
-    if (e && e.cancelable) e.preventDefault();
-    if (mobileSelectionActions) mobileSelectionActions.classList.remove("show");
-    if (floatingMenu) floatingMenu.classList.remove("active");
-    window.getSelection().removeAllRanges();
-    activeSelection = "";
-    if (typeof window.osmosisAutoScrollStart === "function")
-      window.osmosisAutoScrollStart();
-  }
-
   function handleDefineAction(e) {
     if (e && e.cancelable) e.preventDefault();
     const raw = (activeSelection || lastSelectionSnapshot.text || "").trim();
@@ -3874,20 +3864,6 @@ function setupEvents() {
       passive: false,
     });
     mobileDefineBtn.addEventListener("click", handleDefineAction);
-  }
-  const fabScroll = document.getElementById("fabScroll");
-  if (fabScroll) {
-    fabScroll.addEventListener("touchstart", handleScrollAction, {
-      passive: false,
-    });
-    fabScroll.addEventListener("click", handleScrollAction);
-  }
-  const mobileScrollBtn = document.getElementById("mobileScrollBtn");
-  if (mobileScrollBtn) {
-    mobileScrollBtn.addEventListener("touchstart", handleScrollAction, {
-      passive: false,
-    });
-    mobileScrollBtn.addEventListener("click", handleScrollAction);
   }
 
   if (mobileBookmarkBtn) {

@@ -416,12 +416,6 @@
       text: "Start a distraction-free session — the page clears, a timer runs, and your time at the desk is logged.",
     },
     {
-      target: "#articleContent",
-      eyebrow: "Reading · Hands-free",
-      title: "Auto-scroll",
-      text: "Select any text and tap <b>⌄ auto-scroll</b> in the popup to let the page <b>drift</b> on its own — or just <b>two-finger tap</b> the story. A single tap stops it.",
-    },
-    {
       target: "#topNotesBtn",
       eyebrow: "Reading · Workstation",
       title: "Your writing desk",
