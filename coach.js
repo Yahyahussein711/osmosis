@@ -419,7 +419,7 @@
       target: "#articleContent",
       eyebrow: "Reading · Hands-free",
       title: "Auto-scroll",
-      text: "Select any text and tap <b>⌄ auto-scroll</b> in the popup to let the page <b>drift</b> on its own — a slim speed control appears while it moves. A single tap on the story stops it.",
+      text: "Select any text and tap <b>⌄ auto-scroll</b> in the popup to let the page <b>drift</b> on its own — or just <b>two-finger tap</b> the story. A single tap stops it.",
     },
     {
       target: "#topNotesBtn",

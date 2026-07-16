@@ -162,26 +162,63 @@
     var t = $("asToggle");
     if (t) t.addEventListener("click", toggle);
     var stop = $("asStop");
-    if (stop) stop.addEventListener("click", pause);
+    if (stop) {
+      stop.addEventListener("click", pause);
+      stop.addEventListener("touchstart", function (e) {
+        e.preventDefault();
+        pause();
+      });
+    }
 
-    // Triple-tap anywhere on the story to start OR stop the drift — no
-    // reaching for a button. Ignores taps on links/marks/buttons.
-    var content = $("articleContent");
     // Auto-scroll is started from the selection popup (＋ Scroll). While it's
-    // drifting, a single tap on the story stops it — and that tap is swallowed
-    // so it never reaches Focus mode's double-tap-to-exit logic.
+    // drifting, a tap on the story stops it. We listen on TOUCHSTART (and
+    // click, for mouse) because a click often never fires while the page is
+    // moving under your finger. The tap is swallowed so it can't reach Focus
+    // mode's double-tap-to-exit logic.
+    var content = $("articleContent");
     if (content) {
-      content.addEventListener("click", function (e) {
+      var stopIfDrifting = function (e) {
         if (!playing) return;
         if (
           e.target &&
           e.target.closest &&
-          e.target.closest("a,button,mark,.inline-bookmark,input,textarea")
+          e.target.closest(
+            "a,button,mark,.inline-bookmark,input,textarea,.as-speedpop",
+          )
         )
           return;
         e.stopPropagation();
         pause();
-      });
+      };
+      content.addEventListener("touchstart", stopIfDrifting, { passive: true });
+      content.addEventListener("click", stopIfDrifting);
+
+      // Discreet, invisible start: a quick TWO-FINGER tap on the story toggles
+      // the drift. Collides with nothing (selection, single-tap-stop, or
+      // Focus's double-tap-exit all use one finger).
+      var twoStart = 0;
+      content.addEventListener(
+        "touchstart",
+        function (e) {
+          twoStart = e.touches && e.touches.length === 2 ? Date.now() : 0;
+        },
+        { passive: true },
+      );
+      content.addEventListener(
+        "touchend",
+        function (e) {
+          if (
+            twoStart &&
+            e.touches &&
+            e.touches.length === 0 &&
+            Date.now() - twoStart < 400
+          ) {
+            twoStart = 0;
+            toggle();
+          }
+        },
+        { passive: true },
+      );
     }
 
     var s = $("asSpeed");
