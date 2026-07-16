@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260715y" />
+    <link rel="stylesheet" href="styles.css?v=20260715z" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -125,30 +125,6 @@
     </script>
   </head>
   <body>
-    <!-- Launch splash: the Osmosis wordmark, then it fades into the app -->
-    <div id="splash" class="splash">
-      <div class="splash-inner">
-        <div class="splash-word">Osmosis</div>
-      </div>
-    </div>
-    <script>
-      (function () {
-        var sp = document.getElementById("splash");
-        if (!sp) return;
-        var hide = function () {
-          sp.classList.add("gone");
-          setTimeout(function () {
-            if (sp && sp.parentNode) sp.parentNode.removeChild(sp);
-          }, 550);
-        };
-        window.addEventListener("load", function () {
-          setTimeout(hide, 900);
-        });
-        // Safety: never let the splash get stuck.
-        setTimeout(hide, 3500);
-      })();
-    </script>
-
     <div class="bg-blobs" style="display: none">
       <div class="blob blob-1"></div>
       <div class="blob blob-2"></div>
@@ -2090,10 +2066,10 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260715y"></script>
-    <script src="script.js?v=20260715y"></script>
+    <script src="stories.js?v=20260715z"></script>
+    <script src="script.js?v=20260715z"></script>
 
-    <script src="coach.js?v=20260715y"></script>
-    <script src="reading.js?v=20260715y"></script>
+    <script src="coach.js?v=20260715z"></script>
+    <script src="reading.js?v=20260715z"></script>
   </body>
 </html>
