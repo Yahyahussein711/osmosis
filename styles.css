@@ -7157,15 +7157,15 @@ body.deep-work-active .scroll-jump-btn {
   font-family: "Lora", Georgia, serif;
   font-variant: small-caps;
   letter-spacing: 2.5px;
-  font-size: 0.74rem;
+  font-size: 0.95rem;
   color: var(--dark-text);
 }
 .ed-dateline-note {
   font-family: "Lora", Georgia, serif;
   font-style: italic;
-  font-size: 0.82rem;
+  font-size: 1rem;
   color: var(--subtitle-color);
-  margin-top: 3px;
+  margin-top: 5px;
 }
 .finis-block {
   text-align: center;
