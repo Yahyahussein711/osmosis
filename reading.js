@@ -167,27 +167,32 @@
     var content = $("articleContent");
     if (content) {
       var taps = [];
-      content.addEventListener(
-        "click",
-        function (e) {
-          if (
-            e.target &&
-            e.target.closest &&
-            e.target.closest("a,button,mark,.inline-bookmark,input,textarea")
-          )
-            return;
-          var now = Date.now();
-          taps = taps.filter(function (t) {
-            return now - t < 600;
-          });
-          taps.push(now);
-          if (taps.length >= 3) {
-            taps = [];
-            toggle();
-          }
-        },
-        { passive: true },
-      );
+      content.addEventListener("click", function (e) {
+        if (
+          e.target &&
+          e.target.closest &&
+          e.target.closest("a,button,mark,.inline-bookmark,input,textarea")
+        )
+          return;
+        // While it's drifting, a single tap on the story stops it — and we
+        // swallow that tap so it never reaches Focus mode's tap-to-exit.
+        if (playing) {
+          e.stopPropagation();
+          taps = [];
+          pause();
+          return;
+        }
+        // Otherwise, three quick taps start it.
+        var now = Date.now();
+        taps = taps.filter(function (t) {
+          return now - t < 600;
+        });
+        taps.push(now);
+        if (taps.length >= 3) {
+          taps = [];
+          play();
+        }
+      });
     }
 
     var s = $("asSpeed");
