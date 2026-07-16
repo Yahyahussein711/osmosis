@@ -5493,11 +5493,8 @@ function renderArticleGrid() {
       noun +
       (allArticles.length ? ` · ${readCount} read` : "");
     countEl.textContent = countText;
-    // Editorial hides the Library h2 (the masthead replaces it), so the
-    // same tally also prints on its own collation line there.
-    const edCountEl = document.getElementById("edStoryCount");
-    if (edCountEl) edCountEl.textContent = countText;
-    _setMastheadReal(allArticles.length);
+    _renderAlmanac(allArticles.length, readCount);
+    _setMastheadReal();
   }
 
   let displayArticles = allArticles;
@@ -5745,26 +5742,41 @@ function goToExploreView() {
   updateWelcomeLine();
 }
 
-// Real values for the editorial masthead / reading runhead (replacing the
-// old fake roman-numeral issue numbers): today's date, year, live story count.
-function _setMastheadReal(storyCount) {
+// The reading runhead's folio — today's date (dd.mm.yy).
+function _setMastheadReal() {
   const d = new Date();
-  const mon = d
-    .toLocaleDateString(undefined, { month: "short" })
-    .toUpperCase();
-  const day = d.getDate();
-  const yr = d.getFullYear();
-  const set = (id, txt) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = txt;
-  };
-  set("edMhA", `${day} ${mon}`);
-  set("edMhB", `Vol · ${yr}`);
-  set("edMhC", `No · ${storyCount}`);
-  set(
-    "edRunheadFolio",
-    `${String(day).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(yr).slice(2)}`,
-  );
+  const el = document.getElementById("edRunheadFolio");
+  if (el)
+    el.textContent = `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getFullYear()).slice(2)}`;
+}
+
+// The Library almanac: your library at a glance — total stories, how many
+// you've read, and your streak — set in an editorial hairline strip.
+function _renderAlmanac(total, read) {
+  const el = document.getElementById("edAlmanac");
+  if (!el) return;
+  const s =
+    typeof calcStreak === "function"
+      ? calcStreak()
+      : { current: 0, longest: 0 };
+  const cell = (num, label) =>
+    `<div class="alm-cell"><div class="alm-num">${num}</div><div class="alm-label">${label}</div></div>`;
+  el.innerHTML = `
+    <div class="alm-row">
+      ${cell(total, total === 1 ? "Story" : "Stories")}
+      <div class="alm-div"></div>
+      ${cell(read, "Read")}
+      <div class="alm-div"></div>
+      ${cell(s.current, "Streak")}
+    </div>
+    <div class="alm-note">${
+      s.current
+        ? `❦ &nbsp; best ${s.longest} day${s.longest === 1 ? "" : "s"} &nbsp; ❦`.replace(
+            /&nbsp;/g,
+            " ",
+          )
+        : "— read today to begin a streak —"
+    }</div>`;
 }
 
 function navigateToArticle(d, s, a, options = {}) {

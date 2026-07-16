@@ -3355,6 +3355,53 @@ body.multi-select-active .timeline-actions {
 }
 .rt-open { border: none; cursor: pointer; }
 
+/* ===== Library almanac — date + stories + read + streak, editorial ===== */
+.ed-almanac {
+  max-width: 400px;
+  margin: 16px auto 6px;
+  text-align: center;
+}
+.alm-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 13px 0;
+  border-top: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--glass-border);
+}
+.alm-cell { flex: 1; min-width: 0; }
+.alm-num {
+  font-family: "Lora", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.9rem;
+  line-height: 1;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
+.alm-label {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 2.5px;
+  font-size: 0.6rem;
+  color: var(--subtitle-color);
+  margin-top: 6px;
+}
+.alm-div {
+  width: 1px;
+  height: 32px;
+  flex-shrink: 0;
+  background: var(--glass-border);
+}
+.alm-note {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 2px;
+  font-size: 0.62rem;
+  color: var(--accent);
+  margin-top: 9px;
+}
+
 /* ===== Create: remembered authors & genres ===== */
 .mem-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .mem-chip {
