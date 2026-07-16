@@ -403,12 +403,6 @@
       text: "Switch themes, tune reading size and voice, and export or import your whole library as a backup.",
     },
     {
-      target: "#accountGroup",
-      eyebrow: "Settings · Account",
-      title: "Sign in & sync",
-      text: "Sign in with Google to save everything to your account and <b>sync across devices</b>. Or stay fully local — your call.",
-    },
-    {
       pre: openStory,
       target: "#articleContent",
       eyebrow: "Read & Capture",
@@ -422,30 +416,23 @@
       text: "Start a distraction-free session — the page clears, a timer runs, and your time at the desk is logged.",
     },
     {
+      target: "#asToggle",
+      eyebrow: "Reading · Hands-free",
+      title: "Auto-scroll",
+      text: "Tap this to let the page <b>drift</b> on its own, and set the speed. Or just <b>triple-tap anywhere on the story</b> to start or stop it.",
+    },
+    {
       target: "#topNotesBtn",
       eyebrow: "Reading · Workstation",
       title: "Your writing desk",
-      text: "This opens the workstation — where you manage notes and write reflections. Let's open it.",
+      text: "This opens the workstation — where you manage every note you've made. Let's open it.",
     },
     {
       pre: openWSReflection,
-      target: "#reflectLeft",
-      eyebrow: "The Workstation",
-      title: "Reflections",
-      text: "Write your own synthesis of a story in your own words. It's saved and later resurfaced in Daily Review.",
-    },
-    {
-      target: "#socraticBtn",
-      eyebrow: "The Workstation · Dialogue",
-      title: "✦ Guide me",
-      text: "Facing a blank page? Pick a lens, answer guided questions with tap-in starters, then <b>press further</b> to go deeper.",
-    },
-    {
-      pre: switchWSNotes,
       target: "#noteGuideBtn",
       eyebrow: "The Workstation · Notes",
-      title: "Guided notes too",
-      text: "Notes can be guided the same way — anchored to the exact passage you selected. Swipe the sheet down to close it.",
+      title: "Guided notes",
+      text: "Facing a blank note? Tap <b>✦ Guide me</b> — pick a lens, answer with tap-in starters, and press further to go deeper. Swipe the sheet down to close it.",
     },
     {
       pre: finishTour,

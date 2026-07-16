@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260715k" />
+    <link rel="stylesheet" href="styles.css?v=20260715l" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -897,10 +897,6 @@
 
         <div class="dash-column">
           <div class="settings-masonry">
-            <div class="settings-group" id="accountGroup">
-              <div class="settings-group-label">Account</div>
-              <div id="accountPanel" class="account-panel"></div>
-            </div>
             <div class="settings-group">
               <div class="settings-group-label">Appearance</div>
               <div class="setting-row">
@@ -1780,11 +1776,6 @@
         <h3 class="section-title-spaced" style="margin: 0">Workspace</h3>
       </div>
 
-      <!-- Section tabs live at the top, like a printed index -->
-      <div class="drawer-tabs" id="mainCarouselTabs">
-        <button class="drawer-tab active" data-step="0">Reflection</button>
-        <button class="drawer-tab" data-step="1">Notes</button>
-      </div>
       <div id="wsContext" class="ws-context" aria-hidden="true"></div>
 
       <div
@@ -1801,65 +1792,7 @@
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
           "
         >
-          <!-- Slide 1: Reflection -->
-          <div class="carousel-slide ws-slide">
-            <div class="ws-page ws-page-left" id="reflectLeft">
-            <div class="ws-lead">
-              <button
-                class="ws-inspire"
-                id="wsWeaveBtn"
-                style="display: none"
-                title="Lay all your highlights onto the page"
-              >
-                ⤳ Weave
-              </button>
-              <button class="ws-inspire" id="socraticBtn">✦ Guide me</button>
-            </div>
-            <div id="reflectionDialogue" class="dlg" style="display: none"></div>
-            <div id="wsEpigraph" class="ws-epigraph" style="display: none"></div>
-            <div class="ws-sheet" style="position: relative">
-              <span id="wsDraftMark" class="ws-draft-mark" style="display: none"
-                >draft</span
-              >
-              <textarea
-                id="reflectionInput"
-                class="reflection-input ws-paper-input"
-                spellcheck="true"
-                autocorrect="on"
-                autocapitalize="sentences"
-                placeholder="Synthesize this story in your own words…"
-              ></textarea>
-              <div class="ws-toolbar">
-                <div class="ws-undo-redo">
-                  <button class="icon-btn-small ws-tool" id="undoRefBtn" title="Undo">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M3 7v6h6"></path>
-                      <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
-                    </svg>
-                  </button>
-                  <button class="icon-btn-small ws-tool" id="redoRefBtn" title="Redo">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M21 7v6h-6"></path>
-                      <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
-                    </svg>
-                  </button>
-                </div>
-                <span id="wsWordCount" class="ws-live-count"></span>
-                <button class="primary btn-sm" id="saveReflectionBtn">
-                  Save Reflection
-                </button>
-              </div>
-            </div>
-
-            </div>
-            <div class="ws-page ws-page-right">
-              <div id="socraticPromptsBox" class="socratic-box"></div>
-              <div id="wsMargins" class="ws-margins" style="display: none"></div>
-              <div id="reflectionHistory" class="reflection-history"></div>
-            </div>
-          </div>
-
-          <!-- Slide 2: Notes -->
+          <!-- Notes -->
           <div class="carousel-slide ws-slide">
             <div class="ws-page ws-page-left" id="noteLeft">
             <p class="ws-hint" id="selectedTextPreview">
@@ -2270,27 +2203,11 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260715k"></script>
-    <script src="script.js?v=20260715k"></script>
+    <script src="stories.js?v=20260715l"></script>
+    <script src="script.js?v=20260715l"></script>
 
-    <!-- ============================================================
-         Cloud sync (optional). Paste your Firebase web-app config
-         below to enable Google sign-in + cross-device sync. Until
-         you do, the app runs local-only exactly as before.
-         Get these from: Firebase console → Project settings →
-         General → Your apps → Web app → firebaseConfig.
-         ============================================================ -->
-    <script>
-      window.OSMOSIS_FIREBASE_CONFIG = {
-        apiKey: "AIzaSyBpo9IDpLg49RwDlWFebDzqvkLDetLicDA",
-        authDomain: "osmosis-4de48.firebaseapp.com",
-        projectId: "osmosis-4de48",
-        appId: "1:202207005294:web:c9b8fc8cd1e7d674d8347f",
-      };
-    </script>
-    <script src="firebase-sync.js?v=20260715k"></script>
-    <script src="coach.js?v=20260715k"></script>
-    <script src="import.js?v=20260715k"></script>
-    <script src="reading.js?v=20260715k"></script>
+    <script src="coach.js?v=20260715l"></script>
+    <script src="import.js?v=20260715l"></script>
+    <script src="reading.js?v=20260715l"></script>
   </body>
 </html>

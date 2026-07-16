@@ -162,13 +162,33 @@
     var stop = $("asStop");
     if (stop) stop.addEventListener("click", pause);
 
-    // While drifting, a tap anywhere on the story stops it — you never have
-    // to scroll back up to find a button.
+    // Triple-tap anywhere on the story to start OR stop the drift — no
+    // reaching for a button. Ignores taps on links/marks/buttons.
     var content = $("articleContent");
-    if (content)
-      content.addEventListener("click", function () {
-        if (playing) pause();
-      });
+    if (content) {
+      var taps = [];
+      content.addEventListener(
+        "click",
+        function (e) {
+          if (
+            e.target &&
+            e.target.closest &&
+            e.target.closest("a,button,mark,.inline-bookmark,input,textarea")
+          )
+            return;
+          var now = Date.now();
+          taps = taps.filter(function (t) {
+            return now - t < 600;
+          });
+          taps.push(now);
+          if (taps.length >= 3) {
+            taps = [];
+            toggle();
+          }
+        },
+        { passive: true },
+      );
+    }
 
     var s = $("asSpeed");
     if (s) {

@@ -83,8 +83,6 @@ function renderDashboardCards() {
   );
   const highlights = timeline.filter((t) => t.type === "Highlight").length;
   const notes = timeline.filter((t) => t.type === "Note").length;
-  const reflections = timeline.filter((t) => t.type === "Reflection").length;
-  const dueCount = getDueReviewItems().length;
   const streak =
     typeof calcStreak === "function" ? calcStreak() : { current: 0, longest: 0 };
   const deskSec = typeof getDeskSeconds === "function" ? getDeskSeconds() : 0;
@@ -95,12 +93,9 @@ function renderDashboardCards() {
     const hr = new Date().getHours();
     const tod =
       hr < 11 ? "Good morning" : hr < 17 ? "Good afternoon" : hr < 22 ? "Good evening" : "A late hour";
-    let line;
-    if (dueCount)
-      line = `${tod}. ${dueCount} reflection${dueCount === 1 ? "" : "s"} to revisit.`;
-    else if (!stories) line = `${tod}. Your study is bare — read a story to begin.`;
-    else line = `${tod}. Nothing due today — read on, or revisit your margins.`;
-    greet.textContent = line;
+    greet.textContent = !stories
+      ? `${tod}. Your study is bare — read a story to begin.`
+      : `${tod}. ${stories} ${stories === 1 ? "story" : "stories"} read, and counting.`;
   }
 
   const ledgerStat = (n, l) =>
@@ -116,6 +111,15 @@ function renderDashboardCards() {
     ? `<div class="study-ledger-meta">— ${metaParts.join(" · ")} —</div>`
     : "";
 
+  // Hours spent in focused reading — a kept stat.
+  const focusNum =
+    deskSec >= 3600
+      ? deskSec < 36000
+        ? (deskSec / 3600).toFixed(1)
+        : String(Math.round(deskSec / 3600))
+      : String(Math.round(deskSec / 60));
+  const focusName = deskSec >= 3600 ? "Focus hrs" : "Focus min";
+
   grid.innerHTML = `
     <section class="study-block">
       <div class="study-sec-label">The Ledger</div>
@@ -126,43 +130,18 @@ function renderDashboardCards() {
         <div class="study-ledger-div" aria-hidden="true"></div>
         ${ledgerStat(notes, "Notes")}
         <div class="study-ledger-div" aria-hidden="true"></div>
-        ${ledgerStat(reflections, "Reflections")}
+        ${ledgerStat(focusNum, focusName)}
       </div>
       ${meta}
     </section>
-
-    <div class="study-feature study-review" onclick="openReviewSession()">
-      <div class="study-review-left">
-        <div class="study-feature-label">Daily Review</div>
-        <div class="study-feature-num">${dueCount}</div>
-        <div class="study-feature-sub">${dueCount ? (dueCount === 1 ? "reflection to revisit" : "reflections to revisit") : "all caught up"}</div>
-      </div>
-      <div class="study-review-right">
-        <div class="study-review-blurb">${dueCount ? "Sit again with what you wrote — remember it, and deepen it." : "Nothing to revisit. Your reflections will return in time."}</div>
-        <div class="study-feature-cta">${dueCount ? "Begin the session →" : "Come back tomorrow"}</div>
-      </div>
-    </div>
 
     <section class="study-block">
       <div class="study-sec-label">Activity <span class="study-sec-sub">last 28 days</span></div>
       <div class="study-activity"><div id="habitHeatmap" class="heatmap-grid"></div></div>
     </section>
-
-    <div class="study-feature rt-card" id="returnCard"></div>
-
-    <div class="study-feature mg-card" id="marginsCard"></div>
-
-    <div class="study-actions">
-      <div class="study-feature pg-card" id="parlourCard"></div>
-      <div class="study-feature hn-card" id="honoursCard"></div>
-    </div>
   `;
 
   renderHeatmap();
-  renderReturnCard();
-  renderMarginsCard();
-  renderParlourCard();
-  renderHonoursCard();
 }
 
 // ---- The Return: a story you finished months ago, come back around ----
@@ -1987,7 +1966,9 @@ function showFocusExitHint() {
 function updateNotesCarousel() {
   const track = document.getElementById("mainCarouselTrack");
   if (!track) return;
-  track.style.transform = `translateX(-${currentNotesStep * 100}%)`;
+  // Only the Notes slide remains — never scroll to a removed slide.
+  currentNotesStep = 0;
+  track.style.transform = `translateX(0%)`;
 
   // Dynamically update the main drawer title (previously "Workspace") to match the active section
   const headers = document.querySelectorAll(
@@ -5812,6 +5793,17 @@ function loadArticleView(options = {}) {
   if (label) {
     label.dataset.totalMins = mins;
     label.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> <span class="rt-text">${mins}</span>`;
+    // Tap the read-time to reveal "X min left" (and tap again to hide it).
+    label.style.cursor = "pointer";
+    label.title = "Tap for minutes left";
+    label.onclick = () => {
+      label.dataset.showMin = label.dataset.showMin === "1" ? "0" : "1";
+      const rt = label.querySelector(".rt-text");
+      const lft = label.dataset.left || label.dataset.totalMins || "";
+      if (rt && rt.textContent !== "✓")
+        rt.textContent =
+          label.dataset.showMin === "1" ? `${lft} min left` : `${lft}`;
+    };
   }
 
   // Frontispiece image, author and genres for this story
@@ -6567,8 +6559,15 @@ document.addEventListener("scroll", () => {
   if (rtLabel && rtLabel.dataset.totalMins) {
     const totalMins = parseInt(rtLabel.dataset.totalMins) || 0;
     const left = Math.max(0, Math.ceil(totalMins * (1 - pct / 100)));
+    rtLabel.dataset.left = left;
     const rtText = rtLabel.querySelector(".rt-text");
-    if (rtText) rtText.textContent = pct >= 99 ? "✓" : `${left}`;
+    if (rtText)
+      rtText.textContent =
+        pct >= 99
+          ? "✓"
+          : rtLabel.dataset.showMin === "1"
+            ? `${left} min left`
+            : `${left}`;
   }
 
   // Kinetic Velocity Feedback
