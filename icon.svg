@@ -1,4 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#1A1A1A"/>
-  <circle cx="256" cy="256" r="146" fill="none" stroke="#FAF8F0" stroke-width="60"/>
+  <defs>
+    <radialGradient id="osm" cx="38%" cy="30%" r="82%">
+      <stop offset="0%" stop-color="#b8573f"/>
+      <stop offset="55%" stop-color="#9e4632"/>
+      <stop offset="100%" stop-color="#742f20"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="114" fill="url(#osm)"/>
+  <g fill="none" stroke="#FAF8F0" stroke-linecap="round">
+    <circle cx="256" cy="256" r="194" stroke-width="9" opacity="0.22"/>
+    <circle cx="256" cy="256" r="140" stroke-width="15" opacity="0.48"/>
+    <circle cx="256" cy="256" r="86" stroke-width="22" opacity="0.92"/>
+  </g>
+  <circle cx="256" cy="256" r="34" fill="#FAF8F0"/>
 </svg>

@@ -3355,6 +3355,50 @@ body.multi-select-active .timeline-actions {
 }
 .rt-open { border: none; cursor: pointer; }
 
+/* ===== Launch splash ===== */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream, #faf8f0);
+  transition: opacity 0.5s ease;
+}
+.splash.gone {
+  opacity: 0;
+  pointer-events: none;
+}
+.splash-inner {
+  text-align: center;
+  animation: splashRise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.splash-logo {
+  display: block;
+  margin: 0 auto;
+  border-radius: 26px;
+  box-shadow: 0 16px 44px rgba(116, 47, 32, 0.22);
+}
+.splash-word {
+  margin-top: 18px;
+  font-family: "Lora", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.7rem;
+  letter-spacing: 1.5px;
+  color: var(--dark-text, #211d18);
+}
+@keyframes splashRise {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ===== Library almanac — date + stories + read + streak, editorial ===== */
 .ed-almanac {
   max-width: 400px;

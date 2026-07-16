@@ -15,9 +15,9 @@
     <meta name="apple-mobile-web-app-title" content="Osmosis" />
     <meta name="theme-color" content="#FAF8F0" id="themeColorMeta" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="icon" type="image/svg+xml" href="icon.svg" />
-    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg?v=osm2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=osm2" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=osm2" />
     <title>Osmosis</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260715v" />
+    <link rel="stylesheet" href="styles.css?v=20260715w" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -125,6 +125,37 @@
     </script>
   </head>
   <body>
+    <!-- Launch splash: the Osmosis mark, then it fades into the app -->
+    <div id="splash" class="splash">
+      <div class="splash-inner">
+        <img
+          class="splash-logo"
+          src="icon.svg?v=osm2"
+          width="112"
+          height="112"
+          alt="Osmosis"
+        />
+        <div class="splash-word">Osmosis</div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var sp = document.getElementById("splash");
+        if (!sp) return;
+        var hide = function () {
+          sp.classList.add("gone");
+          setTimeout(function () {
+            if (sp && sp.parentNode) sp.parentNode.removeChild(sp);
+          }, 550);
+        };
+        window.addEventListener("load", function () {
+          setTimeout(hide, 900);
+        });
+        // Safety: never let the splash get stuck.
+        setTimeout(hide, 3500);
+      })();
+    </script>
+
     <div class="bg-blobs" style="display: none">
       <div class="blob blob-1"></div>
       <div class="blob blob-2"></div>
@@ -2069,10 +2100,10 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260715v"></script>
-    <script src="script.js?v=20260715v"></script>
+    <script src="stories.js?v=20260715w"></script>
+    <script src="script.js?v=20260715w"></script>
 
-    <script src="coach.js?v=20260715v"></script>
-    <script src="reading.js?v=20260715v"></script>
+    <script src="coach.js?v=20260715w"></script>
+    <script src="reading.js?v=20260715w"></script>
   </body>
 </html>
