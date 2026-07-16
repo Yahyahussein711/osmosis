@@ -5811,7 +5811,7 @@ function loadArticleView(options = {}) {
   const label = document.getElementById("readTimeLabel");
   if (label) {
     label.dataset.totalMins = mins;
-    label.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> <span class="rt-text">${mins} min</span>`;
+    label.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> <span class="rt-text">${mins}</span>`;
   }
 
   // Frontispiece image, author and genres for this story
@@ -6568,9 +6568,7 @@ document.addEventListener("scroll", () => {
     const totalMins = parseInt(rtLabel.dataset.totalMins) || 0;
     const left = Math.max(0, Math.ceil(totalMins * (1 - pct / 100)));
     const rtText = rtLabel.querySelector(".rt-text");
-    if (rtText)
-      rtText.textContent =
-        pct >= 99 ? "Finished" : `${left} min left`;
+    if (rtText) rtText.textContent = pct >= 99 ? "✓" : `${left}`;
   }
 
   // Kinetic Velocity Feedback
