@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260715l" />
+    <link rel="stylesheet" href="styles.css?v=20260715m" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -426,27 +426,6 @@
               </svg>
               Focus
             </button>
-            <button
-              class="text-btn as-btn"
-              id="asToggle"
-              type="button"
-              title="Auto-scroll"
-              aria-label="Auto-scroll"
-            >
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="7 6 12 11 17 6"></polyline>
-                <polyline points="7 13 12 18 17 13"></polyline>
-              </svg>
-            </button>
             <button class="text-btn accent-btn icon-text-btn" id="topNotesBtn">
               <svg
                 width="14"
@@ -577,9 +556,6 @@
                 "
               >
                 <button id="markReadBtn" class="primary">Mark as Read</button>
-                <button id="reflectFinishedBtn" class="secondary">
-                  Reflect
-                </button>
               </div>
             </div>
           </div>
@@ -760,31 +736,6 @@
         </div>
 
         <div id="genCreateFlow" style="margin-bottom: 24px;">
-          <div class="import-box">
-            <div class="import-label">❦ Import from a link</div>
-            <div class="import-row">
-              <input
-                type="url"
-                id="importUrl"
-                inputmode="url"
-                autocomplete="off"
-                autocapitalize="off"
-                spellcheck="false"
-                placeholder="Paste an article URL…"
-              />
-              <button id="importUrlBtn" class="primary btn-sm" type="button">
-                Import
-              </button>
-            </div>
-            <div class="import-hint" id="importHint">
-              Pulls a clean, readable version into the fields below — then just
-              review and Save. No link handy? Paste the text straight into the
-              body.
-            </div>
-            <button id="tidyBtn" class="import-tidy" type="button">
-              ↻ Tidy the text
-            </button>
-          </div>
           <div class="studio-grid">
             <!-- The manuscript: you write directly on the sheet -->
             <div class="studio-manuscript">
@@ -2203,11 +2154,10 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260715l"></script>
-    <script src="script.js?v=20260715l"></script>
+    <script src="stories.js?v=20260715m"></script>
+    <script src="script.js?v=20260715m"></script>
 
-    <script src="coach.js?v=20260715l"></script>
-    <script src="import.js?v=20260715l"></script>
-    <script src="reading.js?v=20260715l"></script>
+    <script src="coach.js?v=20260715m"></script>
+    <script src="reading.js?v=20260715m"></script>
   </body>
 </html>

@@ -416,10 +416,10 @@
       text: "Start a distraction-free session — the page clears, a timer runs, and your time at the desk is logged.",
     },
     {
-      target: "#asToggle",
+      target: "#articleContent",
       eyebrow: "Reading · Hands-free",
       title: "Auto-scroll",
-      text: "Tap this to let the page <b>drift</b> on its own, and set the speed. Or just <b>triple-tap anywhere on the story</b> to start or stop it.",
+      text: "<b>Triple-tap anywhere on the story</b> to let the page <b>drift</b> on its own — a slim speed control appears while it moves. Triple-tap again to stop.",
     },
     {
       target: "#topNotesBtn",
