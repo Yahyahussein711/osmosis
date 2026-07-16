@@ -97,51 +97,51 @@
     syncWake();
   }
 
-  // ---- Chronicle: jump to the very top / bottom of a long record ----
+  // ---- Chronicle: the same pop-up jump button the story uses ----
+  // Appears only when you scroll back up; points down (jump to bottom) near
+  // the top, flips to point up (jump to top) once you're deep in the record.
   function chronWire() {
     var tv = $("timelineView");
-    var jump = $("chronJump");
-    if (!tv || !jump) return;
+    var btn = $("chronScrollJump");
+    if (!tv || !btn) return;
 
-    function jumpTo(dir) {
+    btn.addEventListener("click", function () {
       window.scrollTo({
-        top:
-          dir < 0
-            ? 0
-            : Math.max(
-                document.documentElement.scrollHeight,
-                document.body.scrollHeight,
-              ),
+        top: btn.classList.contains("up")
+          ? 0
+          : Math.max(
+              document.documentElement.scrollHeight,
+              document.body.scrollHeight,
+            ),
         behavior: "smooth",
       });
-    }
-    var up = $("chronUp");
-    if (up)
-      up.addEventListener("click", function () {
-        jumpTo(-1);
-      });
-    var down = $("chronDown");
-    if (down)
-      down.addEventListener("click", function () {
-        jumpTo(1);
-      });
+    });
 
+    var lastY = 0;
     function refresh() {
-      var on =
-        tv.classList.contains("active") &&
-        document.documentElement.scrollHeight > window.innerHeight + 200;
-      jump.style.display = on ? "flex" : "none";
+      if (!tv.classList.contains("active")) {
+        btn.classList.remove("visible");
+        return;
+      }
+      var h = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight,
+      );
+      var y = window.scrollY;
+      var pct = h > window.innerHeight ? (y / (h - window.innerHeight)) * 100 : 0;
+      btn.classList.toggle("up", pct > 60);
+      if (y < lastY - 2 && y > 200) btn.classList.add("visible");
+      else if (y > lastY + 2 || y <= 200) btn.classList.remove("visible");
+      lastY = y;
     }
     if (window.MutationObserver) {
       new MutationObserver(refresh).observe(tv, {
         attributes: true,
         attributeFilter: ["class"],
       });
-      var body = $("journeyTimeline");
-      if (body) new MutationObserver(refresh).observe(body, { childList: true });
     }
-    window.addEventListener("resize", refresh);
     window.addEventListener("scroll", refresh, { passive: true });
+    window.addEventListener("resize", refresh);
     refresh();
   }
 

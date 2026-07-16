@@ -3355,47 +3355,6 @@ body.multi-select-active .timeline-actions {
 }
 .rt-open { border: none; cursor: pointer; }
 
-/* ===== Shared floating controls (auto-scroll play, chronicle jumps) =====
-   Same language as the define / selection pops: paper, hairline, rust. */
-.float-dock {
-  position: fixed;
-  left: 14px;
-  bottom: calc(78px + env(safe-area-inset-bottom, 0px));
-  z-index: 80;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  transition: opacity 0.18s ease;
-}
-/* out of the way while you read; any touch brings it back */
-.float-dock.faded {
-  opacity: 0;
-  pointer-events: none;
-}
-.float-btn {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-solid);
-  color: var(--accent);
-  font-size: 0.95rem;
-  line-height: 1;
-  cursor: pointer;
-  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.18);
-  transition: background 0.2s ease, transform 0.15s ease;
-}
-.float-btn:active {
-  background: color-mix(in srgb, var(--accent) 12%, var(--glass-solid));
-  transform: scale(0.94);
-}
-.float-btn.on {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
 /* ===== Create: remembered authors & genres ===== */
 .mem-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .mem-chip {
