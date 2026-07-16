@@ -822,7 +822,7 @@ const RANKS = [
   { min: 120, title: "Scholar of the Stacks" },
   { min: 220, title: "Curator of Margins" },
   { min: 340, title: "Keeper of the Archives" },
-  { min: 490, title: "Master of the Quarterly" },
+  { min: 490, title: "Master of Osmosis" },
 ];
 
 function _honourStats() {
@@ -5497,6 +5497,7 @@ function renderArticleGrid() {
     // same tally also prints on its own collation line there.
     const edCountEl = document.getElementById("edStoryCount");
     if (edCountEl) edCountEl.textContent = countText;
+    _setMastheadReal(allArticles.length);
   }
 
   let displayArticles = allArticles;
@@ -5742,6 +5743,28 @@ function goToExploreView() {
   renderArticleGrid();
   updateActiveNav("navHome");
   updateWelcomeLine();
+}
+
+// Real values for the editorial masthead / reading runhead (replacing the
+// old fake roman-numeral issue numbers): today's date, year, live story count.
+function _setMastheadReal(storyCount) {
+  const d = new Date();
+  const mon = d
+    .toLocaleDateString(undefined, { month: "short" })
+    .toUpperCase();
+  const day = d.getDate();
+  const yr = d.getFullYear();
+  const set = (id, txt) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  };
+  set("edMhA", `${day} ${mon}`);
+  set("edMhB", `Vol · ${yr}`);
+  set("edMhC", `No · ${storyCount}`);
+  set(
+    "edRunheadFolio",
+    `${String(day).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(yr).slice(2)}`,
+  );
 }
 
 function navigateToArticle(d, s, a, options = {}) {
