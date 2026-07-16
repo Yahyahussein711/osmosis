@@ -5499,34 +5499,6 @@ function renderArticleGrid() {
     if (edCountEl) edCountEl.textContent = countText;
   }
 
-  // "From the Archives" — one unread story resurfaces each day
-  // (deterministic: same pick all day, new pick tomorrow).
-  const archivesSlot = document.getElementById("archivesSlot");
-  if (archivesSlot) {
-    const unread = allArticles.filter(
-      (it) =>
-        !(userLearningJourney.topics[it.domain]?.readArticles || []).includes(
-          it.article,
-        ),
-    );
-    if (!unread.length) {
-      archivesSlot.style.display = "none";
-      archivesSlot.onclick = null;
-    } else {
-      const day = Math.floor(Date.now() / 86400000);
-      const pick = unread[day % unread.length];
-      archivesSlot.innerHTML = `
-        <div class="archives-label">From the Archives</div>
-        <div class="archives-title">${pick.article}</div>
-        <div class="archives-meta">${pick.author ? `${pick.author} · ` : ""}${pick.readTime} min read</div>`;
-      archivesSlot.style.display = "block";
-      archivesSlot.onclick = () => {
-        currentState.mode = "explore";
-        navigateToArticle(pick.domain, pick.subtopic, pick.article);
-      };
-    }
-  }
-
   let displayArticles = allArticles;
   if (currentExploreFilter === "read") {
     displayArticles = displayArticles.filter((item) =>
