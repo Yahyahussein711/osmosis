@@ -1511,18 +1511,13 @@ body.deep-work-active #articleView {
   background: transparent;
   border: none;
   color: var(--dark-text);
-  padding: 8px 14px;
-  border-radius: 3px;
+  padding: 9px 11px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
   cursor: pointer;
   box-shadow: none;
-  font-family: "Lora", Georgia, serif;
-  font-variant: small-caps;
-  letter-spacing: 1.4px;
-  font-size: 0.82rem;
-  font-weight: 500;
   transition: background 0.15s ease;
 }
 .floating-selection-menu .fab-btn svg {
@@ -4129,21 +4124,15 @@ body.compact-mode .annotation-item {
 }
 .mobile-action-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-width: 60px;
+  min-width: 46px;
+  min-height: 44px;
   background: transparent;
   border: none;
   border-radius: 10px;
   color: var(--dark-text);
-  font-family: "Lora", Georgia, serif;
-  font-variant: small-caps;
-  letter-spacing: 1.4px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  padding: 9px 8px 8px;
+  padding: 10px 12px;
   cursor: pointer;
   box-shadow: none;
   transition: background 0.15s ease;

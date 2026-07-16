@@ -155,6 +155,8 @@
     else play();
   }
   window.osmosisAutoScrollToggle = toggle;
+  window.osmosisAutoScrollStart = play;
+  window.osmosisAutoScrollStop = pause;
 
   function wire() {
     var t = $("asToggle");
@@ -165,33 +167,20 @@
     // Triple-tap anywhere on the story to start OR stop the drift — no
     // reaching for a button. Ignores taps on links/marks/buttons.
     var content = $("articleContent");
+    // Auto-scroll is started from the selection popup (＋ Scroll). While it's
+    // drifting, a single tap on the story stops it — and that tap is swallowed
+    // so it never reaches Focus mode's double-tap-to-exit logic.
     if (content) {
-      var taps = [];
       content.addEventListener("click", function (e) {
+        if (!playing) return;
         if (
           e.target &&
           e.target.closest &&
           e.target.closest("a,button,mark,.inline-bookmark,input,textarea")
         )
           return;
-        // While it's drifting, a single tap on the story stops it — and we
-        // swallow that tap so it never reaches Focus mode's tap-to-exit.
-        if (playing) {
-          e.stopPropagation();
-          taps = [];
-          pause();
-          return;
-        }
-        // Otherwise, three quick taps start it.
-        var now = Date.now();
-        taps = taps.filter(function (t) {
-          return now - t < 600;
-        });
-        taps.push(now);
-        if (taps.length >= 3) {
-          taps = [];
-          play();
-        }
+        e.stopPropagation();
+        pause();
       });
     }
 
