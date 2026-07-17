@@ -2914,17 +2914,9 @@ function setupEvents() {
       const imageFit = genImageZoom < 0.999 ? Number(genImageZoom.toFixed(2)) : "";
       const imagePos = genImagePos || "50% 50%";
 
-      // Validate inputs
+      // Validate inputs — no length limit on title or content.
       if (!title || !content) {
         alert("Please provide at least a title and content.");
-        return;
-      }
-      if (title.length > 200) {
-        alert("Title must be 200 characters or less.");
-        return;
-      }
-      if (content.length > 50000) {
-        alert("Content must be 50,000 characters or less.");
         return;
       }
       if (!domain || domain.trim() === "") {
