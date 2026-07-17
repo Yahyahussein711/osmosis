@@ -3384,6 +3384,23 @@ body.multi-select-active .timeline-actions {
   background: color-mix(in srgb, var(--accent) 12%, var(--glass-solid));
 }
 
+/* ===== D. Book flow — first-line indents, no paragraph gaps ===== */
+[data-skin="editorial"] #articleView .article-content p {
+  margin-bottom: 0;
+}
+[data-skin="editorial"] #articleView .article-content p + p {
+  text-indent: 1.35em;
+}
+
+/* ===== C. Paragraph focus — dim all but the lines you're reading ===== */
+.article-content.para-focus > * {
+  opacity: 0.3;
+  transition: opacity 0.45s ease;
+}
+.article-content.para-focus > *.in-focus {
+  opacity: 1;
+}
+
 /* ===== Immersive reading: chrome fades while scrolling down ===== */
 body.immersed .bottom-nav {
   transform: translateY(120%);
