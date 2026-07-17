@@ -2281,11 +2281,11 @@ function toggleTheme() {
 
 function applyReaderPrefs() {
   const defaults = {
-    fontSize: "1.1",
+    fontSize: "1.19",
     lineHeight: "1.7",
     fontFamily: "'Lora', serif",
     letterSpacing: "0",
-    maxWidth: "800",
+    maxWidth: "670",
     theme: "default",
   };
   const prefs = JSON.parse(
@@ -2494,11 +2494,11 @@ function saveReaderPrefs() {
   localStorage.setItem(
     "osmosis_reader_prefs",
     JSON.stringify({
-      fontSize: fontSlider ? fontSlider.value : "1.1",
+      fontSize: fontSlider ? fontSlider.value : "1.19",
       lineHeight: lineSlider ? lineSlider.value : "1.7",
       fontFamily: activeFontBtn ? activeFontBtn.dataset.font : "'Lora', serif",
       letterSpacing: spaceSlider ? spaceSlider.value : "0",
-      maxWidth: widthSlider ? widthSlider.value : "800",
+      maxWidth: widthSlider ? widthSlider.value : "670",
       theme: activeThemeBtn ? activeThemeBtn.dataset.themeVal : "default",
     }),
   );
@@ -5069,6 +5069,7 @@ function updateActiveNav(buttonId) {
 
 function switchView(viewName, skipScroll = false) {
   document.body.classList.remove("drawer-active");
+  document.body.classList.remove("immersed"); // never keep reading-immersion across views
   // Overlays (the writing drawer, dashboard detail, the photo lightbox) lock
   // scrolling while open. Switching views means none of them are showing, so
   // always release the lock — otherwise it leaks and the page can't scroll.
@@ -6539,14 +6540,27 @@ document.addEventListener("scroll", () => {
 
   // Floating jump button: appears only while scrolling up (reading down
   // keeps the page clean), and flips upward once well into the story.
-  const jumpBtn = document.getElementById("scrollJumpBtn");
-  if (jumpBtn) {
-    jumpBtn.classList.toggle("up", pct > 60);
+  {
     const y = window.scrollY;
     const scrollingUp = y < _lastReadScrollY - 2;
     const scrollingDown = y > _lastReadScrollY + 2;
-    if (scrollingUp && y > 200) jumpBtn.classList.add("visible");
-    else if (scrollingDown || y <= 200) jumpBtn.classList.remove("visible");
+    const jumpBtn = document.getElementById("scrollJumpBtn");
+    if (jumpBtn) {
+      jumpBtn.classList.toggle("up", pct > 60);
+      if (scrollingUp && y > 200) jumpBtn.classList.add("visible");
+      else if (scrollingDown || y <= 200) jumpBtn.classList.remove("visible");
+    }
+    // Immersive reading: while scrolling DOWN the chrome (bottom nav, progress)
+    // fades away so it's just text; scrolling UP or reaching the top brings it
+    // back. Focus mode already hides everything, so leave it alone there.
+    const inArticle = document
+      .getElementById("articleView")
+      ?.classList.contains("active");
+    if (inArticle && !document.body.classList.contains("deep-work-active")) {
+      if (scrollingDown && y > 200) document.body.classList.add("immersed");
+      else if (scrollingUp || y <= 200)
+        document.body.classList.remove("immersed");
+    }
     _lastReadScrollY = y;
   }
 

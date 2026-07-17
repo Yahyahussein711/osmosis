@@ -897,6 +897,9 @@ input[type="text"].search-input:not(:placeholder-shown) {
   bottom: 0;
   left: 0;
   right: 0;
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.3s ease;
   margin: 0;
   width: 100%;
   max-width: none;
@@ -1098,7 +1101,7 @@ input[type="text"].search-input:not(:placeholder-shown) {
 #pathDetailView > .view-title,
 #pathDetailView > .view-subtitle,
 #pathDetailView > .back {
-  max-width: var(--article-max-width, 800px);
+  max-width: var(--article-max-width, 670px);
   margin-left: auto;
   margin-right: auto;
   width: 100%;
@@ -1189,7 +1192,7 @@ input[type="text"].search-input:not(:placeholder-shown) {
 .article-main-col {
   /* Sheet width = the reader's chosen text measure + page margins,
      so the line length stays exactly what the width slider sets. */
-  max-width: calc(var(--article-max-width, 800px) + 8rem);
+  max-width: calc(var(--article-max-width, 670px) + 8rem);
   margin: 0 auto;
   background-color: var(--reader-paper);
   border: 1px solid var(--reader-paper-edge);
@@ -1229,7 +1232,7 @@ input[type="text"].search-input:not(:placeholder-shown) {
   background-color: var(--cream);
 }
 [data-skin="editorial"] .article-main-col {
-  max-width: var(--article-max-width, 800px);
+  max-width: var(--article-max-width, 670px);
   background: transparent;
   background-image: none;
   border: none;
@@ -3355,6 +3358,19 @@ body.multi-select-active .timeline-actions {
 }
 .rt-open { border: none; cursor: pointer; }
 
+/* ===== Immersive reading: chrome fades while scrolling down ===== */
+body.immersed .bottom-nav {
+  transform: translateY(120%);
+  opacity: 0;
+  pointer-events: none;
+}
+body.immersed .article-progress-container {
+  opacity: 0;
+}
+.article-progress-container {
+  transition: opacity 0.3s ease;
+}
+
 /* ===== Library almanac — date + stories + read + streak, editorial ===== */
 .ed-almanac {
   max-width: 400px;
@@ -5042,7 +5058,7 @@ html[data-skin="editorial"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: var(--article-max-width, 800px);
+  max-width: var(--article-max-width, 670px);
   margin: 0 auto 1rem;
   padding-bottom: 0.7rem;
   border-bottom: 1px solid var(--ed-rule);
