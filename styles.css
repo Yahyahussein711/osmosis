@@ -3358,6 +3358,32 @@ body.multi-select-active .timeline-actions {
 }
 .rt-open { border: none; cursor: pointer; }
 
+/* ===== Manage Stories: cover thumbnail ===== */
+.manage-thumb {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  background: #0d0b09;
+}
+.manage-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.manage-thumb-none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.3rem;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--glass-solid));
+}
+
 /* ===== Immersive reading: chrome fades while scrolling down ===== */
 body.immersed .bottom-nav {
   transform: translateY(120%);

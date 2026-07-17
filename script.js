@@ -6092,7 +6092,6 @@ function renderArticleContent(options = {}) {
       <p>${descHtml}</p>
           <div style="display: flex; gap: 12px; justify-content: center; margin-top: 8px;">
             <button id="markReadBtn" class="primary">${btnText}</button>
-            <button id="reflectFinishedBtn" class="secondary">Reflect</button>
           </div>
       ${coloParts.length ? `<div class="story-colophon">${coloParts.join(" · ")}</div>` : ""}
       <div id="continuationPlate" class="continuation-plate"></div>
@@ -6102,11 +6101,6 @@ function renderArticleContent(options = {}) {
       userLearningJourney.topics[currentState.category]?.readArticles || [];
     let isRead = readList.includes(currentState.article);
     const markReadBtn = document.getElementById("markReadBtn");
-
-    const reflectFinishedBtn = document.getElementById("reflectFinishedBtn");
-    if (reflectFinishedBtn) {
-      reflectFinishedBtn.onclick = () => openNotesDrawer(0);
-    }
 
     const updateBtnUI = () => {
       if (isRead) {
@@ -14174,10 +14168,19 @@ function renderGeneratorManageList() {
       ? bylineParts.join(" · ")
       : `${(artObj.content || "").split(/\s+/).filter(Boolean).length.toLocaleString()} words`;
 
+    // A little cover thumbnail so each story is instantly recognisable.
+    const img = artObj.image;
+    const thumb = img
+      ? `<div class="manage-thumb"><img ${img.startsWith("data:") ? `src="${img}"` : `data-img-ref="${img}"`} alt="" /></div>`
+      : `<div class="manage-thumb manage-thumb-none">${(art || "?").charAt(0).toUpperCase()}</div>`;
+
     item.innerHTML = `
-      <div style="min-width:0; padding-right:10px;">
-        <div style="font-weight:600; color:var(--dark-text); font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${art}</div>
-        <div style="font-size:0.75rem; color:var(--subtitle-color); font-variant:small-caps; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${byline}</div>
+      <div style="display:flex; align-items:center; gap:12px; min-width:0; flex:1;">
+        ${thumb}
+        <div style="min-width:0; padding-right:10px;">
+          <div style="font-weight:600; color:var(--dark-text); font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${art}</div>
+          <div style="font-size:0.75rem; color:var(--subtitle-color); font-variant:small-caps; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${byline}</div>
+        </div>
       </div>
       <div style="display:flex; gap:8px; flex-shrink:0;">
         <button class="secondary btn-sm edit-btn">Edit</button>
@@ -14197,6 +14200,8 @@ function renderGeneratorManageList() {
   if (!hasItems) {
     list.innerHTML =
       '<div class="glass-panel" style="padding: 24px; text-align: center; color: var(--subtitle-color); font-size: 0.9rem;">No stories yet.</div>';
+  } else if (typeof hydrateImages === "function") {
+    hydrateImages(list);
   }
 }
 
