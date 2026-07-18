@@ -7138,7 +7138,10 @@ function loadAnnotations() {
 function updateStoryBookmarkLink() {
   const link = document.getElementById("storyBookmarkLink");
   if (!link) return;
-  const bookmark = getAnnotations().find((a) => a.note === "Bookmarked");
+  // Jump to the NEWEST bookmark in this story, not the first one added.
+  const bmarks = getAnnotations().filter((a) => a.note === "Bookmarked");
+  const ts = (a) => (a.created ? new Date(a.created).getTime() : a.id || 0);
+  const bookmark = bmarks.sort((x, y) => ts(y) - ts(x))[0] || null;
   if (bookmark) {
     link.style.display = "inline-flex";
     link.onclick = () => goToAnnotationInArticle(bookmark.id);
