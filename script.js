@@ -5069,7 +5069,6 @@ function updateActiveNav(buttonId) {
 
 function switchView(viewName, skipScroll = false) {
   document.body.classList.remove("drawer-active");
-  document.body.classList.remove("immersed"); // never keep reading-immersion across views
   // Overlays (the writing drawer, dashboard detail, the photo lightbox) lock
   // scrolling while open. Switching views means none of them are showing, so
   // always release the lock — otherwise it leaks and the page can't scroll.
@@ -5890,11 +5889,6 @@ function loadArticleView(options = {}) {
 
   renderArticleContent(options);
 
-  // A fresh story opens with chrome shown and the reading band lit.
-  _readUpAccum = 0;
-  setImmersed(false);
-  setTimeout(updateParaFocus, 60);
-
   // Resume only within this session (story → timeline → back). A fresh
   // open — new story, or a new app session — starts from the beginning.
   _readingActive = true;
@@ -6516,65 +6510,7 @@ function spawnCompletionExplosion() {
 }
 
 let _lastReadScrollY = 0;
-let _readUpAccum = 0; // accumulated upward scroll — a deliberate reveal, not a jitter
-let _paraFocusOn = false;
 const _sessionScroll = {}; // per-story scroll, forgotten when the app closes
-
-// A/B: hide or reveal all reading chrome (bottom nav + progress).
-function setImmersed(on) {
-  document.body.classList.toggle("immersed", on);
-}
-
-// C: light the paragraphs sitting in the reading band, dim the rest.
-function updateParaFocus() {
-  const art = document.getElementById("articleContent");
-  if (!art) return;
-  art.classList.toggle("para-focus", _paraFocusOn);
-  if (!_paraFocusOn) return;
-  const center = window.innerHeight * 0.42;
-  const band = window.innerHeight * 0.24;
-  const kids = art.children;
-  for (let i = 0; i < kids.length; i++) {
-    const r = kids[i].getBoundingClientRect();
-    const lit = r.bottom > center - band && r.top < center + band;
-    kids[i].classList.toggle("in-focus", lit);
-  }
-}
-
-// A: tap the page to toggle all reading chrome on/off (Kindle / Books style).
-document.addEventListener("click", (e) => {
-  if (currentState.view !== "article") return;
-  if (document.body.classList.contains("deep-work-active")) return;
-  const t = e.target;
-  if (!t || !t.closest || !t.closest("#articleContent")) return;
-  if (
-    t.closest(
-      "a, button, mark, .inline-bookmark, input, textarea, .floating-selection-menu, #notesSection",
-    )
-  )
-    return;
-  const sel = window.getSelection();
-  if (sel && !sel.isCollapsed && String(sel).trim()) return; // mid-selection
-  document.body.classList.toggle("immersed");
-});
-
-// Paragraph-focus preference + toggle.
-try {
-  _paraFocusOn = localStorage.getItem("osmosis_para_focus") === "1";
-} catch (e) {}
-document.addEventListener("DOMContentLoaded", () => {
-  const pf = document.getElementById("paraFocusToggle");
-  if (pf) {
-    pf.checked = _paraFocusOn;
-    pf.addEventListener("change", () => {
-      _paraFocusOn = pf.checked;
-      try {
-        localStorage.setItem("osmosis_para_focus", _paraFocusOn ? "1" : "0");
-      } catch (e) {}
-      updateParaFocus();
-    });
-  }
-});
 let _readingActive = false; // true while a story is "open" (not backed out of)
 let _sittingReads = 0; // stories finished this sitting — the reading thread
 let _sittingStories = []; // {domain, sub, art, obj} read this sitting, for the visual thread
@@ -6597,33 +6533,14 @@ document.addEventListener("scroll", () => {
 
   // Floating jump button: appears only while scrolling up (reading down
   // keeps the page clean), and flips upward once well into the story.
-  {
+  const jumpBtn = document.getElementById("scrollJumpBtn");
+  if (jumpBtn) {
+    jumpBtn.classList.toggle("up", pct > 60);
     const y = window.scrollY;
-    const dy = y - _lastReadScrollY;
-    const scrollingUp = dy < 0;
-    const scrollingDown = dy > 0;
-    // B: accumulate upward distance so only a DELIBERATE up-scroll reveals the
-    // chrome — tiny jitters no longer flicker it back.
-    if (scrollingUp) _readUpAccum += -dy;
-    else if (scrollingDown) _readUpAccum = 0;
-
-    const jumpBtn = document.getElementById("scrollJumpBtn");
-    if (jumpBtn) {
-      jumpBtn.classList.toggle("up", pct > 60);
-      if (scrollingUp && _readUpAccum > 40 && y > 200)
-        jumpBtn.classList.add("visible");
-      else if (scrollingDown || y <= 200) jumpBtn.classList.remove("visible");
-    }
-    // A/B: immersive chrome. Hide while reading down; reveal on a deliberate
-    // up-scroll (40px+) or near the top. Focus mode handles its own chrome.
-    if (!document.body.classList.contains("deep-work-active")) {
-      if (scrollingDown && dy > 3 && y > 160) setImmersed(true);
-      else if (_readUpAccum > 40 || y <= 120) setImmersed(false);
-    }
-
-    // C: keep the reading-band paragraphs lit.
-    if (_paraFocusOn) updateParaFocus();
-
+    const scrollingUp = y < _lastReadScrollY - 2;
+    const scrollingDown = y > _lastReadScrollY + 2;
+    if (scrollingUp && y > 200) jumpBtn.classList.add("visible");
+    else if (scrollingDown || y <= 200) jumpBtn.classList.remove("visible");
     _lastReadScrollY = y;
   }
 
@@ -6646,17 +6563,6 @@ document.addEventListener("scroll", () => {
             : `${left}`;
   }
 
-  // Kinetic Velocity Feedback
-  let velocity = Math.abs(window.scrollY - lastScrollTop);
-  lastScrollTop = window.scrollY;
-  if (velocity > 15 && currentState.view === "article") {
-    document.body.classList.add("scrolling-fast");
-    clearTimeout(scrollVelocityTimeout);
-    scrollVelocityTimeout = setTimeout(
-      () => document.body.classList.remove("scrolling-fast"),
-      150,
-    );
-  }
 });
 
 // ============================================================

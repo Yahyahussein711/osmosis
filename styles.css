@@ -897,9 +897,6 @@ input[type="text"].search-input:not(:placeholder-shown) {
   bottom: 0;
   left: 0;
   right: 0;
-  transition:
-    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 0.3s ease;
   margin: 0;
   width: 100%;
   max-width: none;
@@ -1352,12 +1349,6 @@ mark.highlighted-text.newly-added {
     width 0.1s ease-out,
     box-shadow 0.3s ease,
     filter 0.3s ease;
-}
-body.scrolling-fast #articleProgressBar {
-  box-shadow:
-    0 -2px 15px var(--accent),
-    0 -4px 30px var(--accent);
-  filter: brightness(1.4);
 }
 
 /* Reading Completed Section */
@@ -3390,28 +3381,6 @@ body.multi-select-active .timeline-actions {
 }
 [data-skin="editorial"] #articleView .article-content p + p {
   text-indent: 1.35em;
-}
-
-/* ===== C. Paragraph focus — dim all but the lines you're reading ===== */
-.article-content.para-focus > * {
-  opacity: 0.3;
-  transition: opacity 0.45s ease;
-}
-.article-content.para-focus > *.in-focus {
-  opacity: 1;
-}
-
-/* ===== Immersive reading: chrome fades while scrolling down ===== */
-body.immersed .bottom-nav {
-  transform: translateY(120%);
-  opacity: 0;
-  pointer-events: none;
-}
-body.immersed .article-progress-container {
-  opacity: 0;
-}
-.article-progress-container {
-  transition: opacity 0.3s ease;
 }
 
 /* ===== Library almanac — date + stories + read + streak, editorial ===== */

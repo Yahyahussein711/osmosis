@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="reset.css" />
-    <link rel="stylesheet" href="styles.css?v=20260716f" />
+    <link rel="stylesheet" href="styles.css?v=20260716g" />
     <style id="synthesisRitualStyles">
       .brand-logo-svg {
         /* Static logo - no animation */
@@ -289,6 +289,7 @@
               justify-content: center;
               padding: 8px;
               border-radius: 50%;
+              margin-left: 10px;
             "
           >
             <svg
@@ -498,7 +499,7 @@
           <button
             id="storyBookmarkLink"
             title="Jump to your bookmark"
-            style="display: none; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; color: var(--accent); font-size: 0.85rem; font-weight: 600; padding: 4px 0; margin-left: 18px; font-family: 'Outfit', sans-serif;"
+            style="display: none; align-items: center; gap: 6px; background: none; border: none; cursor: pointer; color: var(--accent); font-size: 0.85rem; font-weight: 600; padding: 4px 0; font-family: 'Outfit', sans-serif;"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)" stroke="var(--accent)" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             Jump to your bookmark
@@ -893,18 +894,6 @@
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" id="keepAwakeToggle" />
-                  <span class="toggle-slider"></span>
-                </label>
-              </div>
-              <div class="setting-row">
-                <div class="setting-info">
-                  <div class="setting-name">Paragraph Focus</div>
-                  <div class="setting-desc">
-                    Dim everything but the lines you're reading
-                  </div>
-                </div>
-                <label class="toggle-switch">
-                  <input type="checkbox" id="paraFocusToggle" />
                   <span class="toggle-slider"></span>
                 </label>
               </div>
@@ -1673,8 +1662,6 @@
               Select text in the story, then type a note below.
             </p>
 
-            <button class="ws-inspire" id="noteGuideBtn">✦ Guide me</button>
-            <div id="annotationDialogue" class="dlg" style="display: none"></div>
 
             <div class="ws-sheet">
               <textarea
@@ -2077,10 +2064,10 @@
 
     <div id="toast" class="toast">Message</div>
 
-    <script src="stories.js?v=20260716f"></script>
-    <script src="script.js?v=20260716f"></script>
+    <script src="stories.js?v=20260716g"></script>
+    <script src="script.js?v=20260716g"></script>
 
-    <script src="coach.js?v=20260716f"></script>
-    <script src="reading.js?v=20260716f"></script>
+    <script src="coach.js?v=20260716g"></script>
+    <script src="reading.js?v=20260716g"></script>
   </body>
 </html>
