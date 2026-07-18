@@ -9798,16 +9798,31 @@ function renderChronStories(body, view) {
     return;
   }
 
-  const ORDER = ["Highlight", "Note", "Reflection", "Bookmark", "Read"];
+  const ORDER = ["Highlight", "Note", "Bookmark", "Read"];
   const PLURAL = {
     Highlight: "Highlights",
     Note: "Notes",
-    Reflection: "Reflections",
     Bookmark: "Bookmarks",
     Read: "Reading",
   };
   const fmtDay = (t) =>
     new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  // Reading progress for a story (scans for its saved progress_ key).
+  const progressFor = (domain, article) => {
+    const suffix = "_" + article;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (
+        k &&
+        k.indexOf("progress_article_" + domain + "_") === 0 &&
+        k.endsWith(suffix)
+      ) {
+        const v = parseInt(localStorage.getItem(k), 10);
+        if (!isNaN(v)) return v;
+      }
+    }
+    return 0;
+  };
 
   body.innerHTML = groups
     .map((g, gi) => {
@@ -9828,7 +9843,7 @@ function renderChronStories(body, view) {
         })
         .join("");
 
-      // meta line: read status + span
+      // meta line: read status, reading time, progress, entries, date span
       const times = g.items.map((i) => new Date(i.date).getTime());
       const first = Math.min(...times);
       const lastT = Math.max(...times);
@@ -9840,7 +9855,27 @@ function renderChronStories(body, view) {
         fmtDay(first) === fmtDay(lastT)
           ? `marked ${fmtDay(first)}`
           : `${fmtDay(first)} – ${fmtDay(lastT)}`;
-      const meta = `${isRead ? '<span class="ds-read">✓ Read</span> · ' : ""}${g.items.length} ${g.items.length === 1 ? "entry" : "entries"} · ${spanTxt}`;
+      const words = (obj.content || "").split(/\s+/).filter(Boolean).length;
+      const mins = words ? Math.max(1, Math.round(words / 200)) : 0;
+      const prog = progressFor(g.domain, g.article);
+      const genres =
+        Array.isArray(obj.genres) && obj.genres.length
+          ? `<div class="ds-genres">${obj.genres
+              .slice(0, 3)
+              .map((x) => `<span class="ds-genre">${_chronEsc(x)}</span>`)
+              .join("")}</div>`
+          : "";
+      const metaBits = [];
+      if (isRead) metaBits.push('<span class="ds-read">✓ Read</span>');
+      if (mins) metaBits.push(`${mins} min`);
+      if (prog > 0 && prog < 100 && !isRead) metaBits.push(`${prog}% in`);
+      metaBits.push(`${g.items.length} ${g.items.length === 1 ? "entry" : "entries"}`);
+      metaBits.push(spanTxt);
+      const meta = metaBits.join(" · ");
+      const progBar =
+        prog > 0
+          ? `<div class="ds-progress"><i style="width:${Math.min(100, prog)}%"></i></div>`
+          : "";
 
       // body: sections grouped by type, ALL marks, newest first
       const sections = ORDER.filter((t) => byType[t] && byType[t].length)
@@ -9871,10 +9906,12 @@ function renderChronStories(body, view) {
           <div class="chron-dossier-info">
             <div class="chron-dossier-title">${_chronEsc(g.article)}</div>
             ${obj.author ? `<div class="chron-dossier-author">${_chronEsc(obj.author)}</div>` : ""}
+            ${genres}
             <div class="chron-dossier-chips">${chips}</div>
           </div>
           <span class="chron-dossier-chev">⌄</span>
         </div>
+        ${progBar}
         <div class="chron-dossier-meta">${meta}</div>
         <div class="chron-dossier-body">
           ${sections}

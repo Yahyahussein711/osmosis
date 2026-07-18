@@ -8298,6 +8298,30 @@ body.deep-work-active::after {
 }
 .chron-dossier-author { font-family: "Lora", Georgia, serif; font-style: italic; font-size: 0.82rem; color: var(--subtitle-color); margin-top: 3px; }
 .chron-dossier-chips { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 10px; }
+.ds-genres { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.ds-genre {
+  font-family: "Lora", Georgia, serif;
+  font-variant: small-caps;
+  letter-spacing: 0.8px;
+  font-size: 0.6rem;
+  color: var(--subtitle-color);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.ds-progress {
+  height: 3px;
+  border-radius: 3px;
+  background: var(--glass-border);
+  overflow: hidden;
+  margin: 12px 0 0;
+}
+.ds-progress > i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
 .ds-chip {
   display: inline-flex;
   align-items: center;
