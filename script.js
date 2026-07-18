@@ -806,8 +806,6 @@ const HONOURS = [
   { id: "thirty_stories", glyph: "ⅩⅩⅩ", name: "The Thirty", desc: "Finish thirty stories.", pts: 100, test: (s) => s.read >= 30, prog: (s) => [s.read, 30] },
   { id: "ten_marks", glyph: "✎", name: "Ten Marks", desc: "Save ten highlights or notes.", pts: 20, test: (s) => s.marks >= 10, prog: (s) => [s.marks, 10] },
   { id: "fifty_marks", glyph: "✒", name: "Fifty Marks", desc: "Save fifty highlights or notes.", pts: 50, test: (s) => s.marks >= 50, prog: (s) => [s.marks, 50] },
-  { id: "first_reflection", glyph: "❧", name: "First Reflection", desc: "Write your first reflection.", pts: 15, test: (s) => s.refl >= 1, prog: (s) => [s.refl, 1] },
-  { id: "ten_reflections", glyph: "❦", name: "Deep Thinker", desc: "Write ten reflections.", pts: 40, test: (s) => s.refl >= 10, prog: (s) => [s.refl, 10] },
   { id: "week_streak", glyph: "Ⅶ", name: "A Week of Letters", desc: "Read seven days in a row.", pts: 40, test: (s) => s.longest >= 7, prog: (s) => [s.longest, 7] },
   { id: "month_streak", glyph: "☾", name: "A Month of Letters", desc: "Read thirty days in a row.", pts: 100, test: (s) => s.longest >= 30, prog: (s) => [s.longest, 30] },
   { id: "first_fav", glyph: "♥", name: "First Favourite", desc: "Mark a moment as a favourite.", pts: 10, test: (s) => s.favs >= 1, prog: (s) => [s.favs, 1] },
@@ -5428,10 +5426,10 @@ function renderArticleGrid() {
           How Osmosis Works
         </div>
         <div style="font-size: 0.9rem; color: var(--subtitle-color); line-height: 1.5; padding-right: 20px;">
-          Osmosis is a living knowledge environment. Here is the core loop:<br><br>
-          <strong>1. Explore:</strong> Select a domain below and dive into an article.<br>
-          <strong>2. Extract:</strong> Highlight text and write reflections to capture insights.<br>
-          <strong>3. Evolve:</strong> Every action automatically constructs a physical 3D <strong>Knowledge Web</strong> of your brain.
+          Osmosis turns reading into lasting knowledge:<br><br>
+          <strong>1. Read:</strong> Pick a story below and open it.<br>
+          <strong>2. Mark:</strong> Select any passage to highlight it, add a note, bookmark your place, or define a word.<br>
+          <strong>3. Return:</strong> Everything you mark is gathered in the Chronicle — search it, revisit it, and see the patterns in how you read.
         </div>
       </div>
     `;
@@ -6949,9 +6947,9 @@ function loadAnnotations() {
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="1.5" style="margin-bottom:12px;"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
             <div style="font-size: 0.85rem; font-weight: bold; color: var(--dark-text); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; padding-right: 20px;">How to Extract Knowledge</div>
             <div style="font-size: 0.85rem; color: var(--subtitle-color); line-height: 1.5; text-align: left; padding-right: 20px;">
-                <strong>1.</strong> Highlight any interesting text in the article.<br>
-                <strong>2.</strong> Click <em>Highlight</em> to instantly save it, or <em>Note</em> to add your own context.<br>
-                <strong>3.</strong> Every saved passage physically grows this topic in your 3D Knowledge Web.
+                <strong>1.</strong> Select any passage in the story.<br>
+                <strong>2.</strong> Tap <em>Highlight</em> to save it, or <em>Note</em> to add your own thought.<br>
+                <strong>3.</strong> Every mark is saved here and gathered in your Chronicle, ready to revisit.
             </div>
         </div>`;
     } else {
@@ -13448,7 +13446,7 @@ async function applyImportedLibrary(rawText) {
 // quietly takes a muted hue sampled from the plate itself.
 function _frontisReveal(img) {
   const run = () => {
-    _tissueGuard(img);
+    // No blur-veil reveal — the photo shows immediately.
     _plateTint(img);
   };
   if (img.complete && img.naturalWidth) run();

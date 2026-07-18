@@ -7135,26 +7135,7 @@ body.deep-work-active .scroll-jump-btn {
   margin-bottom: 0 !important;
 }
 .tissue-veil {
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--cream) 86%, transparent);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  opacity: 1;
-  pointer-events: none;
-  transition:
-    opacity 1.1s ease 0.15s,
-    transform 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s;
-}
-.tissue-veil.lifted {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-@media (prefers-reduced-motion: reduce) {
-  .tissue-veil {
-    display: none;
-  }
+  display: none; /* no blur-veil over story cover photos */
 }
 
 /* The drop cap and the author separator echo the plate's own hue */

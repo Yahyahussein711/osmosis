@@ -354,7 +354,7 @@
       target: '.chron-lens[data-lens="journal"]',
       eyebrow: "Chronicle · Journal",
       title: "The timeline",
-      text: "A dated stream of every highlight, note, reflection and bookmark. Search it, favourite entries, and scrub through time.",
+      text: "A dated stream of every highlight, note and bookmark. Search it, favourite entries, and scrub through time.",
     },
     {
       pre: clickLens("stories"),
@@ -372,28 +372,10 @@
     },
     {
       pre: clickNav("navDashboard"),
-      target: ".study-review",
-      eyebrow: "The Study · Daily Review",
-      title: "Spaced repetition",
-      text: "Your reflections resurface on a widening schedule so they never fade. Recall, reveal what you wrote, then rate how it lands.",
-    },
-    {
-      target: "#parlourCard",
-      eyebrow: "The Study · For Fun",
-      title: "The Parlour Game",
-      text: "A quiz built from what you've <b>actually read</b> — passages, authors, your own margins. Build a streak, use 50/50.",
-    },
-    {
-      target: "#honoursCard",
-      eyebrow: "The Study · Rewards",
-      title: "Honours & ranks",
-      text: "Earn stamped seals for milestones, each worth points that carry a rank. Tap to open the whole cabinet.",
-    },
-    {
-      target: "#marginsCard",
-      eyebrow: "The Study · Serendipity",
-      title: "The Common Thread",
-      text: "Two passages you marked in <b>different stories</b> that share an idea — the invisible threads through your reading.",
+      target: "#dashboardCardsGrid",
+      eyebrow: "The Study",
+      title: "Your progress",
+      text: "Your ledger at a glance — stories, highlights, notes and hours at the desk — plus a 28-day activity heatmap.",
     },
     {
       pre: clickNav("navMenuBtn"),
@@ -423,10 +405,10 @@
     },
     {
       pre: openWSReflection,
-      target: "#noteGuideBtn",
+      target: "#annotationInput",
       eyebrow: "The Workstation · Notes",
-      title: "Guided notes",
-      text: "Facing a blank note? Tap <b>✦ Guide me</b> — pick a lens, answer with tap-in starters, and press further to go deeper. Swipe the sheet down to close it.",
+      title: "Your notes",
+      text: "Write and manage your notes here, jump back to where each sits in the story, and search everything you've captured. Swipe the sheet down to close it.",
     },
     {
       pre: finishTour,
