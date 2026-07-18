@@ -6030,26 +6030,7 @@ function renderArticleContent(options = {}) {
   loadAnnotations();
   loadReflections();
 
-  // Apply the Doomscroll "Feed" Reveal Effect, or skip if jumping to a note
-  const blocks = articleContent.children;
-  const isJumpingToNote = options.isJumpingToNote || false;
-
-  Array.from(blocks).forEach((block, idx) => {
-    if (isJumpingToNote) {
-      block.classList.add("scroll-reveal", "visible");
-      block.style.transitionDelay = "0s";
-    } else {
-      block.classList.add("scroll-reveal");
-      // Instantly reveal the first 2 blocks so the screen isn't empty
-      if (idx < 2) {
-        block.style.transitionDelay = `${idx * 0.15}s`;
-        setTimeout(() => block.classList.add("visible"), 50);
-      }
-    }
-  });
-  if (!isJumpingToNote) {
-    setupDoomscrollObserver();
-  }
+  // Paragraphs render immediately — no scroll-reveal animation.
 
   const completionSection = document.querySelector(
     ".article-completion-section",

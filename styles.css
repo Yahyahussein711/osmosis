@@ -1330,17 +1330,10 @@ mark.highlighted-text.newly-added {
 }
 
 /* DOOMSCROLLER FEED EFFECT: Scroll Reveal */
+/* Paragraphs render immediately — no scroll-reveal animation. */
 .scroll-reveal {
-  opacity: 0;
-  transform: translateY(30px) scale(0.98);
-  transition:
-    opacity 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-  will-change: opacity, transform;
-}
-.scroll-reveal.visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: none;
 }
 
 /* KINETIC FEEDBACK: Velocity Glow */
