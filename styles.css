@@ -9254,4 +9254,176 @@ body.deep-work-active::after {
   max-width: 60px;
 }
 
+/* ============================================================
+   Heatmap day overview — a calm sheet, not a trip to the Chronicle
+   ============================================================ */
+.day-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(30, 24, 16, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.day-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.day-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--cream, #faf8f0);
+  color: var(--dark-text, #2d2619);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(30, 24, 16, 0.35);
+  transform: translateY(24px);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.day-overlay.visible .day-sheet {
+  transform: translateY(0);
+}
+@media (min-width: 640px) {
+  .day-overlay {
+    align-items: center;
+  }
+  .day-sheet {
+    border-radius: 16px;
+    max-height: 82vh;
+  }
+}
+.day-head {
+  position: sticky;
+  top: 0;
+  padding: 22px 24px 16px;
+  background: var(--cream, #faf8f0);
+  border-bottom: 1px solid var(--ed-rule, rgba(45, 38, 25, 0.14));
+  border-radius: 20px 20px 0 0;
+}
+.day-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(45, 38, 25, 0.07);
+  color: var(--dark-text, #2d2619);
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.day-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent, #9e4632);
+}
+.day-title {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 4px 0 14px;
+  padding-right: 36px;
+}
+.day-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.day-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 0.86rem;
+  color: var(--subtitle-color, #6b6355);
+}
+.day-stat b {
+  font-weight: 700;
+  color: var(--dark-text, #2d2619);
+}
+.day-stat-glyph {
+  font-size: 0.95rem;
+  align-self: center;
+}
+.day-body {
+  padding: 8px 24px 28px;
+}
+.day-story {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--ed-rule, rgba(45, 38, 25, 0.1));
+}
+.day-story:last-child {
+  border-bottom: none;
+}
+.day-story-open {
+  cursor: pointer;
+}
+.day-story-open:active {
+  opacity: 0.6;
+}
+.day-story-h {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.day-story-t {
+  font-family: "Lora", Georgia, serif;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.3;
+  flex: 1;
+}
+.day-readtag {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent, #9e4632);
+}
+.day-mark {
+  display: flex;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.day-glyph {
+  flex-shrink: 0;
+  width: 1.1em;
+  text-align: center;
+  font-size: 0.95rem;
+}
+.day-mtext {
+  flex: 1;
+  color: var(--dark-text, #2d2619);
+}
+.day-mark-quiet .day-mtext {
+  color: var(--subtitle-color, #6b6355);
+  font-style: italic;
+}
+.day-msub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--subtitle-color, #6b6355);
+}
+
 /* End of stylesheet */

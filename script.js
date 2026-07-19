@@ -10864,6 +10864,137 @@ function toggleTimelineFavorite(dateStr) {
   }
 }
 
+// A calm, self-contained overview of one day — every mark you made,
+// grouped by story. Opens over the current view; never leaves for the Chronicle.
+function showDayOverview(date) {
+  const dayKey = date.toDateString();
+  let items = (userLearningJourney.timeline || []).filter(
+    (t) => new Date(t.date).toDateString() === dayKey,
+  );
+  items.forEach(_chronNormalize);
+  items = items.filter((t) => t.type !== "Reflection");
+  if (!items.length) {
+    showToast("No activity on this day.");
+    return;
+  }
+
+  let ov = document.getElementById("dayOverlay");
+  if (!ov) {
+    ov = document.createElement("div");
+    ov.id = "dayOverlay";
+    ov.className = "day-overlay";
+    ov.innerHTML =
+      '<div class="day-sheet" role="dialog" aria-modal="true"></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click", (e) => {
+      if (e.target === ov) closeDayOverview();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeDayOverview();
+    });
+  }
+  const sheet = ov.querySelector(".day-sheet");
+
+  const dateTxt = date.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+  const isToday = dayKey === new Date().toDateString();
+  const yr =
+    date.getFullYear() !== new Date().getFullYear()
+      ? ", " + date.getFullYear()
+      : "";
+
+  // Summary tallies per kind.
+  const byType = {};
+  items.forEach((t) => (byType[t.type] = (byType[t.type] || 0) + 1));
+  const ORDER = ["Read", "Highlight", "Note", "Bookmark"];
+  const LBL = {
+    Read: "read",
+    Highlight: "highlight",
+    Note: "note",
+    Bookmark: "bookmark",
+  };
+  const summary = ORDER.filter((t) => byType[t])
+    .map((t) => {
+      const n = byType[t];
+      return `<span class="day-stat"><span class="day-stat-glyph" style="color:${_chronCol(
+        t,
+      )}">${_chronGlyph(t)}</span><b>${n}</b> ${LBL[t]}${n === 1 ? "" : "s"}</span>`;
+    })
+    .join("");
+
+  // Group everything by story, preserving first-seen order.
+  const order = [];
+  const stories = {};
+  items.forEach((t) => {
+    const key = t.article || "· general";
+    if (!stories[key]) {
+      stories[key] = { domain: t.domain || "", article: t.article || "", marks: [], read: false };
+      order.push(key);
+    }
+    if (t.type === "Read") stories[key].read = true;
+    else stories[key].marks.push(t);
+  });
+
+  const blocks = order
+    .map((key) => {
+      const g = stories[key];
+      const rows = g.marks
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .map((t) => {
+          const p = _chronParse(t);
+          const main = p.quote || p.note || t.text || "";
+          const sub = p.quote && p.note ? p.note : "";
+          return `<div class="day-mark"><span class="day-glyph" style="color:${_chronCol(
+            t.type,
+          )}">${_chronGlyph(t.type)}</span><span class="day-mtext">${_chronEsc(
+            _chronTrim(main, 200),
+          )}${sub ? `<span class="day-msub">${_chronEsc(_chronTrim(sub, 160))}</span>` : ""}</span></div>`;
+        })
+        .join("");
+      const readBadge = g.read
+        ? '<span class="day-readtag">✓ read</span>'
+        : "";
+      const canOpen = g.article ? "day-story-open" : "";
+      return `<div class="day-story ${canOpen}" data-domain="${_chronAttr(
+        g.domain,
+      )}" data-article="${_chronAttr(g.article)}"><div class="day-story-h"><span class="day-story-t">${_chronEsc(
+        g.article || "General",
+      )}</span>${readBadge}</div>${rows || (g.read ? '<div class="day-mark day-mark-quiet"><span class="day-glyph" style="color:' + _chronCol("Read") + '">▪</span><span class="day-mtext">Marked as read.</span></div>' : "")}</div>`;
+    })
+    .join("");
+
+  sheet.innerHTML = `
+    <div class="day-head">
+      <button class="day-close" aria-label="Close" onclick="closeDayOverview()">✕</button>
+      <div class="day-eyebrow">${isToday ? "Today" : "A day in your reading"}</div>
+      <div class="day-title">${dateTxt}${yr}</div>
+      <div class="day-summary">${summary}</div>
+    </div>
+    <div class="day-body">${blocks}</div>`;
+
+  // Tap a story to open it (that isn't the Chronicle).
+  sheet.querySelectorAll(".day-story-open").forEach((el) => {
+    el.addEventListener("click", () => {
+      const d = el.dataset.domain || "";
+      const a = el.dataset.article || "";
+      if (a && typeof jumpToArticleByDomainAndName === "function") {
+        closeDayOverview();
+        jumpToArticleByDomainAndName(d, a);
+      }
+    });
+  });
+
+  ov.classList.add("visible");
+}
+function closeDayOverview() {
+  const ov = document.getElementById("dayOverlay");
+  if (ov) ov.classList.remove("visible");
+}
+window.closeDayOverview = closeDayOverview;
+
 function renderHeatmap() {
   const grid = document.getElementById("habitHeatmap");
   if (!grid) return;
@@ -10881,7 +11012,7 @@ function renderHeatmap() {
     exp.innerHTML = `
       <button onclick="dismissTip('heatmap')" style="position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: var(--subtitle-color); cursor: pointer; padding: 4px; box-shadow: none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       <div style='font-size: 0.75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> Journey Heatmap</div>
-      <div style="padding-right: 20px;">Tracks your daily reading and notation habits. The darker the square, the more active you were. <strong>Tap any active square</strong> to instantly jump back in time to that specific day in your timeline.</div>`;
+      <div style="padding-right: 20px;">Tracks your daily reading and notation habits. The darker the square, the more active you were. <strong>Tap any active square</strong> to see a clean overview of everything you did that day.</div>`;
     grid.parentNode.insertBefore(exp, grid);
   }
 
@@ -10901,67 +11032,14 @@ function renderHeatmap() {
     cell.title = date.toDateString() + (i === 0 ? " (Today)" : "");
     cell.textContent = date.getDate();
 
-    // Jump to the exact day in the Timeline when clicked
+    // Show a clean overview of everything that happened on this day
+    const dayDate = new Date(date);
     cell.addEventListener("click", () => {
       if (count === 0) {
         showToast("No activity on this day.");
         return;
       }
-      updateActiveNav("navTimeline");
-      switchView("timelineView");
-      currentZoom = "daily";
-      document
-        .querySelectorAll(".zoom-btn")
-        .forEach((b) => b.classList.remove("active"));
-      const dailyBtn = document.querySelector(".zoom-btn[data-zoom='daily']");
-      if (dailyBtn) dailyBtn.classList.add("active");
-
-      document
-        .querySelectorAll(".timeline-filter-btn")
-        .forEach((b) => b.classList.remove("active"));
-      const allFilter = document.querySelector(
-        ".timeline-filter-btn[data-filter='All']",
-      );
-      if (allFilter) allFilter.classList.add("active");
-
-      renderTimeline("All");
-
-      setTimeout(() => {
-        const targetKey = date.toLocaleDateString(undefined, {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        });
-        const headers = document.querySelectorAll(".timeline-group-header");
-        for (let h of headers) {
-          if (h.textContent.includes(targetKey)) {
-            const y = h.getBoundingClientRect().top + window.scrollY - 80; // Offset for top app bar
-            window.scrollTo({ top: y, behavior: "smooth" });
-            h.style.transition = "background 0.5s ease, color 0.5s ease";
-            h.style.background = "var(--accent)";
-            h.style.color = "white";
-
-            // Auto-expand this specific date group
-            const content = h.nextElementSibling;
-            if (content && content.style.gridTemplateRows === "0fr") {
-              h.click();
-            }
-
-            // Auto-expand all the timeline items inside it
-            if (content) {
-              const items = content.querySelectorAll(".timeline-item");
-              items.forEach((item) => item.classList.add("expanded"));
-            }
-
-            setTimeout(() => {
-              h.style.background = "";
-              h.style.color = "";
-            }, 1500);
-            break;
-          }
-        }
-      }, 100);
+      showDayOverview(dayDate);
     });
 
     grid.appendChild(cell);
