@@ -1719,7 +1719,19 @@ const TTS_MAX_CHARS = 240;
 let dwInterval = null;
 let dwSeconds = 0;
 let dwStartWords = 0;
+let dwStartTime = 0;
+let dwStartProgress = 0;
 const DW_TOTAL_SECONDS = 25 * 60;
+
+// Reading progress (0–1) from the article's current scroll position.
+function _readingProgressFraction() {
+  const el = document.getElementById("articleContent");
+  if (!el) return 0;
+  const rect = el.getBoundingClientRect();
+  const total = rect.height - window.innerHeight + 250;
+  const scrolled = Math.max(0, -rect.top + 80);
+  return total > 0 ? Math.min(1, Math.max(0, scrolled / total)) : 0;
+}
 let lastScrollTop = 0;
 let scrollVelocityTimeout = null;
 let hasTriggeredCompletion = false;
@@ -3261,7 +3273,11 @@ function setupEvents() {
     const article =
       window.topicsData[currentState.category]?.subtopics[currentState.subtopic]
         ?.articles[currentState.article];
-    dwStartWords = article ? article.content.split(/\s+/).length : 0;
+    dwStartWords = article
+      ? article.content.split(/\s+/).filter(Boolean).length
+      : 0;
+    dwStartTime = Date.now();
+    dwStartProgress = _readingProgressFraction();
     dwInterval = setInterval(() => {
       dwSeconds--;
       updateDWDisplay();
@@ -3280,12 +3296,24 @@ function setupEvents() {
   function endDeepWork(completed) {
     clearInterval(dwInterval);
     document.body.classList.remove("deep-work-active");
-    const timeSpent = DW_TOTAL_SECONDS - dwSeconds;
-    const minsSpent = Math.max(1, Math.ceil(timeSpent / 60));
+    // Accurate elapsed time from a real timestamp (survives tab throttling /
+    // backgrounding, unlike the 1-second countdown).
+    const timeSpent = dwStartTime
+      ? Math.min(DW_TOTAL_SECONDS, Math.round((Date.now() - dwStartTime) / 1000))
+      : DW_TOTAL_SECONDS - dwSeconds;
+    dwStartTime = 0;
+    const minsSpent = Math.max(1, Math.round(timeSpent / 60));
+    // Words ACTUALLY read = how far your reading position advanced this session.
+    const endProg = _readingProgressFraction();
+    const wordsRead = Math.max(
+      0,
+      Math.round((endProg - dwStartProgress) * dwStartWords),
+    );
     if (completed || timeSpent > 60) {
       logDeskTime(timeSpent);
       document.getElementById("dwMins").textContent = minsSpent;
-      document.getElementById("dwWords").textContent = dwStartWords;
+      document.getElementById("dwWords").textContent =
+        wordsRead.toLocaleString();
       const life = document.getElementById("dwLifetime");
       if (life) life.textContent = formatDeskTime(getDeskSeconds());
       document.getElementById("dwModal").classList.add("active");
@@ -3928,28 +3956,29 @@ function setupEvents() {
       endDeepWork(false);
     }
   });
-  let dwLastTapTime = 0;
+  // Triple-tap the story to ENTER or EXIT Focus mode.
+  let _dwTaps = [];
   document.addEventListener("click", (e) => {
-    if (!document.body.classList.contains("deep-work-active")) return;
-    // Don't exit while selecting/highlighting text
-    if (window.getSelection && String(window.getSelection()).trim()) {
-      dwLastTapTime = 0;
-      return;
-    }
-    // Don't exit when interacting with a highlight, note, link, or control
+    if (currentState.view !== "article") return;
+    // Ignore taps on marks/links/controls, or while selecting text.
     if (
       e.target.closest(
         "mark, a, button, input, textarea, select, .inline-bookmark, #notesSection, .floating-selection-menu",
       )
     )
       return;
-    // Exit only on a DOUBLE tap, so a stray tap doesn't break focus
+    if (window.getSelection && String(window.getSelection()).trim()) {
+      _dwTaps = [];
+      return;
+    }
     const now = Date.now();
-    if (now - dwLastTapTime < 350) {
-      dwLastTapTime = 0;
-      endDeepWork(false);
-    } else {
-      dwLastTapTime = now;
+    _dwTaps = _dwTaps.filter((t) => now - t < 600);
+    _dwTaps.push(now);
+    if (_dwTaps.length >= 3) {
+      _dwTaps = [];
+      if (document.body.classList.contains("deep-work-active"))
+        endDeepWork(false);
+      else startDeepWork();
     }
   });
 

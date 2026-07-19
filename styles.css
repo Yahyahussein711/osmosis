@@ -3342,6 +3342,22 @@ body.multi-select-active .timeline-actions {
 }
 .rt-open { border: none; cursor: pointer; }
 
+/* ===== Reading font: a neat, even grid ===== */
+.font-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+.font-grid .font-btn {
+  padding: 9px 6px;
+  font-size: 0.85rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 8px;
+}
+
 /* ===== Manage Stories: cover thumbnail ===== */
 .manage-thumb {
   width: 46px;
