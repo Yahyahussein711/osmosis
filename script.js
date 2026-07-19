@@ -1650,34 +1650,6 @@ document.addEventListener("touchend", (e) => {
 }, { passive: true });
 
 // ============================================================
-// NOTIFICATION SYSTEM
-// ============================================================
-function requestNotificationPermission() {
-  if ('Notification' in window) {
-    if (Notification.permission === 'granted') {
-      return Promise.resolve();
-    } else if (Notification.permission !== 'denied') {
-      return Notification.requestPermission();
-    }
-  }
-  return Promise.resolve();
-}
-
-function sendNotification(title, options = {}) {
-  if ('Notification' in window && Notification.permission === 'granted') {
-    try {
-      new Notification(title, {
-        icon: 'logo.svg',
-        badge: 'logo.svg',
-        ...options
-      });
-    } catch (e) {
-      console.log('Notification failed:', e);
-    }
-  }
-}
-
-// ============================================================
 // STATE MANAGEMENT
 // ============================================================
 let userLearningJourney = {
@@ -2017,9 +1989,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch((err) => console.log("SW registration failed:", err));
   }
 
-  // Request notification permission
-  requestNotificationPermission().catch(err => console.log("Notification permission request failed:", err));
-
   // Login removed — the app always runs as a local, account-free session.
   if (!localStorage.getItem("osmosis_auth_token")) {
     localStorage.setItem("osmosis_auth_token", "local_guest");
@@ -2073,8 +2042,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") pullFromServer(false);
   });
-  setInterval(checkDailyReminder, 60000);
-  setTimeout(checkDailyReminder, 5000);
 });
 
 function loadCustomContent() {
@@ -4608,85 +4575,6 @@ function setupEvents() {
       document.body.classList.toggle("compact-mode", e.target.checked);
       localStorage.setItem("osmosis_compact", e.target.checked ? "1" : "0");
     });
-  }
-
-  // Reminder Feature
-  const reminderToggle = document.getElementById("reminderToggle");
-  const reminderTimeInput = document.getElementById("reminderTimeInput");
-  if (reminderToggle && reminderTimeInput) {
-    reminderToggle.checked =
-      localStorage.getItem("osmosis_reminder_enabled") === "1";
-    reminderTimeInput.value =
-      localStorage.getItem("osmosis_reminder_time") || "20:00";
-    reminderTimeInput.disabled = !reminderToggle.checked;
-
-    reminderToggle.addEventListener("change", async (e) => {
-      const isEnabled = e.target.checked;
-      localStorage.setItem("osmosis_reminder_enabled", isEnabled ? "1" : "0");
-      reminderTimeInput.disabled = !isEnabled;
-      if (
-        isEnabled &&
-        "Notification" in window &&
-        Notification.permission !== "granted"
-      ) {
-        await Notification.requestPermission();
-      }
-      if (
-        isEnabled &&
-        "Notification" in window &&
-        Notification.permission === "granted"
-      ) {
-        scheduleBackgroundReminder(reminderTimeInput.value);
-      }
-    });
-    reminderTimeInput.addEventListener("change", (e) => {
-      localStorage.setItem("osmosis_reminder_time", e.target.value);
-      if (
-        reminderToggle.checked &&
-        "Notification" in window &&
-        Notification.permission === "granted"
-      ) {
-        scheduleBackgroundReminder(e.target.value);
-      }
-    });
-
-    if (
-      reminderToggle.checked &&
-      "Notification" in window &&
-      Notification.permission === "granted"
-    ) {
-      scheduleBackgroundReminder(reminderTimeInput.value);
-    }
-
-    const testReminderBtn = document.getElementById("testReminderBtn");
-    if (testReminderBtn) {
-      testReminderBtn.addEventListener("click", () => {
-        if ("Notification" in window && Notification.permission === "granted") {
-          try {
-            if (
-              "serviceWorker" in navigator &&
-              navigator.serviceWorker.controller
-            ) {
-              navigator.serviceWorker.ready.then((reg) => {
-                reg.showNotification("Osmosis Reading Time", {
-                  body: "Take a few minutes to explore your Knowledge Web.",
-                  icon: "logo.svg",
-                });
-              });
-            } else {
-              new Notification("Osmosis Reading Time", {
-                body: "Take a few minutes to explore your Knowledge Web.",
-                icon: "logo.svg",
-              });
-            }
-          } catch (e) {
-            showToast("Time for your daily reading!");
-          }
-        } else {
-          showToast("Time for your daily reading!");
-        }
-      });
-    }
   }
 
   // Knowledge graph canvas
@@ -15032,92 +14920,6 @@ function restoreGenDraft() {
       updateGenContentCount();
     }
   } catch (e) {}
-}
-
-function checkDailyReminder() {
-  if (localStorage.getItem("osmosis_reminder_enabled") !== "1") return;
-
-  const reminderTime = localStorage.getItem("osmosis_reminder_time") || "20:00";
-  const lastReminderDate = localStorage.getItem("osmosis_last_reminder_date");
-  const now = new Date();
-  const todayStr =
-    now.getFullYear() +
-    "-" +
-    String(now.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(now.getDate()).padStart(2, "0");
-
-  if (lastReminderDate === todayStr) return; // Already reminded today
-
-  const currentTime =
-    now.getHours().toString().padStart(2, "0") +
-    ":" +
-    now.getMinutes().toString().padStart(2, "0");
-  if (currentTime >= reminderTime) {
-    localStorage.setItem("osmosis_last_reminder_date", todayStr);
-    if ("Notification" in window && Notification.permission === "granted") {
-      try {
-        if (
-          "serviceWorker" in navigator &&
-          navigator.serviceWorker.controller
-        ) {
-          navigator.serviceWorker.ready.then((reg) => {
-            reg.showNotification("Osmosis Reading Time", {
-              body: "Take a few minutes to explore your Knowledge Web.",
-              icon: "logo.svg",
-              tag: "osmosis-reminder",
-            });
-          });
-        } else {
-          new Notification("Osmosis Reading Time", {
-            body: "Take a few minutes to explore your Knowledge Web.",
-            icon: "logo.svg",
-          });
-        }
-      } catch (e) {
-        showToast("Time for your daily reading!");
-      }
-    } else {
-      showToast("Time for your daily reading!");
-    }
-  }
-
-  if (
-    localStorage.getItem("osmosis_reminder_enabled") === "1" &&
-    "Notification" in window &&
-    Notification.permission === "granted"
-  ) {
-    scheduleBackgroundReminder(reminderTime);
-  }
-}
-
-async function scheduleBackgroundReminder(timeStr) {
-  if (!("serviceWorker" in navigator)) return;
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    if ("showTrigger" in Notification.prototype) {
-      const now = new Date();
-      const [hours, minutes] = timeStr.split(":").map(Number);
-      const scheduledTime = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-        hours,
-        minutes,
-        0,
-      );
-      if (scheduledTime <= now)
-        scheduledTime.setDate(scheduledTime.getDate() + 1);
-      await reg.showNotification("Osmosis Reading Time", {
-        tag: "osmosis-reminder-bg",
-        body: "Take a few minutes to explore your Knowledge Web.",
-        icon: "logo.svg",
-        showTrigger: new TimestampTrigger(scheduledTime.getTime()),
-      });
-    }
-  } catch (e) {
-    console.log("Background scheduling failed", e);
-  }
 }
 
 // ============================================================
