@@ -60,8 +60,11 @@
       touch-action:none;z-index:1;}
     .br-flow{position:relative;width:100%;column-fill:auto;
       font-size:var(--br-fs,1.22rem);line-height:var(--br-lh,1.6);
+      letter-spacing:var(--br-ls,0);word-spacing:var(--br-ws,0);
       will-change:transform;}
+    #bookReader.br-bold .br-flow{font-weight:600;}
     .br-flow p{margin:0 0 .9em;text-align:justify;-webkit-hyphens:auto;hyphens:auto;orphans:2;widows:2;}
+    #bookReader.br-nojustify .br-flow p{text-align:left;-webkit-hyphens:none;hyphens:none;}
     .br-flow p.br-first{text-indent:0;}
     .br-flow p+p{text-indent:1.3em;}
     .br-flow h2.br-ch{font-size:1.4em;font-weight:600;line-height:1.2;
@@ -140,6 +143,57 @@
     .br-row.br-quote{font-family:var(--br-font,"Lora",Georgia,serif);font-style:italic;}
     .br-empty{padding:40px 20px;text-align:center;color:var(--br-faint,#9a9384);
       font-family:var(--br-font,"Lora",Georgia,serif);font-style:italic;}
+    /* ---- Themes & Settings + Customise (Phase 2) ---- */
+    .br-size{display:flex;align-items:stretch;margin:14px 16px 6px;border-radius:12px;
+      overflow:hidden;border:1px solid color-mix(in srgb,var(--br-ink,#22201b) 12%,transparent);}
+    .br-size-btn{flex:1;border:none;background:none;cursor:pointer;box-shadow:none;
+      color:var(--br-ink,#22201b);font-family:var(--br-font,"Lora",Georgia,serif);
+      padding:12px;display:flex;align-items:center;justify-content:center;}
+    .br-size-btn:active{background:color-mix(in srgb,var(--br-ink,#22201b) 8%,transparent);}
+    .br-size-btn+.br-size-btn{border-left:1px solid color-mix(in srgb,var(--br-ink,#22201b) 12%,transparent);}
+    .br-size-sm{font-size:.95rem;} .br-size-lg{font-size:1.5rem;}
+    .br-themes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:12px 16px 6px;}
+    .br-theme{position:relative;border-radius:12px;cursor:pointer;box-shadow:none;
+      border:2px solid transparent;padding:16px 8px 10px;text-align:center;
+      display:flex;flex-direction:column;align-items:center;gap:4px;overflow:hidden;}
+    .br-theme.on{border-color:var(--br-ink,#22201b);}
+    .br-theme-aa{font-family:var(--br-font,"Lora",Georgia,serif);font-size:1.5rem;line-height:1;}
+    .br-theme-nm{font-family:var(--br-font,"Lora",Georgia,serif);font-size:.72rem;}
+    .br-cust-btn{display:flex;align-items:center;justify-content:center;gap:8px;
+      width:calc(100% - 32px);margin:12px 16px 8px;padding:13px;border:none;border-radius:12px;
+      cursor:pointer;box-shadow:none;background:color-mix(in srgb,var(--br-ink,#22201b) 7%,transparent);
+      color:var(--br-ink,#22201b);font-family:"Outfit",system-ui,sans-serif;font-size:.92rem;font-weight:600;}
+    .br-cust-btn:active{background:color-mix(in srgb,var(--br-ink,#22201b) 14%,transparent);}
+    .br-set-grp{margin:6px 0 4px;padding:2px 18px;font-family:"Outfit",system-ui,sans-serif;
+      font-size:.7rem;letter-spacing:.5px;text-transform:uppercase;color:var(--br-faint,#9a9384);}
+    .br-set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:12px 18px;border-bottom:1px solid color-mix(in srgb,var(--br-ink,#22201b) 8%,transparent);}
+    .br-set-label{font-family:"Outfit",system-ui,sans-serif;font-size:.92rem;color:var(--br-ink,#22201b);}
+    .br-set-val{font-family:"Outfit",system-ui,sans-serif;font-size:.82rem;color:var(--br-faint,#9a9384);
+      min-width:42px;text-align:right;font-variant-numeric:tabular-nums;}
+    .br-slide-row{display:block;padding:10px 18px 14px;border-bottom:1px solid color-mix(in srgb,var(--br-ink,#22201b) 8%,transparent);}
+    .br-slide-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+    .br-range{width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:3px;
+      background:color-mix(in srgb,var(--br-ink,#22201b) 16%,transparent);outline:none;}
+    .br-range::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+      background:#fff;border:1px solid color-mix(in srgb,var(--br-ink,#22201b) 20%,transparent);
+      box-shadow:0 1px 4px rgba(0,0,0,.25);cursor:pointer;}
+    .br-select{font-family:"Outfit",system-ui,sans-serif;font-size:.9rem;border:none;background:none;
+      color:var(--br-ink,#22201b);cursor:pointer;text-align:right;}
+    .br-tog{position:relative;width:46px;height:28px;border-radius:999px;cursor:pointer;border:none;
+      background:color-mix(in srgb,var(--br-ink,#22201b) 18%,transparent);transition:background .2s ease;flex-shrink:0;}
+    .br-tog::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
+      background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s ease;}
+    .br-tog.on{background:var(--br-accent,#9e4632);}
+    .br-tog.on::after{transform:translateX(18px);}
+    .br-reset{display:block;width:calc(100% - 32px);margin:16px 16px 6px;padding:13px;border:none;border-radius:12px;
+      cursor:pointer;box-shadow:none;background:none;color:#c0392b;font-family:"Outfit",system-ui,sans-serif;font-size:.92rem;font-weight:600;}
+    .br-cust-preview{padding:16px 18px;border-bottom:1px solid color-mix(in srgb,var(--br-ink,#22201b) 10%,transparent);
+      font-family:var(--br-font,"Lora",Georgia,serif);font-size:var(--br-fs,1.2rem);line-height:var(--br-lh,1.6);
+      letter-spacing:var(--br-ls,0);word-spacing:var(--br-ws,0);color:var(--br-ink,#22201b);
+      max-height:26vh;overflow:hidden;text-align:justify;}
+    #bookReader.br-bold .br-cust-preview{font-weight:600;}
+    #bookReader.br-nojustify .br-cust-preview{text-align:left;}
     `;
     var s = document.createElement("style");
     s.id = "bookReaderStyles";
@@ -456,8 +510,7 @@
     if (act === "contents") buildContents();
     else if (act === "search") buildSearch();
     else if (act === "bookmarks") buildBookmarks();
-    else if (act === "themes" && typeof showToast === "function")
-      showToast("Themes & Settings — coming next");
+    else if (act === "themes") buildThemes();
   }
   function onMenuIco(ico) {
     if (ico === "bookmark") { toggleBookmark(); refreshBmUI(); }
@@ -576,6 +629,142 @@
   }
   function toast(m) { if (typeof showToast === "function") showToast(m); }
 
+  // ---- Settings: themes + typography (Phase 2) ---------------
+  var THEMES = {
+    original: { paper: "#ffffff", ink: "#1b1a17", faint: "#9a9384", accent: "#9e4632", label: "Original" },
+    quiet:    { paper: "#17140f", ink: "#e7dfcf", faint: "#8f8672", accent: "#d08a5e", label: "Quiet" },
+    paper:    { paper: "#f7f3ea", ink: "#22201b", faint: "#9a9384", accent: "#9e4632", label: "Paper" },
+    bold:     { paper: "#faf7f0", ink: "#100f0d", faint: "#8a8272", accent: "#8a3c2a", label: "Bold" },
+    calm:     { paper: "#efe6d6", ink: "#3a3225", faint: "#9c8f79", accent: "#a25a34", label: "Calm" },
+    focus:    { paper: "#fbf7ee", ink: "#2b2720", faint: "#a2977f", accent: "#9e4632", label: "Focus" },
+  };
+  var THEME_ORDER = ["original", "quiet", "paper", "bold", "calm", "focus"];
+  var FONTS = [
+    { v: "'Lora', Georgia, serif", n: "Lora" },
+    { v: "Georgia, 'Times New Roman', serif", n: "Georgia" },
+    { v: "'Iowan Old Style','Palatino Linotype',Palatino,serif", n: "Iowan" },
+    { v: "'Charter',Georgia,serif", n: "Charter" },
+    { v: "-apple-system,system-ui,'Segoe UI',sans-serif", n: "System Sans" },
+  ];
+  var SKEY = "osmosis_reader_settings";
+  var DEFAULTS = { theme: "paper", fontPx: 20, lineH: 1.6, letter: 0, word: 0, margin: 30, font: FONTS[0].v, bold: false, justify: true };
+  var settings = Object.assign({}, DEFAULTS);
+  var settingsLoaded = false;
+
+  function loadSettings() {
+    if (settingsLoaded) return;
+    settingsLoaded = true;
+    try { var raw = lsGet(SKEY); if (raw) settings = Object.assign({}, DEFAULTS, JSON.parse(raw)); } catch (e) {}
+  }
+  function saveSettings() { lsSet(SKEY, JSON.stringify(settings)); }
+  function applySettings() {
+    var root = el.reader, s = settings, th = THEMES[s.theme] || THEMES.paper;
+    root.style.setProperty("--br-paper", th.paper);
+    root.style.setProperty("--br-ink", th.ink);
+    root.style.setProperty("--br-faint", th.faint);
+    root.style.setProperty("--br-accent", th.accent);
+    root.style.setProperty("--br-font", s.font);
+    root.style.setProperty("--br-fs", s.fontPx + "px");
+    root.style.setProperty("--br-lh", String(s.lineH));
+    root.style.setProperty("--br-ls", s.letter + "em");
+    root.style.setProperty("--br-ws", s.word + "em");
+    root.style.setProperty("--br-mside", s.margin + "px");
+    root.classList.toggle("br-bold", !!s.bold);
+    root.classList.toggle("br-nojustify", !s.justify);
+  }
+  // metric change → re-paginate keeping the same sentence; colour change → not
+  function setMetric(fn) { fn(); saveSettings(); applySettings(); relayout(); }
+  function setColour(fn) { fn(); saveSettings(); applySettings(); }
+  function pct(em) { return (em >= 0 ? "+" : "") + Math.round(em * 100) + "%"; }
+  function slideRow(label, id, min, max, step, val, disp) {
+    return '<div class="br-slide-row"><div class="br-slide-top"><span class="br-set-label">' +
+      label + '</span><span class="br-set-val" id="' + id + 'V">' + disp +
+      '</span></div><input class="br-range" id="' + id + '" type="range" min="' + min +
+      '" max="' + max + '" step="' + step + '" value="' + val + '"></div>';
+  }
+
+  function buildThemes() {
+    openSheet("Themes & Settings");
+    var h = '<div class="br-size"><button class="br-size-btn br-size-sm" data-d="-1">A</button><button class="br-size-btn br-size-lg" data-d="1">A</button></div>';
+    h += '<div class="br-themes">';
+    THEME_ORDER.forEach(function (k) {
+      var t = THEMES[k], on = settings.theme === k;
+      h += '<button class="br-theme' + (on ? " on" : "") + '" data-theme="' + k +
+        '" style="background:' + t.paper + ";color:" + t.ink + ";border-color:" +
+        (on ? t.ink : "transparent") + '"><span class="br-theme-aa">Aa</span><span class="br-theme-nm">' +
+        t.label + "</span></button>";
+    });
+    h += "</div>";
+    h += '<button class="br-cust-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Customise…</button>';
+    el.sheetBody.innerHTML = h;
+    el.sheetBody.querySelectorAll(".br-size-btn").forEach(function (b) {
+      b.addEventListener("click", function () {
+        setMetric(function () { settings.fontPx = clamp(settings.fontPx + +b.dataset.d, 14, 30); });
+      });
+    });
+    el.sheetBody.querySelectorAll(".br-theme").forEach(function (b) {
+      b.addEventListener("click", function () {
+        setColour(function () { settings.theme = b.dataset.theme; });
+        el.sheetBody.querySelectorAll(".br-theme").forEach(function (x) {
+          var on = x === b;
+          x.classList.toggle("on", on);
+          x.style.borderColor = on ? THEMES[x.dataset.theme].ink : "transparent";
+        });
+      });
+    });
+    el.sheetBody.querySelector(".br-cust-btn").addEventListener("click", buildCustomise);
+  }
+
+  function buildCustomise() {
+    openSheet("Customise");
+    var s = settings;
+    var fontOpts = FONTS.map(function (f) {
+      return '<option value="' + f.v + '"' + (s.font === f.v ? " selected" : "") + ">" + f.n + "</option>";
+    }).join("");
+    var h = '<div class="br-cust-preview">Still waters run deep, and the road that leads to water always charges for the arriving. Attention is the rarest form of generosity.</div>';
+    h += '<div class="br-set-grp">Text</div>';
+    h += '<div class="br-set-row"><span class="br-set-label">Font</span><select class="br-select" id="brFont">' + fontOpts + "</select></div>";
+    h += '<div class="br-set-row"><span class="br-set-label">Bold Text</span><button class="br-tog' + (s.bold ? " on" : "") + '" id="brBold" aria-label="Bold"></button></div>';
+    h += '<div class="br-set-grp">Layout</div>';
+    h += slideRow("Line Spacing", "brLine", 1.2, 2.4, 0.05, s.lineH, s.lineH.toFixed(2));
+    h += slideRow("Letter Spacing", "brLetter", -0.03, 0.1, 0.005, s.letter, pct(s.letter));
+    h += slideRow("Word Spacing", "brWord", -0.05, 0.4, 0.01, s.word, pct(s.word));
+    h += slideRow("Margins", "brMargin", 12, 84, 2, s.margin, s.margin + "px");
+    h += '<div class="br-set-row"><span class="br-set-label">Justify Text</span><button class="br-tog' + (s.justify ? " on" : "") + '" id="brJustify" aria-label="Justify"></button></div>';
+    h += '<button class="br-reset" id="brReset">Reset</button>';
+    el.sheetBody.innerHTML = h;
+
+    document.getElementById("brFont").addEventListener("change", function (e) {
+      setMetric(function () { settings.font = e.target.value; });
+    });
+    document.getElementById("brBold").addEventListener("click", function () {
+      setMetric(function () { settings.bold = !settings.bold; });
+      this.classList.toggle("on", settings.bold);
+    });
+    document.getElementById("brJustify").addEventListener("click", function () {
+      setMetric(function () { settings.justify = !settings.justify; });
+      this.classList.toggle("on", settings.justify);
+    });
+    bindSlider("brLine", function (x) { settings.lineH = x; }, function (x) { return x.toFixed(2); });
+    bindSlider("brLetter", function (x) { settings.letter = x; }, pct);
+    bindSlider("brWord", function (x) { settings.word = x; }, pct);
+    bindSlider("brMargin", function (x) { settings.margin = x; }, function (x) { return x + "px"; });
+    document.getElementById("brReset").addEventListener("click", function () {
+      settings = Object.assign({}, DEFAULTS);
+      saveSettings(); applySettings(); relayout(); buildCustomise();
+    });
+  }
+  // Live-apply on drag (no re-paginate); re-paginate on release to fix maps.
+  function bindSlider(id, apply, disp) {
+    var sl = document.getElementById(id), v = document.getElementById(id + "V");
+    sl.addEventListener("input", function () {
+      apply(parseFloat(sl.value));
+      saveSettings(); applySettings();
+      if (v) v.textContent = disp(parseFloat(sl.value));
+    });
+    sl.addEventListener("change", function () { relayout(); });
+  }
+
   // ---- open / close ------------------------------------------
   function open(article, title, key) {
     buildDOM();
@@ -583,6 +772,8 @@
     var saved = storeKey ? parseInt(lsGet(storeKey), 10) : NaN;
     anchor = isNaN(saved) ? 0 : saved;
     loadBookmarks(key);
+    loadSettings();
+    applySettings();
     el.runhead.textContent = title || "";
     buildFlow(title, article && article.content);
     el.reader.classList.add("on");
