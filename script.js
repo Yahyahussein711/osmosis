@@ -1682,6 +1682,10 @@ let currentZoom = "daily";
 let currentTimelineSearch = "";
 let chronLens = "journal";
 let chronFilter = "All";
+// By Story lens — search text, sort key, and expand-all state.
+let chronStorySearch = "";
+let chronStorySort = "recent";
+let chronStoryAllOpen = false;
 let currentNotesSearch = "";
 let timelineTransitionTimeout = null;
 const TTS_PARAGRAPH_BREAK = "__PAUSE_PARAGRAPH__";
@@ -9343,6 +9347,10 @@ function renderTimeline(filterType) {
   const filtersEl = document.getElementById("chronFilters");
   if (filtersEl)
     filtersEl.style.display = chronLens === "journal" ? "flex" : "none";
+  // By Story carries its own search bar, so the global one steps aside there.
+  const chronSearchEl = document.querySelector(".chron-search");
+  if (chronSearchEl)
+    chronSearchEl.style.display = chronLens === "stories" ? "none" : "";
 
   if (!items.length) {
     body.innerHTML = _chronEmpty(
@@ -9363,6 +9371,8 @@ function _wireChronControls() {
     lenses.querySelectorAll(".chron-lens").forEach((b) => {
       b.addEventListener("click", () => {
         chronLens = b.dataset.lens;
+        chronStorySearch = "";
+        chronStoryAllOpen = false;
         lenses
           .querySelectorAll(".chron-lens")
           .forEach((x) => x.classList.toggle("active", x === b));
@@ -9707,8 +9717,8 @@ function renderChronStories(body, view) {
     map[k].items.push(it);
     map[k].last = Math.max(map[k].last, new Date(it.date).getTime());
   });
-  const groups = Object.values(map).sort((a, b) => b.last - a.last);
-  if (!groups.length) {
+  const allGroups = Object.values(map);
+  if (!allGroups.length) {
     body.innerHTML = _chronEmpty(
       "No stories marked yet — highlight or note a story and it gathers here.",
     );
@@ -9724,6 +9734,8 @@ function renderChronStories(body, view) {
   };
   const fmtDay = (t) =>
     new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const fmtDur = (m) =>
+    m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
   // Reading progress for a story (scans for its saved progress_ key).
   const progressFor = (domain, article) => {
     const suffix = "_" + article;
@@ -9741,120 +9753,240 @@ function renderChronStories(body, view) {
     return 0;
   };
 
-  body.innerHTML = groups
-    .map((g, gi) => {
-      const obj = _chronStoryObj(g.domain, g.article) || {};
-      const cover = obj.image
-        ? `<div class="chron-dossier-cover"><img ${obj.image.startsWith("data:") ? `src="${obj.image}"` : `data-img-ref="${obj.image}"`} alt="" style="object-position:${obj.imagePos || "50% 50%"}" /></div>`
-        : `<div class="chron-dossier-cover chron-dossier-noimg">${_chronEsc((g.article || "?").charAt(0))}</div>`;
-
-      const byType = {};
-      g.items.forEach((i) => (byType[i.type] = byType[i.type] || []).push(i));
-
-      // stat chips (type-coloured)
-      const chips = ORDER.filter((t) => byType[t] && byType[t].length)
-        .map((t) => {
-          const n = byType[t].length;
-          const lbl = n === 1 ? t : PLURAL[t];
-          return `<span class="ds-chip" style="--tcol:${_chronCol(t)}"><span class="ds-chip-dot"></span>${n} ${lbl}</span>`;
-        })
-        .join("");
-
-      // meta line: read status, reading time, progress, entries, date span
-      const times = g.items.map((i) => new Date(i.date).getTime());
-      const first = Math.min(...times);
-      const lastT = Math.max(...times);
-      const readList =
-        userLearningJourney.topics[g.domain] &&
-        userLearningJourney.topics[g.domain].readArticles;
-      const isRead = readList && readList.includes(g.article);
-      const spanTxt =
-        fmtDay(first) === fmtDay(lastT)
-          ? `marked ${fmtDay(first)}`
-          : `${fmtDay(first)} – ${fmtDay(lastT)}`;
-      const words = (obj.content || "").split(/\s+/).filter(Boolean).length;
-      const mins = words ? Math.max(1, Math.round(words / 200)) : 0;
-      const prog = progressFor(g.domain, g.article);
-      const genres =
-        Array.isArray(obj.genres) && obj.genres.length
-          ? `<div class="ds-genres">${obj.genres
-              .slice(0, 3)
-              .map((x) => `<span class="ds-genre">${_chronEsc(x)}</span>`)
-              .join("")}</div>`
-          : "";
-      const metaBits = [];
-      if (isRead) metaBits.push('<span class="ds-read">✓ Read</span>');
-      if (mins) metaBits.push(`${mins} min`);
-      if (prog > 0 && prog < 100 && !isRead) metaBits.push(`${prog}% in`);
-      metaBits.push(`${g.items.length} ${g.items.length === 1 ? "entry" : "entries"}`);
-      metaBits.push(spanTxt);
-      const meta = metaBits.join(" · ");
-      const progBar =
-        prog > 0
-          ? `<div class="ds-progress"><i style="width:${Math.min(100, prog)}%"></i></div>`
-          : "";
-
-      // body: sections grouped by type, ALL marks, newest first
-      const sections = ORDER.filter((t) => byType[t] && byType[t].length)
-        .map((t) => {
-          const rows = byType[t]
-            .slice()
-            .sort((a, b) => new Date(b.date) - new Date(a.date))
-            .map((i) => {
-              const parsed = _chronParse(i);
-              const q = parsed.quote || parsed.note || i.text || "";
-              const noteExtra =
-                parsed.quote && parsed.note
-                  ? `<span class="ds-mark-note">${_chronEsc(_chronTrim(parsed.note, 80))}</span>`
-                  : "";
-              return `<button class="ds-mark" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-date="${i.date}">
-                <span class="ds-mark-glyph" style="color:${_chronCol(t)}">${_chronGlyph(t)}</span>
-                <span class="ds-mark-body"><span class="ds-mark-txt">${_chronEsc(_chronTrim(q, 150))}</span>${noteExtra}<span class="ds-mark-when">${fmtDay(i.date)}</span></span>
-              </button>`;
-            })
-            .join("");
-          return `<div class="ds-section"><div class="ds-section-head" style="--tcol:${_chronCol(t)}">${PLURAL[t]} · ${byType[t].length}</div>${rows}</div>`;
-        })
-        .join("");
-
-      return `<div class="chron-dossier${gi === 0 ? " open" : ""}">
-        <div class="chron-dossier-head">
-          ${cover}
-          <div class="chron-dossier-info">
-            <div class="chron-dossier-title">${_chronEsc(g.article)}</div>
-            ${obj.author ? `<div class="chron-dossier-author">${_chronEsc(obj.author)}</div>` : ""}
-            ${genres}
-            <div class="chron-dossier-chips">${chips}</div>
-          </div>
-          <span class="chron-dossier-chev">⌄</span>
-        </div>
-        ${progBar}
-        <div class="chron-dossier-meta">${meta}</div>
-        <div class="chron-dossier-body">
-          ${sections}
-          <button class="ds-open" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}">Open the story →</button>
-        </div>
-      </div>`;
-    })
-    .join("");
-
-  if (typeof hydrateImages === "function") hydrateImages(body);
-
-  // expand / collapse a dossier
-  body.querySelectorAll(".chron-dossier-head").forEach((h) => {
-    h.addEventListener("click", () => h.parentElement.classList.toggle("open"));
+  // Resolve the search/sort-relevant fields once per story.
+  allGroups.forEach((g) => {
+    g.obj = _chronStoryObj(g.domain, g.article) || {};
+    const words = (g.obj.content || "").split(/\s+/).filter(Boolean).length;
+    g.mins = words ? Math.max(1, Math.round(words / 200)) : 0;
+    g.prog = progressFor(g.domain, g.article);
+    const readList =
+      userLearningJourney.topics[g.domain] &&
+      userLearningJourney.topics[g.domain].readArticles;
+    g.isRead = !!(readList && readList.includes(g.article));
+    g.markCount = g.items.length;
+    g.haystack = (
+      g.article +
+      " " +
+      (g.obj.author || "") +
+      " " +
+      (Array.isArray(g.obj.genres) ? g.obj.genres.join(" ") : "")
+    ).toLowerCase();
   });
-  // a mark or the open button jumps into the story
-  body.querySelectorAll(".ds-mark, .ds-open").forEach((b) => {
-    b.addEventListener("click", (e) => {
-      e.stopPropagation();
-      jumpToArticleByDomainAndName(
-        b.dataset.domain || "",
-        b.dataset.article || "",
-        b.dataset.date || null,
+
+  // ── Overview + controls (persist across re-paints so the input keeps focus)
+  const totalStories = allGroups.length;
+  const totalMarks = allGroups.reduce((s, g) => s + g.markCount, 0);
+  const readMins = allGroups.reduce((s, g) => s + (g.isRead ? g.mins : 0), 0);
+  const SORTS = [
+    { k: "recent", label: "Recent" },
+    { k: "marks", label: "Most marked" },
+    { k: "az", label: "A–Z" },
+    { k: "progress", label: "Progress" },
+  ];
+  body.innerHTML = `
+    <div class="ds-overview">
+      <div class="ds-ov-line">
+        <span class="ds-ov-n">${totalStories}</span> ${totalStories === 1 ? "story" : "stories"}
+        <span class="ds-ov-sep">·</span>
+        <span class="ds-ov-n">${totalMarks}</span> ${totalMarks === 1 ? "mark" : "marks"}${
+          readMins
+            ? ` <span class="ds-ov-sep">·</span> <span class="ds-ov-n">${fmtDur(readMins)}</span> read`
+            : ""
+        }
+      </div>
+      <button class="ds-expand-all" type="button"></button>
+    </div>
+    <div class="ds-controls">
+      <div class="ds-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input id="dsSearch" type="text" placeholder="Find a story…" value="${_chronAttr(chronStorySearch)}" autocomplete="off" />
+      </div>
+      <div class="ds-sort">
+        ${SORTS.map(
+          (s) =>
+            `<button class="ds-sort-btn${chronStorySort === s.k ? " active" : ""}" data-sort="${s.k}" type="button">${s.label}</button>`,
+        ).join("")}
+      </div>
+    </div>
+    <div class="ds-list"></div>`;
+
+  const listEl = body.querySelector(".ds-list");
+
+  const dossierHtml = (g, gi) => {
+    const obj = g.obj;
+    const cover = obj.image
+      ? `<div class="chron-dossier-cover"><img ${obj.image.startsWith("data:") ? `src="${obj.image}"` : `data-img-ref="${obj.image}"`} alt="" style="object-position:${obj.imagePos || "50% 50%"}" /></div>`
+      : `<div class="chron-dossier-cover chron-dossier-noimg">${_chronEsc((g.article || "?").charAt(0))}</div>`;
+
+    const byType = {};
+    g.items.forEach((i) => (byType[i.type] = byType[i.type] || []).push(i));
+
+    const chips = ORDER.filter((t) => byType[t] && byType[t].length)
+      .map((t) => {
+        const n = byType[t].length;
+        const lbl = n === 1 ? t : PLURAL[t];
+        return `<span class="ds-chip" style="--tcol:${_chronCol(t)}"><span class="ds-chip-dot"></span>${n} ${lbl}</span>`;
+      })
+      .join("");
+
+    const times = g.items.map((i) => new Date(i.date).getTime());
+    const first = Math.min(...times);
+    const lastT = Math.max(...times);
+    const spanTxt =
+      fmtDay(first) === fmtDay(lastT)
+        ? `marked ${fmtDay(first)}`
+        : `${fmtDay(first)} – ${fmtDay(lastT)}`;
+    const genres =
+      Array.isArray(obj.genres) && obj.genres.length
+        ? `<div class="ds-genres">${obj.genres
+            .slice(0, 3)
+            .map((x) => `<span class="ds-genre">${_chronEsc(x)}</span>`)
+            .join("")}</div>`
+        : "";
+    const metaBits = [];
+    if (g.isRead) metaBits.push('<span class="ds-read">✓ Read</span>');
+    if (g.mins) metaBits.push(`${g.mins} min`);
+    if (g.prog > 0 && g.prog < 100 && !g.isRead) metaBits.push(`${g.prog}% in`);
+    metaBits.push(`${g.markCount} ${g.markCount === 1 ? "entry" : "entries"}`);
+    metaBits.push(spanTxt);
+    const meta = metaBits.join(" · ");
+    const progBar =
+      g.prog > 0
+        ? `<div class="ds-progress"><i style="width:${Math.min(100, g.prog)}%"></i></div>`
+        : "";
+
+    const sections = ORDER.filter((t) => byType[t] && byType[t].length)
+      .map((t) => {
+        const rows = byType[t]
+          .slice()
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .map((i) => {
+            const parsed = _chronParse(i);
+            const q = parsed.quote || parsed.note || i.text || "";
+            const noteExtra =
+              parsed.quote && parsed.note
+                ? `<span class="ds-mark-note">${_chronEsc(_chronTrim(parsed.note, 80))}</span>`
+                : "";
+            return `<button class="ds-mark" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-date="${i.date}">
+              <span class="ds-mark-glyph" style="color:${_chronCol(t)}">${_chronGlyph(t)}</span>
+              <span class="ds-mark-body"><span class="ds-mark-txt">${_chronEsc(_chronTrim(q, 150))}</span>${noteExtra}<span class="ds-mark-when">${fmtDay(i.date)}</span></span>
+            </button>`;
+          })
+          .join("");
+        return `<div class="ds-section"><div class="ds-section-head" style="--tcol:${_chronCol(t)}">${PLURAL[t]} · ${byType[t].length}</div>${rows}</div>`;
+      })
+      .join("");
+
+    // Resume where you left off when the story is part-read; otherwise open fresh.
+    const canResume = g.prog > 0 && g.prog < 100 && !g.isRead;
+    const cta = canResume
+      ? `<button class="ds-open ds-resume" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-resume="${g.prog}">Resume · ${g.prog}% →</button>`
+      : `<button class="ds-open" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-resume="0">Open the story →</button>`;
+
+    const open = chronStoryAllOpen || gi === 0;
+    return `<div class="chron-dossier${open ? " open" : ""}">
+      <div class="chron-dossier-head">
+        ${cover}
+        <div class="chron-dossier-info">
+          <div class="chron-dossier-title">${_chronEsc(g.article)}</div>
+          ${obj.author ? `<div class="chron-dossier-author">${_chronEsc(obj.author)}</div>` : ""}
+          ${genres}
+          <div class="chron-dossier-chips">${chips}</div>
+        </div>
+        <span class="chron-dossier-chev">⌄</span>
+      </div>
+      ${progBar}
+      <div class="chron-dossier-meta">${meta}</div>
+      <div class="chron-dossier-body">
+        ${sections}
+        ${cta}
+      </div>
+    </div>`;
+  };
+
+  const wireList = () => {
+    listEl.querySelectorAll(".chron-dossier-head").forEach((h) => {
+      h.addEventListener("click", () =>
+        h.parentElement.classList.toggle("open"),
       );
     });
+    listEl.querySelectorAll(".ds-mark").forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        jumpToArticleByDomainAndName(
+          b.dataset.domain || "",
+          b.dataset.article || "",
+          b.dataset.date || null,
+        );
+      });
+    });
+    listEl.querySelectorAll(".ds-open").forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const pct = parseInt(b.dataset.resume || "0", 10);
+        jumpToArticleByDomainAndName(
+          b.dataset.domain || "",
+          b.dataset.article || "",
+          null,
+          pct > 0 ? { resumePct: pct } : {},
+        );
+      });
+    });
+  };
+
+  const paintList = () => {
+    let gs = allGroups.slice();
+    const q = chronStorySearch.toLowerCase().trim();
+    if (q) gs = gs.filter((g) => g.haystack.includes(q));
+    gs.sort((a, b) => {
+      if (chronStorySort === "marks")
+        return b.markCount - a.markCount || b.last - a.last;
+      if (chronStorySort === "az") return a.article.localeCompare(b.article);
+      if (chronStorySort === "progress")
+        return (b.prog || 0) - (a.prog || 0) || b.last - a.last;
+      return b.last - a.last; // recent
+    });
+    if (!gs.length) {
+      listEl.innerHTML = _chronEmpty(
+        `No story matches “${_chronEsc(chronStorySearch.trim())}”.`,
+      );
+      return;
+    }
+    listEl.innerHTML = gs.map((g, gi) => dossierHtml(g, gi)).join("");
+    if (typeof hydrateImages === "function") hydrateImages(listEl);
+    wireList();
+  };
+
+  // ── Wire controls
+  const searchInput = body.querySelector("#dsSearch");
+  if (searchInput) {
+    searchInput.addEventListener("input", (e) => {
+      chronStorySearch = e.target.value;
+      paintList();
+    });
+  }
+  body.querySelectorAll(".ds-sort-btn").forEach((b) => {
+    b.addEventListener("click", () => {
+      chronStorySort = b.dataset.sort;
+      body
+        .querySelectorAll(".ds-sort-btn")
+        .forEach((x) => x.classList.toggle("active", x === b));
+      paintList();
+    });
   });
+  const expandBtn = body.querySelector(".ds-expand-all");
+  if (expandBtn) {
+    const syncLabel = () =>
+      (expandBtn.textContent = chronStoryAllOpen ? "Collapse all" : "Expand all");
+    syncLabel();
+    expandBtn.addEventListener("click", () => {
+      chronStoryAllOpen = !chronStoryAllOpen;
+      syncLabel();
+      paintList();
+    });
+  }
+
+  paintList();
 }
 
 // ---- Anthology lens (your book of quotations) ----
@@ -13989,7 +14121,12 @@ function jumpToTimelineDate(dateStr) {
   }
 }
 
-function jumpToArticleByDomainAndName(domain, article, timelineDateStr = null) {
+function jumpToArticleByDomainAndName(
+  domain,
+  article,
+  timelineDateStr = null,
+  opts = {},
+) {
   // Standardized mode mapping from view
   switch (currentState.view) {
     case "journey":
@@ -14073,6 +14210,21 @@ function jumpToArticleByDomainAndName(domain, article, timelineDateStr = null) {
           }, 350); // Shorter wait for smoother feel
         }
       }
+    }
+
+    // Resume: land at the reader's saved reading position (a scroll %),
+    // reversing the same formula the scroll handler uses to record it.
+    if (opts.resumePct && opts.resumePct > 0) {
+      const pct = Math.min(100, Math.max(0, opts.resumePct));
+      setTimeout(() => {
+        const artEl = document.getElementById("articleContent");
+        if (!artEl) return;
+        const r = artEl.getBoundingClientRect();
+        const absTop = r.top + window.scrollY;
+        const total = r.height - window.innerHeight + 250;
+        const y = (pct / 100) * total + absTop - 80;
+        window.scrollTo({ top: Math.max(0, y), behavior: "auto" });
+      }, 140);
     }
   } else {
     showToast("Article not found in the current library.");
