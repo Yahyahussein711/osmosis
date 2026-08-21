@@ -85,8 +85,9 @@
       background:color-mix(in srgb,var(--br-ink,#22201b) 8%,transparent);
       color:var(--br-ink,#22201b);box-shadow:none;padding:0;}
     .br-round:active{background:color-mix(in srgb,var(--br-ink,#22201b) 16%,transparent);}
-    .br-close{right:14px;top:calc(env(safe-area-inset-top,0px) + 50%);transform:translateY(-50%);}
-    .br-menu{right:14px;top:50%;transform:translateY(-50%);}
+    /* vertically centred within each bar via top/bottom + margin auto */
+    .br-close{right:14px;top:env(safe-area-inset-top,0px);bottom:0;margin:auto 0;}
+    .br-menu{right:14px;top:0;bottom:env(safe-area-inset-bottom,0px);margin:auto 0;}
     `;
     var s = document.createElement("style");
     s.id = "bookReaderStyles";
@@ -259,7 +260,7 @@
     var g = null;
     el.stage.addEventListener("pointerdown", function (e) {
       if (animating) return;
-      el.stage.setPointerCapture(e.pointerId);
+      try { el.stage.setPointerCapture(e.pointerId); } catch (err) {}
       g = { id: e.pointerId, x0: e.clientX, y0: e.clientY, axis: null,
             t0: performance.now(), moved: false, dragging: false };
       el.flow.style.transition = "none";
@@ -292,12 +293,8 @@
         else if (frac < -0.28 || v > 0.5) go(-1);
         else place(page, true);
       } else if (!g.moved && dt < 500) {
-        // tap zones
-        var x = e.clientX;
-        var w = el.stage.clientWidth;
-        if (x < w * 0.26) go(-1);
-        else if (x > w * 0.74) go(1);
-        else toggleChrome();
+        // Only a swipe turns pages — a tap just shows/hides the chrome.
+        toggleChrome();
       }
       g = null;
     }
