@@ -9883,7 +9883,7 @@ function renderChronStories(body, view) {
       ? `<button class="ds-open ds-resume" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-resume="${g.prog}">Resume · ${g.prog}% →</button>`
       : `<button class="ds-open" data-domain="${_chronAttr(g.domain)}" data-article="${_chronAttr(g.article)}" data-resume="0">Open the story →</button>`;
 
-    const open = chronStoryAllOpen || gi === 0;
+    const open = chronStoryAllOpen;
     return `<div class="chron-dossier${open ? " open" : ""}">
       <div class="chron-dossier-head">
         ${cover}
