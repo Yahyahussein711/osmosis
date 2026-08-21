@@ -5822,6 +5822,15 @@ function loadArticleView(options = {}) {
       60,
     );
   }
+
+  // Apple-Books-style paginated reader opens over the legacy view.
+  if (window.OsmosisReader) {
+    window.OsmosisReader.open(
+      article,
+      currentState.article,
+      currentState.category + "_" + currentState.subtopic + "_" + currentState.article,
+    );
+  }
 }
 
 function renderArticleContent(options = {}) {
