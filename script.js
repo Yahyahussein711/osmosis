@@ -4401,25 +4401,31 @@ function setupEvents() {
     });
   });
 
-  document.getElementById("fontSizeSlider").addEventListener("input", (e) => {
-    document.documentElement.style.setProperty(
-      "--article-font-size",
-      e.target.value + "rem",
-    );
-    saveReaderPrefs();
-  });
+  // Legacy reading-preference sliders — removed from Settings now that the
+  // paginated reader owns typography. Guard so their absence can't throw.
+  const _fsSlider = document.getElementById("fontSizeSlider");
+  if (_fsSlider)
+    _fsSlider.addEventListener("input", (e) => {
+      document.documentElement.style.setProperty(
+        "--article-font-size",
+        e.target.value + "rem",
+      );
+      saveReaderPrefs();
+    });
 
-  document.getElementById("lineHeightSlider").addEventListener("input", (e) => {
-    document.documentElement.style.setProperty(
-      "--article-line-height",
-      e.target.value,
-    );
-    saveReaderPrefs();
-  });
+  const _lhSlider = document.getElementById("lineHeightSlider");
+  if (_lhSlider)
+    _lhSlider.addEventListener("input", (e) => {
+      document.documentElement.style.setProperty(
+        "--article-line-height",
+        e.target.value,
+      );
+      saveReaderPrefs();
+    });
 
-  document
-    .getElementById("letterSpacingSlider")
-    .addEventListener("input", (e) => {
+  const _lsSlider = document.getElementById("letterSpacingSlider");
+  if (_lsSlider)
+    _lsSlider.addEventListener("input", (e) => {
       document.documentElement.style.setProperty(
         "--article-letter-spacing",
         e.target.value + "px",
@@ -4427,13 +4433,15 @@ function setupEvents() {
       saveReaderPrefs();
     });
 
-  document.getElementById("maxWidthSlider").addEventListener("input", (e) => {
-    document.documentElement.style.setProperty(
-      "--article-max-width",
-      e.target.value + "px",
-    );
-    saveReaderPrefs();
-  });
+  const _mwSlider = document.getElementById("maxWidthSlider");
+  if (_mwSlider)
+    _mwSlider.addEventListener("input", (e) => {
+      document.documentElement.style.setProperty(
+        "--article-max-width",
+        e.target.value + "px",
+      );
+      saveReaderPrefs();
+    });
 
   document.querySelectorAll(".font-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {

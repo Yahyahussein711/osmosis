@@ -194,6 +194,41 @@
       max-height:26vh;overflow:hidden;text-align:justify;}
     #bookReader.br-bold .br-cust-preview{font-weight:600;}
     #bookReader.br-nojustify .br-cust-preview{text-align:left;}
+    /* ---- highlights + notes (Phase 4) ---- */
+    .br-flow .sn.br-hl{background:color-mix(in srgb,var(--br-accent,#9e4632) 22%,transparent);
+      border-radius:2px;box-decoration-break:clone;-webkit-box-decoration-break:clone;}
+    .br-flow .sn.br-hl.br-hasnote{box-shadow:inset 0 -2px 0 var(--br-accent,#9e4632);}
+    .br-flow .br-author{text-align:center;font-style:italic;color:var(--br-faint,#9a9384);
+      font-size:.95em;margin:-.3em 0 1.7em;}
+    .br-flow p.br-first::first-letter{float:left;font-family:var(--br-font,"Lora",Georgia,serif);
+      font-size:3.05em;line-height:.82;padding:.02em .09em 0 0;color:var(--br-accent,#9e4632);font-weight:600;}
+    .br-hlbar{position:absolute;z-index:14;transform:translate(-50%,-118%);display:none;
+      background:#221d17;color:#fff;border-radius:12px;padding:2px;box-shadow:0 8px 26px rgba(0,0,0,.42);
+      white-space:nowrap;font-family:"Outfit",system-ui,sans-serif;}
+    .br-hlbar.on{display:flex;align-items:stretch;}
+    .br-hlbar button{border:none;background:none;color:#fff;font-size:.85rem;padding:10px 14px;cursor:pointer;border-radius:9px;box-shadow:none;}
+    .br-hlbar button:active{background:rgba(255,255,255,.16);}
+    .br-hlbar .sep{width:1px;background:rgba(255,255,255,.22);margin:7px 0;}
+    .br-note-wrap{position:absolute;inset:0;z-index:15;display:none;align-items:center;justify-content:center;
+      background:rgba(20,16,10,.42);padding:20px;}
+    .br-note-wrap.on{display:flex;}
+    .br-note{width:min(440px,90vw);background:var(--br-paper,#f7f3ea);border-radius:16px;padding:16px;
+      box-shadow:0 14px 44px rgba(0,0,0,.4);}
+    .br-note-q{font-family:var(--br-font,"Lora",Georgia,serif);font-style:italic;font-size:.95rem;
+      color:var(--br-ink,#22201b);border-left:3px solid var(--br-accent,#9e4632);padding-left:11px;
+      margin-bottom:12px;max-height:22vh;overflow:auto;}
+    .br-note textarea{width:100%;min-height:96px;border:1px solid color-mix(in srgb,var(--br-ink,#22201b) 14%,transparent);
+      border-radius:10px;background:none;color:var(--br-ink,#22201b);padding:11px;font-family:"Outfit",system-ui,sans-serif;
+      font-size:.98rem;line-height:1.5;outline:none;resize:vertical;box-sizing:border-box;}
+    .br-note-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
+    .br-note-actions button{border:none;border-radius:10px;padding:10px 18px;cursor:pointer;box-shadow:none;
+      font-family:"Outfit",system-ui,sans-serif;font-size:.9rem;font-weight:600;}
+    .br-note-cancel{background:none;color:var(--br-faint,#9a9384);}
+    .br-note-save{background:var(--br-accent,#9e4632);color:#fff;}
+    .br-row-note{display:block;margin-top:4px;font-style:normal;color:var(--br-faint,#9a9384);font-size:.82rem;}
+    /* bottom reading-progress hairline */
+    .br-progline{position:absolute;left:0;bottom:0;height:2px;background:var(--br-accent,#9e4632);
+      width:0;opacity:.5;z-index:3;transition:width .3s ease;pointer-events:none;}
     `;
     var s = document.createElement("style");
     s.id = "bookReaderStyles";
@@ -241,6 +276,25 @@
       '    <button class="br-sheet-x" id="brSheetX" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
       '  </div>' +
       '  <div class="br-sheet-body" id="brSheetBody"></div>' +
+      '</div>' +
+      '<div class="br-progline" id="brProgline"></div>' +
+      // ---- highlight bar + note composer (Phase 4) ----
+      '<div class="br-hlbar" id="brHlbar">' +
+      '  <button data-hl="toggle" id="brHlToggle">Highlight</button>' +
+      '  <span class="sep"></span>' +
+      '  <button data-hl="note">Note</button>' +
+      '  <span class="sep"></span>' +
+      '  <button data-hl="copy">Copy</button>' +
+      '</div>' +
+      '<div class="br-note-wrap" id="brNoteWrap">' +
+      '  <div class="br-note">' +
+      '    <div class="br-note-q" id="brNoteQ"></div>' +
+      '    <textarea id="brNoteText" placeholder="Write a note…"></textarea>' +
+      '    <div class="br-note-actions">' +
+      '      <button class="br-note-cancel" id="brNoteCancel">Cancel</button>' +
+      '      <button class="br-note-save" id="brNoteSave">Save</button>' +
+      '    </div>' +
+      '  </div>' +
       '</div>';
     document.body.appendChild(r);
     el.reader = r;
@@ -259,6 +313,12 @@
     el.popPct = r.querySelector("#brPopPct");
     el.bmN = r.querySelector("#brBmN");
     el.icoBm = r.querySelector("#brIcoBm");
+    el.hlbar = r.querySelector("#brHlbar");
+    el.hlToggle = r.querySelector("#brHlToggle");
+    el.noteWrap = r.querySelector("#brNoteWrap");
+    el.noteQ = r.querySelector("#brNoteQ");
+    el.noteText = r.querySelector("#brNoteText");
+    el.progline = r.querySelector("#brProgline");
 
     r.querySelector("#brClose").addEventListener("click", function (e) {
       e.stopPropagation();
@@ -276,6 +336,13 @@
     el.pop.querySelectorAll(".br-pop-ico").forEach(function (b) {
       b.addEventListener("click", function () { onMenuIco(b.dataset.ico); });
     });
+    // highlight bar + note composer
+    el.hlbar.querySelectorAll("button").forEach(function (b) {
+      b.addEventListener("click", function (e) { e.stopPropagation(); onHlAction(b.dataset.hl); });
+    });
+    r.querySelector("#brNoteCancel").addEventListener("click", closeNote);
+    r.querySelector("#brNoteSave").addEventListener("click", saveNote);
+    el.noteWrap.addEventListener("click", function (e) { if (e.target === el.noteWrap) closeNote(); });
 
     wireGestures();
     window.addEventListener("resize", onResize);
@@ -301,8 +368,9 @@
     var m = p.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g);
     return m || [p];
   }
-  function buildFlow(title, content) {
+  function buildFlow(title, article) {
     sentences = [];
+    var content = article && article.content;
     var paras = String(content || "")
       .split(/\r?\n\s*\r?\n/)
       .map(function (p) { return p.trim(); })
@@ -313,6 +381,8 @@
       if (paras.length && paras[0] === "---") paras.shift();
     }
     var html = '<h2 class="br-ch">' + escapeHtml(title || "") + "</h2>";
+    if (article && article.author)
+      html += '<div class="br-author">' + escapeHtml(article.author) + "</div>";
     var firstP = true;
     paras.forEach(function (para) {
       if (para === "---") { html += '<hr class="br-rule">'; return; }
@@ -381,6 +451,9 @@
       left <= 0 ? "Last page" : left + (left === 1 ? " page left" : " pages left");
     el.progress.textContent = "Page " + (page + 1) + " of " + pageCount;
     el.folio.textContent = String(page + 1);
+    if (el.progline)
+      el.progline.style.width =
+        pageCount > 1 ? (page / (pageCount - 1)) * 100 + "%" : "100%";
     if (storeKey) lsSet(storeKey, String(anchor));
   }
 
@@ -389,6 +462,7 @@
     if (animating) return;
     var target = page + dir;
     if (target < 0 || target > pageCount - 1) return;
+    closeHlBar();
     animating = true;
     page = target;
     anchor = firstSentenceOfPage(page);
@@ -402,19 +476,24 @@
     var g = null;
     el.stage.addEventListener("pointerdown", function (e) {
       if (animating) return;
+      if (el.hlbar.classList.contains("on")) { closeHlBar(); }
       try { el.stage.setPointerCapture(e.pointerId); } catch (err) {}
       g = { id: e.pointerId, x0: e.clientX, y0: e.clientY, axis: null,
-            t0: performance.now(), moved: false, dragging: false };
+            t0: performance.now(), moved: false, dragging: false, longpressed: false,
+            lp: setTimeout(function () {
+              if (g && !g.moved) { g.longpressed = true; openHlBar(g.x0, g.y0); }
+            }, 430) };
       el.flow.style.transition = "none";
     });
     el.stage.addEventListener("pointermove", function (e) {
       if (!g || e.pointerId !== g.id) return;
       var dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+      if (Math.hypot(dx, dy) > 7 && g.lp) { clearTimeout(g.lp); g.lp = null; }
       if (Math.hypot(dx, dy) > 8) g.moved = true;
+      if (g.longpressed) return;
       if (!g.axis && Math.hypot(dx, dy) > 10) {
         g.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
         if (g.axis === "x") {
-          // refuse at the ends
           if ((dx < 0 && page >= pageCount - 1) || (dx > 0 && page <= 0)) g.axis = "refuse";
           else g.dragging = true;
         }
@@ -426,8 +505,10 @@
     });
     function end(e) {
       if (!g || e.pointerId !== g.id) return;
+      if (g.lp) clearTimeout(g.lp);
       var dx = e.clientX - g.x0, dy = e.clientY - g.y0;
       var dt = performance.now() - g.t0;
+      if (g.longpressed) { g = null; return; }
       if (g.dragging) {
         var frac = -dx / W;
         var v = dx / dt; // px/ms
@@ -442,6 +523,7 @@
     }
     el.stage.addEventListener("pointerup", end);
     el.stage.addEventListener("pointercancel", function (e) {
+      if (g && g.lp) clearTimeout(g.lp);
       if (g && g.dragging) place(page, true);
       g = null;
     });
@@ -599,27 +681,39 @@
     saveBookmarks();
   }
   function refreshBmUI() {
-    var n = Object.keys(bmSet).length;
+    var n = Object.keys(bmSet).length + Object.keys(hlMap).length;
     if (el.bmN) el.bmN.textContent = n ? String(n) : "";
     if (el.icoBm) el.icoBm.classList.toggle("on", !!bmSet[currentAnchor()]);
   }
   function buildBookmarks() {
     openSheet("Bookmarks & Highlights");
-    var list = Object.keys(bmSet).map(Number).sort(function (a, b) { return a - b; });
-    if (!list.length) {
-      el.sheetBody.innerHTML =
-        '<div class="br-empty">No bookmarks yet — tap the bookmark icon to save your place.</div>';
-      return;
-    }
     var html = "";
-    list.forEach(function (i) {
-      var pg = snPage[i] != null ? snPage[i] : 0;
-      var txt = (sentences[i] && sentences[i].text) || "";
-      html +=
-        '<button class="br-row br-quote" data-sn="' + i + '"><span class="br-row-pg">p. ' +
-        (pg + 1) + "</span>" + escapeHtml(txt.slice(0, 90)) + "</button>";
-    });
-    el.sheetBody.innerHTML = html;
+    var hls = Object.keys(hlMap).map(Number).sort(function (a, b) { return a - b; });
+    if (hls.length) {
+      html += '<div class="br-set-grp">Highlights</div>';
+      hls.forEach(function (i) {
+        var pg = snPage[i] != null ? snPage[i] : 0;
+        var note = hlMap[i] && hlMap[i].note;
+        html +=
+          '<button class="br-row br-quote" data-sn="' + i + '"><span class="br-row-pg">p. ' +
+          (pg + 1) + "</span>" + escapeHtml(sentenceText(i).slice(0, 90)) +
+          (note ? '<span class="br-row-note">✎ ' + escapeHtml(note.slice(0, 80)) + "</span>" : "") +
+          "</button>";
+      });
+    }
+    var bms = Object.keys(bmSet).map(Number).sort(function (a, b) { return a - b; });
+    if (bms.length) {
+      html += '<div class="br-set-grp">Bookmarks</div>';
+      bms.forEach(function (i) {
+        var pg = snPage[i] != null ? snPage[i] : 0;
+        html +=
+          '<button class="br-row br-quote" data-sn="' + i + '"><span class="br-row-pg">p. ' +
+          (pg + 1) + "</span>" + escapeHtml(sentenceText(i).slice(0, 90)) + "</button>";
+      });
+    }
+    el.sheetBody.innerHTML =
+      html ||
+      '<div class="br-empty">No marks yet — long-press a passage to highlight it, or tap the bookmark icon to save your place.</div>';
     wireRows();
   }
   function shareStory() {
@@ -628,6 +722,96 @@
     else toast("Sharing isn’t available here");
   }
   function toast(m) { if (typeof showToast === "function") showToast(m); }
+
+  // ---- Highlights + notes (Phase 4) --------------------------
+  // hlMap: { sentenceIndex: { note: "" } }.  Persisted per story and,
+  // on first mark, recorded into the Chronicle via trackEngagement.
+  var hlMap = {};
+  var hlKey = "";
+  var hlTarget = -1;
+  function loadHighlights(key) {
+    hlKey = key ? "osmosis_reader_hl_" + key : "";
+    hlMap = {};
+    if (!hlKey) return;
+    try { var raw = lsGet(hlKey); if (raw) hlMap = JSON.parse(raw) || {}; } catch (e) {}
+  }
+  function saveHighlights() { if (hlKey) lsSet(hlKey, JSON.stringify(hlMap)); }
+  function applyHighlights() {
+    el.flow.querySelectorAll(".sn.br-hl").forEach(function (s) {
+      s.classList.remove("br-hl", "br-hasnote");
+    });
+    Object.keys(hlMap).forEach(function (i) {
+      el.flow.querySelectorAll('.sn[data-i="' + i + '"]').forEach(function (s) {
+        s.classList.add("br-hl");
+        if (hlMap[i] && hlMap[i].note) s.classList.add("br-hasnote");
+      });
+    });
+  }
+  function sentenceText(i) { return (sentences[i] && sentences[i].text) || ""; }
+
+  function openHlBar(x, y) {
+    var elm = document.elementFromPoint(x, y);
+    var sn = elm && elm.closest ? elm.closest(".sn") : null;
+    if (!sn) return;
+    hlTarget = +sn.dataset.i;
+    el.hlToggle.textContent = hlMap[hlTarget] ? "Unhighlight" : "Highlight";
+    var stageRect = el.stage.getBoundingClientRect();
+    var bx = Math.min(Math.max(x, stageRect.left + 70), stageRect.right - 70);
+    var by = Math.max(y, stageRect.top + 40);
+    el.hlbar.style.left = bx + "px";
+    el.hlbar.style.top = by + "px";
+    el.hlbar.classList.add("on");
+  }
+  function closeHlBar() { el.hlbar.classList.remove("on"); }
+
+  function onHlAction(act) {
+    if (hlTarget < 0) return;
+    if (act === "toggle") toggleHighlight(hlTarget);
+    else if (act === "note") openNote(hlTarget);
+    else if (act === "copy") {
+      if (navigator.clipboard) navigator.clipboard.writeText(sentenceText(hlTarget)).catch(function () {});
+      toast("Copied");
+      closeHlBar();
+    }
+    if (act === "toggle") closeHlBar();
+  }
+  function toggleHighlight(i) {
+    if (hlMap[i]) { delete hlMap[i]; }
+    else {
+      hlMap[i] = {};
+      recordMark("highlight", '"' + sentenceText(i) + '"');
+      toast("Highlighted");
+    }
+    saveHighlights();
+    applyHighlights();
+    refreshBmUI();
+  }
+  // record a mark into the Osmosis Chronicle (currentState is this story)
+  function recordMark(kind, text) {
+    try { if (typeof trackEngagement === "function") trackEngagement(kind, text); } catch (e) {}
+  }
+
+  function openNote(i) {
+    hlTarget = i;
+    el.noteQ.textContent = "“" + sentenceText(i) + "”";
+    el.noteText.value = (hlMap[i] && hlMap[i].note) || "";
+    el.noteWrap.classList.add("on");
+    closeHlBar();
+    setTimeout(function () { el.noteText.focus(); }, 60);
+  }
+  function closeNote() { el.noteWrap.classList.remove("on"); }
+  function saveNote() {
+    var i = hlTarget, txt = el.noteText.value.trim();
+    if (!hlMap[i]) hlMap[i] = {};
+    hlMap[i].note = txt;
+    if (!txt) delete hlMap[i].note;
+    saveHighlights();
+    applyHighlights();
+    refreshBmUI();
+    if (txt) recordMark("note", txt + '\n\n"' + sentenceText(i) + '"');
+    closeNote();
+    toast("Note saved");
+  }
 
   // ---- Settings: themes + typography (Phase 2) ---------------
   var THEMES = {
@@ -772,14 +956,18 @@
     var saved = storeKey ? parseInt(lsGet(storeKey), 10) : NaN;
     anchor = isNaN(saved) ? 0 : saved;
     loadBookmarks(key);
+    loadHighlights(key);
     loadSettings();
     applySettings();
     el.runhead.textContent = title || "";
-    buildFlow(title, article && article.content);
+    buildFlow(title, article);
+    applyHighlights();
     el.reader.classList.add("on");
     chromeShown = false;
     el.reader.classList.remove("chrome");
     closeMenu();
+    closeHlBar();
+    closeNote();
     // paginate after the browser has laid the flow out
     requestAnimationFrame(function () {
       requestAnimationFrame(function () { relayout(); refreshBmUI(); });
