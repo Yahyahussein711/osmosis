@@ -5699,6 +5699,12 @@ function _renderAlmanac(total, read) {
 }
 
 function navigateToArticle(d, s, a, options = {}) {
+  // Remember where the origin page was scrolled so leaving the story can
+  // return there instead of jumping to the top. Don't capture while already
+  // reading (e.g. jumping between marks) — that would clobber the real scroll.
+  if (currentState.view !== "article") {
+    window.__osmReturnScroll = window.scrollY;
+  }
   currentState.category = d;
   currentState.subtopic = s;
   currentState.article = a;

@@ -1214,6 +1214,11 @@
     // unwind the underlying navigation via the existing Back button
     var back = document.getElementById("backToPrevious");
     if (back) back.click();
+    // return the origin page to where it was scrolled (Explore/Chronicle)
+    var y = typeof window.__osmReturnScroll === "number" ? window.__osmReturnScroll : 0;
+    requestAnimationFrame(function () { window.scrollTo(0, y); });
+    setTimeout(function () { window.scrollTo(0, y); }, 80);
+    setTimeout(function () { window.scrollTo(0, y); }, 220);
   }
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
