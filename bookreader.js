@@ -19,6 +19,7 @@
   var chromeShown = false;
   var built = false;
   var sentences = [];   // flat [{text}]
+  var words = [];       // flat [{text, sn}] — addressing unit for highlights
   var EASE = "cubic-bezier(.32,.72,.28,1)";
   var REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -110,12 +111,15 @@
     .br-pop-row .br-pl{flex:1;}
     .br-pop-row .br-pr{color:var(--br-faint,#9a9384);font-size:.85rem;display:flex;align-items:center;gap:6px;}
     .br-pop-row svg{flex-shrink:0;opacity:.85;}
-    .br-pop-icons{display:flex;justify-content:space-around;align-items:center;padding:10px 8px;}
+    .br-pop-icons{display:grid;grid-template-columns:repeat(3,1fr);align-items:center;justify-items:center;padding:10px 8px;}
     .br-pop-ico{width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;box-shadow:none;
       display:flex;align-items:center;justify-content:center;
       background:color-mix(in srgb,var(--br-ink,#22201b) 7%,transparent);color:var(--br-ink,#22201b);}
     .br-pop-ico.on{background:var(--br-accent,#9e4632);color:#fff;}
     .br-pop-ico:active{background:color-mix(in srgb,var(--br-ink,#22201b) 16%,transparent);}
+    /* keep every reader-button icon from being crushed by its flex button */
+    #bookReader button svg{flex-shrink:0;}
+    .br-pop-ico svg{width:20px;height:20px;min-width:20px;min-height:20px;}
     .br-sheet{position:absolute;left:0;right:0;bottom:0;z-index:12;max-height:86%;
       display:flex;flex-direction:column;background:var(--br-paper,#f7f3ea);
       border-radius:18px 18px 0 0;box-shadow:0 -10px 40px rgba(20,16,10,.3);
@@ -194,10 +198,10 @@
       max-height:26vh;overflow:hidden;text-align:justify;}
     #bookReader.br-bold .br-cust-preview{font-weight:600;}
     #bookReader.br-nojustify .br-cust-preview{text-align:left;}
-    /* ---- highlights + notes (Phase 4) ---- */
-    .br-flow .sn.br-hl{background:color-mix(in srgb,var(--br-accent,#9e4632) 22%,transparent);
-      border-radius:2px;box-decoration-break:clone;-webkit-box-decoration-break:clone;}
-    .br-flow .sn.br-hl.br-hasnote{box-shadow:inset 0 -2px 0 var(--br-accent,#9e4632);}
+    /* ---- highlights + notes (Phase 4) — word-level ---- */
+    .br-flow .wd.br-hl{background:color-mix(in srgb,var(--br-accent,#9e4632) 22%,transparent);}
+    .br-flow .wd.br-hl.br-hasnote{box-shadow:inset 0 -2px 0 var(--br-accent,#9e4632);}
+    .br-flow .wd.br-sel{background:color-mix(in srgb,var(--br-accent,#9e4632) 36%,transparent);}
     .br-flow .br-author{text-align:center;font-style:italic;color:var(--br-faint,#9a9384);
       font-size:.95em;margin:-.3em 0 1.7em;}
     .br-flow p.br-first::first-letter{float:left;font-family:var(--br-font,"Lora",Georgia,serif);
@@ -370,6 +374,7 @@
   }
   function buildFlow(title, article) {
     sentences = [];
+    words = [];
     var content = article && article.content;
     var paras = String(content || "")
       .split(/\r?\n\s*\r?\n/)
@@ -392,9 +397,18 @@
       firstP = false;
       html += "<p" + cls + ">";
       splitSentences(para).forEach(function (s) {
-        var i = sentences.length;
+        var si = sentences.length;
         sentences.push({ text: s.trim() });
-        html += '<span class="sn" data-i="' + i + '">' + inlineMd(s) + "</span>";
+        html += '<span class="sn" data-i="' + si + '">';
+        // each word carries its trailing space so highlights read continuously
+        var toks = s.match(/\S+\s*/g) || [];
+        toks.forEach(function (tok) {
+          var wi = words.length;
+          words.push({ text: tok, sn: si });
+          html += '<span class="wd" data-w="' + wi + '">' +
+            escapeHtml(tok).replace(/\*/g, "") + "</span>";
+        });
+        html += "</span>";
       });
       html += "</p>";
     });
@@ -476,12 +490,18 @@
     var g = null;
     el.stage.addEventListener("pointerdown", function (e) {
       if (animating) return;
-      if (el.hlbar.classList.contains("on")) { closeHlBar(); }
+      if (el.hlbar.classList.contains("on")) { closeHlBar(); clearSel(); }
       try { el.stage.setPointerCapture(e.pointerId); } catch (err) {}
       g = { id: e.pointerId, x0: e.clientX, y0: e.clientY, axis: null,
-            t0: performance.now(), moved: false, dragging: false, longpressed: false,
+            t0: performance.now(), moved: false, dragging: false, longpressed: false, selecting: false,
             lp: setTimeout(function () {
-              if (g && !g.moved) { g.longpressed = true; openHlBar(g.x0, g.y0); }
+              if (!g || g.moved) return;
+              g.longpressed = true;
+              var w = wordAt(g.x0, g.y0);
+              if (w < 0) return;
+              var idx = hlRangeAt(w);
+              if (idx >= 0) { g.selecting = false; openBarExisting(idx); }
+              else { g.selecting = true; startSel(w); }
             }, 430) };
       el.flow.style.transition = "none";
     });
@@ -490,7 +510,10 @@
       var dx = e.clientX - g.x0, dy = e.clientY - g.y0;
       if (Math.hypot(dx, dy) > 7 && g.lp) { clearTimeout(g.lp); g.lp = null; }
       if (Math.hypot(dx, dy) > 8) g.moved = true;
-      if (g.longpressed) return;
+      if (g.longpressed) {
+        if (g.selecting) extendSel(wordAt(e.clientX, e.clientY));
+        return;
+      }
       if (!g.axis && Math.hypot(dx, dy) > 10) {
         g.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
         if (g.axis === "x") {
@@ -508,7 +531,10 @@
       if (g.lp) clearTimeout(g.lp);
       var dx = e.clientX - g.x0, dy = e.clientY - g.y0;
       var dt = performance.now() - g.t0;
-      if (g.longpressed) { g = null; return; }
+      if (g.longpressed) {
+        if (g.selecting) openBarNew(Math.min(selA, selB), Math.max(selA, selB));
+        g = null; return;
+      }
       if (g.dragging) {
         var frac = -dx / W;
         var v = dx / dt; // px/ms
@@ -681,25 +707,27 @@
     saveBookmarks();
   }
   function refreshBmUI() {
-    var n = Object.keys(bmSet).length + Object.keys(hlMap).length;
+    var n = Object.keys(bmSet).length + hlRanges.length;
     if (el.bmN) el.bmN.textContent = n ? String(n) : "";
     if (el.icoBm) el.icoBm.classList.toggle("on", !!bmSet[currentAnchor()]);
   }
   function buildBookmarks() {
     openSheet("Bookmarks & Highlights");
     var html = "";
-    var hls = Object.keys(hlMap).map(Number).sort(function (a, b) { return a - b; });
-    if (hls.length) {
+    if (hlRanges.length) {
       html += '<div class="br-set-grp">Highlights</div>';
-      hls.forEach(function (i) {
-        var pg = snPage[i] != null ? snPage[i] : 0;
-        var note = hlMap[i] && hlMap[i].note;
-        html +=
-          '<button class="br-row br-quote" data-sn="' + i + '"><span class="br-row-pg">p. ' +
-          (pg + 1) + "</span>" + escapeHtml(sentenceText(i).slice(0, 90)) +
-          (note ? '<span class="br-row-note">✎ ' + escapeHtml(note.slice(0, 80)) + "</span>" : "") +
-          "</button>";
-      });
+      hlRanges
+        .map(function (r) { return r; })
+        .sort(function (a, b) { return a.s - b.s; })
+        .forEach(function (r) {
+          var sn = words[r.s] ? words[r.s].sn : 0;
+          var pg = snPage[sn] != null ? snPage[sn] : 0;
+          html +=
+            '<button class="br-row br-quote" data-sn="' + sn + '"><span class="br-row-pg">p. ' +
+            (pg + 1) + "</span>" + escapeHtml(rangeText(r).slice(0, 90)) +
+            (r.note ? '<span class="br-row-note">✎ ' + escapeHtml(r.note.slice(0, 80)) + "</span>" : "") +
+            "</button>";
+        });
     }
     var bms = Object.keys(bmSet).map(Number).sort(function (a, b) { return a - b; });
     if (bms.length) {
@@ -723,94 +751,137 @@
   }
   function toast(m) { if (typeof showToast === "function") showToast(m); }
 
-  // ---- Highlights + notes (Phase 4) --------------------------
-  // hlMap: { sentenceIndex: { note: "" } }.  Persisted per story and,
-  // on first mark, recorded into the Chronicle via trackEngagement.
-  var hlMap = {};
+  // ---- Highlights + notes (Phase 4) — word-range selection ----
+  // hlRanges: [{ s, e, note? }] over word indices. Long-press then drag
+  // across words to select the exact text (Apple-Books style).
+  var hlRanges = [];
   var hlKey = "";
-  var hlTarget = -1;
+  var curSel = null;          // { s, e, idx } — active bar target (idx<0 = new)
+  var selActive = false, selA = -1, selB = -1;
+
   function loadHighlights(key) {
     hlKey = key ? "osmosis_reader_hl_" + key : "";
-    hlMap = {};
+    hlRanges = [];
     if (!hlKey) return;
-    try { var raw = lsGet(hlKey); if (raw) hlMap = JSON.parse(raw) || {}; } catch (e) {}
+    try {
+      var raw = lsGet(hlKey);
+      var parsed = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(parsed)) hlRanges = parsed;
+    } catch (e) {}
   }
-  function saveHighlights() { if (hlKey) lsSet(hlKey, JSON.stringify(hlMap)); }
+  function saveHighlights() { if (hlKey) lsSet(hlKey, JSON.stringify(hlRanges)); }
+  function wordSpan(w) { return el.flow.querySelector('.wd[data-w="' + w + '"]'); }
   function applyHighlights() {
-    el.flow.querySelectorAll(".sn.br-hl").forEach(function (s) {
+    el.flow.querySelectorAll(".wd.br-hl,.wd.br-hasnote").forEach(function (s) {
       s.classList.remove("br-hl", "br-hasnote");
     });
-    Object.keys(hlMap).forEach(function (i) {
-      el.flow.querySelectorAll('.sn[data-i="' + i + '"]').forEach(function (s) {
-        s.classList.add("br-hl");
-        if (hlMap[i] && hlMap[i].note) s.classList.add("br-hasnote");
-      });
+    hlRanges.forEach(function (r) {
+      for (var w = r.s; w <= r.e; w++) {
+        var span = wordSpan(w);
+        if (span) { span.classList.add("br-hl"); if (r.note) span.classList.add("br-hasnote"); }
+      }
     });
   }
+  function rangeText(r) {
+    var t = "";
+    for (var w = r.s; w <= r.e; w++) t += (words[w] ? words[w].text : "");
+    return t.replace(/\s+/g, " ").trim();
+  }
+  function hlRangeAt(w) {
+    for (var i = 0; i < hlRanges.length; i++)
+      if (w >= hlRanges[i].s && w <= hlRanges[i].e) return i;
+    return -1;
+  }
   function sentenceText(i) { return (sentences[i] && sentences[i].text) || ""; }
-
-  function openHlBar(x, y) {
-    var elm = document.elementFromPoint(x, y);
-    var sn = elm && elm.closest ? elm.closest(".sn") : null;
-    if (!sn) return;
-    hlTarget = +sn.dataset.i;
-    el.hlToggle.textContent = hlMap[hlTarget] ? "Unhighlight" : "Highlight";
-    var stageRect = el.stage.getBoundingClientRect();
-    var bx = Math.min(Math.max(x, stageRect.left + 70), stageRect.right - 70);
-    var by = Math.max(y, stageRect.top + 40);
-    el.hlbar.style.left = bx + "px";
-    el.hlbar.style.top = by + "px";
-    el.hlbar.classList.add("on");
-  }
-  function closeHlBar() { el.hlbar.classList.remove("on"); }
-
-  function onHlAction(act) {
-    if (hlTarget < 0) return;
-    if (act === "toggle") toggleHighlight(hlTarget);
-    else if (act === "note") openNote(hlTarget);
-    else if (act === "copy") {
-      if (navigator.clipboard) navigator.clipboard.writeText(sentenceText(hlTarget)).catch(function () {});
-      toast("Copied");
-      closeHlBar();
-    }
-    if (act === "toggle") closeHlBar();
-  }
-  function toggleHighlight(i) {
-    if (hlMap[i]) { delete hlMap[i]; }
-    else {
-      hlMap[i] = {};
-      recordMark("highlight", '"' + sentenceText(i) + '"');
-      toast("Highlighted");
-    }
-    saveHighlights();
-    applyHighlights();
-    refreshBmUI();
-  }
-  // record a mark into the Osmosis Chronicle (currentState is this story)
   function recordMark(kind, text) {
     try { if (typeof trackEngagement === "function") trackEngagement(kind, text); } catch (e) {}
   }
 
-  function openNote(i) {
-    hlTarget = i;
-    el.noteQ.textContent = "“" + sentenceText(i) + "”";
-    el.noteText.value = (hlMap[i] && hlMap[i].note) || "";
+  // ---- live selection ----
+  function wordAt(x, y) {
+    var e = document.elementFromPoint(x, y);
+    var wd = e && e.closest ? e.closest(".wd") : null;
+    return wd ? +wd.dataset.w : -1;
+  }
+  function startSel(w) { selActive = true; selA = selB = w; renderSel(); }
+  function extendSel(w) { if (selActive && w >= 0) { selB = w; renderSel(); } }
+  function renderSel() {
+    el.flow.querySelectorAll(".wd.br-sel").forEach(function (s) { s.classList.remove("br-sel"); });
+    var a = Math.min(selA, selB), b = Math.max(selA, selB);
+    for (var w = a; w <= b; w++) { var s = wordSpan(w); if (s) s.classList.add("br-sel"); }
+  }
+  function clearSel() {
+    selActive = false;
+    el.flow.querySelectorAll(".wd.br-sel").forEach(function (s) { s.classList.remove("br-sel"); });
+  }
+
+  // ---- the floating bar ----
+  function positionBar(s, e) {
+    var first = wordSpan(s), last = wordSpan(e);
+    if (!first) return;
+    var r1 = first.getBoundingClientRect();
+    var r2 = last ? last.getBoundingClientRect() : r1;
+    var sr = el.stage.getBoundingClientRect();
+    var cx = (r1.left + r2.right) / 2;
+    cx = Math.min(Math.max(cx, sr.left + 80), sr.right - 80);
+    var top = Math.min(r1.top, r2.top);
+    var cy = Math.max(top, sr.top + 44);
+    el.hlbar.style.left = cx + "px";
+    el.hlbar.style.top = cy + "px";
+    el.hlbar.classList.add("on");
+  }
+  function openBarNew(s, e) {
+    curSel = { s: s, e: e, idx: -1 };
+    el.hlToggle.textContent = "Highlight";
+    positionBar(s, e);
+  }
+  function openBarExisting(idx) {
+    var r = hlRanges[idx];
+    curSel = { s: r.s, e: r.e, idx: idx };
+    el.hlToggle.textContent = "Unhighlight";
+    positionBar(r.s, r.e);
+  }
+  function closeHlBar() { el.hlbar.classList.remove("on"); }
+
+  function onHlAction(act) {
+    if (!curSel) return;
+    if (act === "toggle") {
+      if (curSel.idx >= 0) {
+        hlRanges.splice(curSel.idx, 1);
+        toast("Removed");
+      } else {
+        hlRanges.push({ s: curSel.s, e: curSel.e });
+        recordMark("highlight", '"' + rangeText(curSel) + '"');
+        toast("Highlighted");
+      }
+      saveHighlights(); applyHighlights(); refreshBmUI();
+      clearSel(); closeHlBar();
+    } else if (act === "note") {
+      openNote();
+    } else if (act === "copy") {
+      if (navigator.clipboard) navigator.clipboard.writeText(rangeText(curSel)).catch(function () {});
+      toast("Copied"); clearSel(); closeHlBar();
+    }
+  }
+
+  function openNote() {
+    if (!curSel) return;
+    el.noteQ.textContent = "“" + rangeText(curSel) + "”";
+    el.noteText.value = (curSel.idx >= 0 && hlRanges[curSel.idx].note) || "";
     el.noteWrap.classList.add("on");
     closeHlBar();
     setTimeout(function () { el.noteText.focus(); }, 60);
   }
   function closeNote() { el.noteWrap.classList.remove("on"); }
   function saveNote() {
-    var i = hlTarget, txt = el.noteText.value.trim();
-    if (!hlMap[i]) hlMap[i] = {};
-    hlMap[i].note = txt;
-    if (!txt) delete hlMap[i].note;
-    saveHighlights();
-    applyHighlights();
-    refreshBmUI();
-    if (txt) recordMark("note", txt + '\n\n"' + sentenceText(i) + '"');
-    closeNote();
-    toast("Note saved");
+    if (!curSel) return;
+    var txt = el.noteText.value.trim(), isNew = curSel.idx < 0;
+    var r;
+    if (isNew) { r = { s: curSel.s, e: curSel.e }; if (txt) r.note = txt; hlRanges.push(r); }
+    else { r = hlRanges[curSel.idx]; if (txt) r.note = txt; else delete r.note; }
+    saveHighlights(); applyHighlights(); refreshBmUI();
+    if (txt) recordMark("note", txt + '\n\n"' + rangeText(r) + '"');
+    clearSel(); closeNote(); toast("Note saved");
   }
 
   // ---- Settings: themes + typography (Phase 2) ---------------
