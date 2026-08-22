@@ -41,10 +41,21 @@
     if (document.getElementById("bookReaderStyles")) return;
     var css = `
     #bookReader{position:fixed;inset:0;z-index:5000;display:none;
-      background:var(--br-paper,#f7f3ea);color:var(--br-ink,#22201b);
+      color:var(--br-ink,#22201b);
       font-family:var(--br-font,"Lora",Georgia,serif);
       -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
     #bookReader.on{display:block;}
+    /* the page as a card that can be swiped down to leave */
+    .br-card{position:absolute;inset:0;overflow:hidden;background:var(--br-paper,#f7f3ea);
+      transform-origin:center 34%;will-change:transform;}
+    #bookReader.dismissing{background:rgba(14,11,8,calc(.18 + var(--dp,0)*.5));
+      backdrop-filter:blur(calc(var(--dp,0)*18px));-webkit-backdrop-filter:blur(calc(var(--dp,0)*18px));}
+    #bookReader.dismissing .br-card{box-shadow:0 24px 70px rgba(0,0,0,.5);}
+    .br-dismiss-x{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;z-index:30;
+      width:34px;height:34px;border-radius:50%;border:none;box-shadow:none;cursor:pointer;
+      background:color-mix(in srgb,var(--br-ink,#22201b) 10%,transparent);color:var(--br-ink,#22201b);
+      display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+    #bookReader.dismissing .br-dismiss-x{pointer-events:auto;}
     /* running head + folio, always visible */
     .br-runhead{position:absolute;top:0;left:0;right:0;height:var(--br-mtop,58px);
       display:flex;align-items:center;justify-content:center;
@@ -257,6 +268,8 @@
     var r = document.createElement("div");
     r.id = "bookReader";
     r.innerHTML =
+      '<div class="br-card" id="brCard">' +
+      '<button class="br-dismiss-x" id="brDismissX" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>' +
       '<div class="br-runhead"><span id="brRunhead"></span></div>' +
       '<div class="br-stage" id="brStage"><div class="br-flow" id="brFlow"></div></div>' +
       '<div class="br-folio" id="brFolio"></div>' +
@@ -311,7 +324,8 @@
       '      <button class="br-note-save" id="brNoteSave">Save</button>' +
       '    </div>' +
       '  </div>' +
-      '</div>';
+      '</div>' +
+      '</div>'; // close .br-card
     document.body.appendChild(r);
     el.reader = r;
     el.stage = r.querySelector("#brStage");
@@ -337,6 +351,8 @@
     el.progline = r.querySelector("#brProgline");
     el.handleA = r.querySelector("#brHandleA");
     el.handleB = r.querySelector("#brHandleB");
+    el.card = r.querySelector("#brCard");
+    el.dismissX = r.querySelector("#brDismissX");
 
     r.querySelector("#brClose").addEventListener("click", function (e) {
       e.stopPropagation();
@@ -363,6 +379,7 @@
     el.noteWrap.addEventListener("click", function (e) { if (e.target === el.noteWrap) closeNote(); });
     wireHandle(el.handleA, "A");
     wireHandle(el.handleB, "B");
+    el.dismissX.addEventListener("click", function (e) { e.stopPropagation(); close(); });
 
     wireGestures();
     window.addEventListener("resize", onResize);
@@ -535,8 +552,11 @@
         if (g.axis === "x") {
           if ((dx < 0 && page >= pageCount - 1) || (dx > 0 && page <= 0)) g.axis = "refuse";
           else g.dragging = true;
+        } else if (g.axis === "y" && dy > 0) {
+          g.dismissing = true; // a downward drag peels the page away to leave
         }
       }
+      if (g.dismissing) { dismissDrag(Math.max(0, dy)); return; }
       if (g.dragging) {
         el.flow.style.transform =
           "translate3d(" + (-page * U + dx) + "px,0,0)";
@@ -549,6 +569,10 @@
       var dt = performance.now() - g.t0;
       if (g.longpressed) {
         if (g.selecting) openBarNew(selS, selE);
+        g = null; return;
+      }
+      if (g.dismissing) {
+        dismissEnd(Math.max(0, dy), dy / ((performance.now() - g.t0) || 1));
         g = null; return;
       }
       if (g.dragging) {
@@ -567,6 +591,7 @@
     el.stage.addEventListener("pointercancel", function (e) {
       if (g && g.lp) clearTimeout(g.lp);
       if (g && g.dragging) place(page, true);
+      if (g && g.dismissing) dismissEnd(0, 0);
       g = null;
     });
   }
@@ -593,6 +618,53 @@
   function toggleChrome() {
     chromeShown = !chromeShown;
     el.reader.classList.toggle("chrome", chromeShown);
+  }
+
+  // ---- swipe-down-to-leave (interactive dismiss) -------------
+  function dismissDrag(dy) {
+    var H = el.reader.clientHeight || 800;
+    var p = Math.max(0, Math.min(1, dy / (H * 0.4)));
+    el.reader.classList.add("dismissing");
+    el.reader.style.setProperty("--dp", p.toFixed(3));
+    el.card.style.transition = "none";
+    el.card.style.transform =
+      "translateY(" + dy * 0.35 + "px) scale(" + (1 - p * 0.16) + ")";
+    el.card.style.borderRadius = p * 34 + "px";
+    el.dismissX.style.opacity = Math.min(1, p * 4);
+  }
+  function dismissEnd(dy, vy) {
+    var H = el.reader.clientHeight || 800;
+    var p = Math.max(0, Math.min(1, dy / (H * 0.4)));
+    if (p > 0.32 || (vy > 0.9 && dy > 80)) {
+      // commit: throw the card down and leave
+      el.card.style.transition =
+        "transform .3s cubic-bezier(.4,0,.6,1), border-radius .3s ease, opacity .3s ease";
+      el.card.style.transform = "translateY(" + H + "px) scale(.8)";
+      el.card.style.opacity = "0";
+      setTimeout(function () { close(); resetCard(); }, 260);
+    } else {
+      // snap back to full screen
+      el.card.style.transition =
+        "transform .34s cubic-bezier(.22,1,.36,1), border-radius .34s ease";
+      el.card.style.transform = "none";
+      el.card.style.borderRadius = "0";
+      el.dismissX.style.opacity = "0";
+      el.reader.style.setProperty("--dp", "0");
+      setTimeout(function () {
+        el.reader.classList.remove("dismissing");
+        el.card.style.transition = "";
+      }, 360);
+    }
+  }
+  function resetCard() {
+    if (!el.card) return;
+    el.card.style.transition = "none";
+    el.card.style.transform = "";
+    el.card.style.borderRadius = "";
+    el.card.style.opacity = "";
+    el.reader.classList.remove("dismissing");
+    el.reader.style.removeProperty("--dp");
+    el.dismissX.style.opacity = "0";
   }
 
   // ---- navigation helpers ------------------------------------
@@ -1102,6 +1174,7 @@
     el.runhead.textContent = title || "";
     buildFlow(title, article);
     applyHighlights();
+    resetCard();
     el.reader.classList.add("on");
     chromeShown = false;
     el.reader.classList.remove("chrome");
