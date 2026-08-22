@@ -43,7 +43,8 @@
     #bookReader{position:fixed;inset:0;z-index:5000;display:none;
       color:var(--br-ink,#22201b);
       font-family:var(--br-font,"Lora",Georgia,serif);
-      -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+      -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+      transition:background .3s ease,backdrop-filter .3s ease,-webkit-backdrop-filter .3s ease;}
     #bookReader.on{display:block;}
     /* the page as a card that can be swiped down to leave */
     .br-card{position:absolute;inset:0;overflow:hidden;background:var(--br-paper,#f7f3ea);
@@ -356,7 +357,7 @@
 
     r.querySelector("#brClose").addEventListener("click", function (e) {
       e.stopPropagation();
-      close();
+      animateClose();
     });
     r.querySelector("#brMenu").addEventListener("click", function (e) {
       e.stopPropagation();
@@ -379,7 +380,7 @@
     el.noteWrap.addEventListener("click", function (e) { if (e.target === el.noteWrap) closeNote(); });
     wireHandle(el.handleA, "A");
     wireHandle(el.handleB, "B");
-    el.dismissX.addEventListener("click", function (e) { e.stopPropagation(); close(); });
+    el.dismissX.addEventListener("click", function (e) { e.stopPropagation(); animateClose(); });
 
     wireGestures();
     window.addEventListener("resize", onResize);
@@ -621,43 +622,67 @@
   }
 
   // ---- swipe-down-to-leave (interactive dismiss) -------------
+  var closing = false;
   function dismissDrag(dy) {
     var H = el.reader.clientHeight || 800;
+    // gentle rubber-band so the card eases as it falls, not a linear slide
     var p = Math.max(0, Math.min(1, dy / (H * 0.4)));
+    var ty = dy * (0.42 - p * 0.12); // follows the finger, softening with depth
     el.reader.classList.add("dismissing");
     el.reader.style.setProperty("--dp", p.toFixed(3));
     el.card.style.transition = "none";
     el.card.style.transform =
-      "translateY(" + dy * 0.35 + "px) scale(" + (1 - p * 0.16) + ")";
-    el.card.style.borderRadius = p * 34 + "px";
+      "translate3d(0," + ty + "px,0) scale(" + (1 - p * 0.15) + ")";
+    el.card.style.borderRadius = Math.min(34, p * 46) + "px";
     el.dismissX.style.opacity = Math.min(1, p * 4);
   }
   function dismissEnd(dy, vy) {
     var H = el.reader.clientHeight || 800;
     var p = Math.max(0, Math.min(1, dy / (H * 0.4)));
     if (p > 0.32 || (vy > 0.9 && dy > 80)) {
-      // commit: throw the card down and leave
+      // commit: carry the card the rest of the way out, smoothly
+      el.reader.style.setProperty("--dp", "0");
       el.card.style.transition =
-        "transform .3s cubic-bezier(.4,0,.6,1), border-radius .3s ease, opacity .3s ease";
-      el.card.style.transform = "translateY(" + H + "px) scale(.8)";
+        "transform .42s cubic-bezier(.33,0,.15,1), border-radius .42s ease, opacity .42s ease";
+      el.card.style.transform = "translate3d(0," + (H + 40) + "px,0) scale(.86)";
       el.card.style.opacity = "0";
-      setTimeout(function () { close(); resetCard(); }, 260);
+      setTimeout(function () { close(); resetCard(); }, 380);
     } else {
-      // snap back to full screen
+      // spring back to full screen
       el.card.style.transition =
-        "transform .34s cubic-bezier(.22,1,.36,1), border-radius .34s ease";
-      el.card.style.transform = "none";
+        "transform .42s cubic-bezier(.22,1,.36,1), border-radius .42s ease";
+      el.card.style.transform = "translate3d(0,0,0) scale(1)";
       el.card.style.borderRadius = "0";
       el.dismissX.style.opacity = "0";
       el.reader.style.setProperty("--dp", "0");
       setTimeout(function () {
         el.reader.classList.remove("dismissing");
         el.card.style.transition = "";
-      }, 360);
+      }, 440);
     }
+  }
+  // Pressing ✕ plays the same graceful card dismiss instead of a hard cut.
+  function animateClose() {
+    if (closing) return;
+    closing = true;
+    var H = el.reader.clientHeight || 800;
+    el.reader.classList.add("dismissing");
+    el.reader.style.setProperty("--dp", "0.66");
+    el.dismissX.style.opacity = "0";
+    el.card.style.transition = "none";
+    el.card.style.transform = "translate3d(0,0,0) scale(1)";
+    el.card.style.borderRadius = "0";
+    void el.card.offsetHeight; // commit the start state
+    el.card.style.transition =
+      "transform .4s cubic-bezier(.32,.72,.28,1), border-radius .4s ease, opacity .38s ease";
+    el.card.style.transform = "translate3d(0," + H * 0.14 + "px,0) scale(.9)";
+    el.card.style.borderRadius = "30px";
+    el.card.style.opacity = "0";
+    setTimeout(function () { close(); resetCard(); closing = false; }, 380);
   }
   function resetCard() {
     if (!el.card) return;
+    closing = false;
     el.card.style.transition = "none";
     el.card.style.transform = "";
     el.card.style.borderRadius = "";
