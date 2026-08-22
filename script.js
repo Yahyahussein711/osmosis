@@ -5699,10 +5699,17 @@ function _renderAlmanac(total, read) {
 }
 
 function navigateToArticle(d, s, a, options = {}) {
-  // Remember where the origin page was scrolled so leaving the story can
-  // return there instead of jumping to the top. Don't capture while already
-  // reading (e.g. jumping between marks) — that would clobber the real scroll.
+  // Remember which page we came from and where it was scrolled, so leaving
+  // the story reveals it exactly as it was — no re-render, no jump to top.
+  // Skip while already reading (jumping between marks) so we don't clobber it.
   if (currentState.view !== "article") {
+    const av = document.querySelector(".view.active");
+    const nv = document.querySelector(".nav-item.active");
+    window.__osmReturn = {
+      viewId: av ? av.id : "exploreView",
+      navId: nv ? nv.id : "navHome",
+      scroll: window.scrollY,
+    };
     window.__osmReturnScroll = window.scrollY;
   }
   currentState.category = d;
@@ -5711,6 +5718,14 @@ function navigateToArticle(d, s, a, options = {}) {
   localStorage.setItem("osmosis_active_article", JSON.stringify({ d, s, a }));
   loadArticleView(options);
 }
+
+// Lightweight end-of-reading cleanup the book reader calls when it closes,
+// mirroring the Back button but without re-rendering the origin grid.
+window.__osmEndReading = function () {
+  try { stopTTS(); } catch (e) {}
+  _readingActive = false;
+  try { delete _sessionScroll[getStorageKey()]; } catch (e) {}
+};
 
 // ============================================================
 // ARTICLE RENDERER

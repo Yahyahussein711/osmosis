@@ -1211,14 +1211,20 @@
 
   function close() {
     el.reader.classList.remove("on");
-    // unwind the underlying navigation via the existing Back button
-    var back = document.getElementById("backToPrevious");
-    if (back) back.click();
-    // return the origin page to where it was scrolled (Explore/Chronicle)
-    var y = typeof window.__osmReturnScroll === "number" ? window.__osmReturnScroll : 0;
+    var ret = window.__osmReturn || { viewId: "exploreView", navId: "navHome", scroll: 0 };
+    // End the reading session (TTS/wake/session-scroll) without re-rendering.
+    if (typeof window.__osmEndReading === "function") {
+      try { window.__osmEndReading(); } catch (e) {}
+    }
+    // Reveal the origin page exactly as it was — no grid rebuild, no scroll
+    // reset (skipScroll=true), then put the scroll back where it was.
+    if (typeof switchView === "function") switchView(ret.viewId, true);
+    if (typeof updateActiveNav === "function" && ret.navId) {
+      try { updateActiveNav(ret.navId); } catch (e) {}
+    }
+    var y = ret.scroll || 0;
+    window.scrollTo(0, y);
     requestAnimationFrame(function () { window.scrollTo(0, y); });
-    setTimeout(function () { window.scrollTo(0, y); }, 80);
-    setTimeout(function () { window.scrollTo(0, y); }, 220);
   }
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
