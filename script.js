@@ -5037,7 +5037,11 @@ function switchView(viewName, skipScroll = false) {
   if (viewName === "profileView" && typeof renderBackupLedger === "function")
     renderBackupLedger();
 
-  if (!skipScroll) {
+  // Never yank the scroll to the top while the paginated reader is open over
+  // the page — that would lose the Library's place when you leave a story.
+  const _brOverlay = document.getElementById("bookReader");
+  const _readerOpen = _brOverlay && _brOverlay.classList.contains("on");
+  if (!skipScroll && !_readerOpen) {
     // Instant — an animated scroll on every page open is distracting
     window.scrollTo({ top: 0, behavior: "auto" });
   }
@@ -5844,21 +5848,24 @@ function loadArticleView(options = {}) {
   const resume =
     !options.skipResume && Number.isFinite(savedScroll) && savedScroll > 40;
 
-  switchView("articleView", resume);
-  if (resume) {
-    setTimeout(
-      () => window.scrollTo({ top: savedScroll, behavior: "auto" }),
-      60,
-    );
-  }
-
-  // Apple-Books-style paginated reader opens over the legacy view.
+  // Apple-Books-style paginated reader opens as an overlay. Keep the page
+  // you came from (Explore/Chronicle) active underneath — never switch it to
+  // the legacy article view — so leaving the story reveals it instantly with
+  // no re-render, no scroll reset.
   if (window.OsmosisReader) {
     window.OsmosisReader.open(
       article,
       currentState.article,
       currentState.category + "_" + currentState.subtopic + "_" + currentState.article,
     );
+  } else {
+    switchView("articleView", resume);
+    if (resume) {
+      setTimeout(
+        () => window.scrollTo({ top: savedScroll, behavior: "auto" }),
+        60,
+      );
+    }
   }
 }
 

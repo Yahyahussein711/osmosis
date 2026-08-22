@@ -1210,21 +1210,13 @@
   }
 
   function close() {
+    // The origin page (Explore/Chronicle) was never hidden — just lift the
+    // overlay and it's already there, at the same scroll. No re-render.
     el.reader.classList.remove("on");
-    var ret = window.__osmReturn || { viewId: "exploreView", navId: "navHome", scroll: 0 };
-    // End the reading session (TTS/wake/session-scroll) without re-rendering.
+    resetCard();
     if (typeof window.__osmEndReading === "function") {
       try { window.__osmEndReading(); } catch (e) {}
     }
-    // Reveal the origin page exactly as it was — no grid rebuild, no scroll
-    // reset (skipScroll=true), then put the scroll back where it was.
-    if (typeof switchView === "function") switchView(ret.viewId, true);
-    if (typeof updateActiveNav === "function" && ret.navId) {
-      try { updateActiveNav(ret.navId); } catch (e) {}
-    }
-    var y = ret.scroll || 0;
-    window.scrollTo(0, y);
-    requestAnimationFrame(function () { window.scrollTo(0, y); });
   }
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
