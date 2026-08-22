@@ -202,6 +202,16 @@
     .br-flow .wd.br-hl{background:color-mix(in srgb,var(--br-accent,#9e4632) 22%,transparent);}
     .br-flow .wd.br-hl.br-hasnote{box-shadow:inset 0 -2px 0 var(--br-accent,#9e4632);}
     .br-flow .wd.br-sel{background:color-mix(in srgb,var(--br-accent,#9e4632) 36%,transparent);}
+    /* draggable selection handles */
+    .br-handle{position:absolute;z-index:13;display:none;width:26px;margin-left:-13px;
+      touch-action:none;cursor:ew-resize;}
+    .br-handle.on{display:block;}
+    .br-handle::before{content:"";position:absolute;left:12px;top:0;bottom:0;width:2px;
+      background:var(--br-accent,#9e4632);}
+    .br-handle::after{content:"";position:absolute;left:6px;width:14px;height:14px;border-radius:50%;
+      background:var(--br-accent,#9e4632);box-shadow:0 1px 4px rgba(0,0,0,.35);}
+    .br-handle.start::after{top:-11px;}
+    .br-handle.end::after{bottom:-11px;}
     .br-flow .br-author{text-align:center;font-style:italic;color:var(--br-faint,#9a9384);
       font-size:.95em;margin:-.3em 0 1.7em;}
     .br-flow p.br-first::first-letter{float:left;font-family:var(--br-font,"Lora",Georgia,serif);
@@ -282,7 +292,9 @@
       '  <div class="br-sheet-body" id="brSheetBody"></div>' +
       '</div>' +
       '<div class="br-progline" id="brProgline"></div>' +
-      // ---- highlight bar + note composer (Phase 4) ----
+      // ---- selection handles + highlight bar + note composer (Phase 4) ----
+      '<div class="br-handle start" id="brHandleA"></div>' +
+      '<div class="br-handle end" id="brHandleB"></div>' +
       '<div class="br-hlbar" id="brHlbar">' +
       '  <button data-hl="toggle" id="brHlToggle">Highlight</button>' +
       '  <span class="sep"></span>' +
@@ -323,6 +335,8 @@
     el.noteQ = r.querySelector("#brNoteQ");
     el.noteText = r.querySelector("#brNoteText");
     el.progline = r.querySelector("#brProgline");
+    el.handleA = r.querySelector("#brHandleA");
+    el.handleB = r.querySelector("#brHandleB");
 
     r.querySelector("#brClose").addEventListener("click", function (e) {
       e.stopPropagation();
@@ -347,6 +361,8 @@
     r.querySelector("#brNoteCancel").addEventListener("click", closeNote);
     r.querySelector("#brNoteSave").addEventListener("click", saveNote);
     el.noteWrap.addEventListener("click", function (e) { if (e.target === el.noteWrap) closeNote(); });
+    wireHandle(el.handleA, "A");
+    wireHandle(el.handleB, "B");
 
     wireGestures();
     window.addEventListener("resize", onResize);
@@ -476,7 +492,7 @@
     if (animating) return;
     var target = page + dir;
     if (target < 0 || target > pageCount - 1) return;
-    closeHlBar();
+    closeHlBar(); clearSel();
     animating = true;
     page = target;
     anchor = firstSentenceOfPage(page);
@@ -532,7 +548,7 @@
       var dx = e.clientX - g.x0, dy = e.clientY - g.y0;
       var dt = performance.now() - g.t0;
       if (g.longpressed) {
-        if (g.selecting) openBarNew(Math.min(selA, selB), Math.max(selA, selB));
+        if (g.selecting) openBarNew(selS, selE);
         g = null; return;
       }
       if (g.dragging) {
@@ -757,7 +773,7 @@
   var hlRanges = [];
   var hlKey = "";
   var curSel = null;          // { s, e, idx } — active bar target (idx<0 = new)
-  var selActive = false, selA = -1, selB = -1;
+  var selActive = false, selS = -1, selE = -1, selAnchor = -1;
 
   function loadHighlights(key) {
     hlKey = key ? "osmosis_reader_hl_" + key : "";
@@ -799,20 +815,72 @@
 
   // ---- live selection ----
   function wordAt(x, y) {
-    var e = document.elementFromPoint(x, y);
-    var wd = e && e.closest ? e.closest(".wd") : null;
-    return wd ? +wd.dataset.w : -1;
+    // look through the handles/bar to the word beneath
+    var list = document.elementsFromPoint
+      ? document.elementsFromPoint(x, y)
+      : [document.elementFromPoint(x, y)];
+    for (var i = 0; i < list.length; i++) {
+      var wd = list[i] && list[i].closest ? list[i].closest(".wd") : null;
+      if (wd) return +wd.dataset.w;
+    }
+    return -1;
   }
-  function startSel(w) { selActive = true; selA = selB = w; renderSel(); }
-  function extendSel(w) { if (selActive && w >= 0) { selB = w; renderSel(); } }
+  function startSel(w) { selActive = true; selAnchor = w; selS = selE = w; renderSel(); }
+  function extendSel(w) {
+    if (!selActive || w < 0) return;
+    if (w >= selAnchor) { selS = selAnchor; selE = w; }
+    else { selS = w; selE = selAnchor; }
+    renderSel();
+  }
   function renderSel() {
     el.flow.querySelectorAll(".wd.br-sel").forEach(function (s) { s.classList.remove("br-sel"); });
-    var a = Math.min(selA, selB), b = Math.max(selA, selB);
-    for (var w = a; w <= b; w++) { var s = wordSpan(w); if (s) s.classList.add("br-sel"); }
+    for (var w = selS; w <= selE; w++) { var s = wordSpan(w); if (s) s.classList.add("br-sel"); }
   }
   function clearSel() {
     selActive = false;
     el.flow.querySelectorAll(".wd.br-sel").forEach(function (s) { s.classList.remove("br-sel"); });
+    hideHandles();
+  }
+  // ---- draggable selection handles ----
+  function placeHandles() {
+    var fw = wordSpan(selS), lw = wordSpan(selE);
+    if (!fw || !lw) { hideHandles(); return; }
+    var r1 = fw.getBoundingClientRect(), r2 = lw.getBoundingClientRect();
+    el.handleA.style.left = r1.left + "px";
+    el.handleA.style.top = r1.top + "px";
+    el.handleA.style.height = r1.height + "px";
+    el.handleA.classList.add("on");
+    el.handleB.style.left = r2.right + "px";
+    el.handleB.style.top = r2.top + "px";
+    el.handleB.style.height = r2.height + "px";
+    el.handleB.classList.add("on");
+  }
+  function hideHandles() {
+    if (el.handleA) el.handleA.classList.remove("on");
+    if (el.handleB) el.handleB.classList.remove("on");
+  }
+  function wireHandle(h, which) {
+    h.addEventListener("pointerdown", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      try { h.setPointerCapture(e.pointerId); } catch (err) {}
+      h._drag = true;
+      closeHlBar();
+    });
+    h.addEventListener("pointermove", function (e) {
+      if (!h._drag) return;
+      var w = wordAt(e.clientX, e.clientY);
+      if (w < 0) return;
+      if (which === "A") selS = Math.min(w, selE);
+      else selE = Math.max(w, selS);
+      renderSel(); placeHandles();
+    });
+    function up() {
+      if (!h._drag) return;
+      h._drag = false;
+      openBarNew(selS, selE);
+    }
+    h.addEventListener("pointerup", up);
+    h.addEventListener("pointercancel", up);
   }
 
   // ---- the floating bar ----
@@ -834,6 +902,7 @@
     curSel = { s: s, e: e, idx: -1 };
     el.hlToggle.textContent = "Highlight";
     positionBar(s, e);
+    placeHandles();
   }
   function openBarExisting(idx) {
     var r = hlRanges[idx];
