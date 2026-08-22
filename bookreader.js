@@ -43,8 +43,7 @@
     #bookReader{position:fixed;inset:0;z-index:5000;display:none;
       color:var(--br-ink,#22201b);
       font-family:var(--br-font,"Lora",Georgia,serif);
-      -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
-      transition:background .3s ease,backdrop-filter .3s ease,-webkit-backdrop-filter .3s ease;}
+      -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
     #bookReader.on{display:block;}
     /* the page as a card that can be swiped down to leave */
     .br-card{position:absolute;inset:0;overflow:hidden;background:var(--br-paper,#f7f3ea);
@@ -625,32 +624,30 @@
   var closing = false;
   function dismissDrag(dy) {
     var H = el.reader.clientHeight || 800;
-    // gentle rubber-band so the card eases as it falls, not a linear slide
     var p = Math.max(0, Math.min(1, dy / (H * 0.4)));
-    var ty = dy * (0.42 - p * 0.12); // follows the finger, softening with depth
     el.reader.classList.add("dismissing");
     el.reader.style.setProperty("--dp", p.toFixed(3));
     el.card.style.transition = "none";
+    // card tracks the finger 1:1 so the drag feels immediate
     el.card.style.transform =
-      "translate3d(0," + ty + "px,0) scale(" + (1 - p * 0.15) + ")";
-    el.card.style.borderRadius = Math.min(34, p * 46) + "px";
+      "translate3d(0," + dy + "px,0) scale(" + (1 - p * 0.14) + ")";
+    el.card.style.borderRadius = p * 30 + "px";
     el.dismissX.style.opacity = Math.min(1, p * 4);
   }
   function dismissEnd(dy, vy) {
     var H = el.reader.clientHeight || 800;
     var p = Math.max(0, Math.min(1, dy / (H * 0.4)));
-    if (p > 0.32 || (vy > 0.9 && dy > 80)) {
-      // commit: carry the card the rest of the way out, smoothly
-      el.reader.style.setProperty("--dp", "0");
+    if (p > 0.3 || (vy > 0.8 && dy > 60)) {
+      // commit — quick throw out
       el.card.style.transition =
-        "transform .42s cubic-bezier(.33,0,.15,1), border-radius .42s ease, opacity .42s ease";
-      el.card.style.transform = "translate3d(0," + (H + 40) + "px,0) scale(.86)";
+        "transform .16s cubic-bezier(.4,0,1,1), opacity .16s ease";
+      el.card.style.transform = "translate3d(0," + H + "px,0) scale(.9)";
       el.card.style.opacity = "0";
-      setTimeout(function () { close(); resetCard(); }, 380);
+      setTimeout(function () { close(); resetCard(); }, 150);
     } else {
-      // spring back to full screen
+      // quick snap back
       el.card.style.transition =
-        "transform .42s cubic-bezier(.22,1,.36,1), border-radius .42s ease";
+        "transform .18s cubic-bezier(.2,.8,.2,1), border-radius .18s ease";
       el.card.style.transform = "translate3d(0,0,0) scale(1)";
       el.card.style.borderRadius = "0";
       el.dismissX.style.opacity = "0";
@@ -658,27 +655,27 @@
       setTimeout(function () {
         el.reader.classList.remove("dismissing");
         el.card.style.transition = "";
-      }, 440);
+      }, 190);
     }
   }
-  // Pressing ✕ plays the same graceful card dismiss instead of a hard cut.
+  // Pressing ✕ plays the same quick card dismiss instead of a hard cut.
   function animateClose() {
     if (closing) return;
     closing = true;
     var H = el.reader.clientHeight || 800;
     el.reader.classList.add("dismissing");
-    el.reader.style.setProperty("--dp", "0.66");
+    el.reader.style.setProperty("--dp", "0.55");
     el.dismissX.style.opacity = "0";
     el.card.style.transition = "none";
     el.card.style.transform = "translate3d(0,0,0) scale(1)";
     el.card.style.borderRadius = "0";
-    void el.card.offsetHeight; // commit the start state
+    void el.card.offsetHeight;
     el.card.style.transition =
-      "transform .4s cubic-bezier(.32,.72,.28,1), border-radius .4s ease, opacity .38s ease";
-    el.card.style.transform = "translate3d(0," + H * 0.14 + "px,0) scale(.9)";
-    el.card.style.borderRadius = "30px";
+      "transform .18s cubic-bezier(.4,0,1,1), border-radius .18s ease, opacity .18s ease";
+    el.card.style.transform = "translate3d(0," + H * 0.4 + "px,0) scale(.88)";
+    el.card.style.borderRadius = "26px";
     el.card.style.opacity = "0";
-    setTimeout(function () { close(); resetCard(); closing = false; }, 380);
+    setTimeout(function () { close(); resetCard(); closing = false; }, 170);
   }
   function resetCard() {
     if (!el.card) return;
